@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "updated": "2026-08-29",
+  "documents": [
+    {
+      "id": "G-001",
+      "title": "Utility scripts",
+      "type": "guide",
+      "status": "active",
+      "priority": "P2",
+      "path": "docs/guides/G-001-scripts.md",
+      "depends_on": []
+    },
+    {
+      "id": "P-001",
+      "title": "TDD implementation of a joined RIAO + RINAP TF module",
+      "type": "plan",
+      "status": "draft",
+      "priority": "P0",
+      "path": "docs/plans/P-001-riao-rinap-tf.md",
+      "depends_on": [
+        "R-001"
+      ]
+    },
+    {
+      "id": "P-002",
+      "title": "Automate ORACC upstream updates through ORACC-TF publication",
+      "type": "plan",
+      "status": "draft",
+      "priority": "P0",
+      "path": "docs/plans/P-002-upstream-automation.md",
+      "depends_on": [
+        "R-002",
+        "P-001"
+      ]
+    },
+    {
+      "id": "P-003",
+      "title": "Build user documentation for ORACC-TF",
+      "type": "plan",
+      "status": "draft",
+      "priority": "P1",
+      "path": "docs/plans/P-003-documentation.md",
+      "depends_on": [
+        "R-003",
+        "P-001"
+      ]
+    },
+    {
+      "id": "R-001",
+      "title": "Which ORACC projects are worth converting to Text-Fabric",
+      "type": "research",
+      "status": "done",
+      "priority": "P0",
+      "path": "docs/research/R-001-corpus-selection.md",
+      "depends_on": []
+    },
+    {
+      "id": "R-002",
+      "title": "Upstream change detection, rebuild and publication for ORACC-TF",
+      "type": "research",
+      "status": "active",
+      "priority": "P0",
+      "path": "docs/research/R-002-upstream-automation.md",
+      "depends_on": [
+        "R-001"
+      ]
+    },
+    {
+      "id": "R-003",
+      "title": "Documentation architecture for ORACC-TF",
+      "type": "research",
+      "status": "active",
+      "priority": "P1",
+      "path": "docs/research/R-003-documentation.md",
+      "depends_on": [
+        "R-001",
+        "P-001"
+      ]
+    },
+    {
+      "id": "INDEX",
+      "title": "ORACC-TF documentation index",
+      "type": "index",
+      "status": "active",
+      "priority": "P0",
+      "path": "docs/README.md",
+      "depends_on": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P-001.M0",
+      "title": "Harness and cardinalities",
+      "plan": "P-001",
+      "spec": "\u00a75 M0",
+      "priority": "P0",
+      "blocked_by": [],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M1",
+      "title": "Semantic GDL classification",
+      "plan": "P-001",
+      "spec": "\u00a75 M1",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M0"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M2",
+      "title": "Word layer",
+      "plan": "P-001",
+      "spec": "\u00a75 M2",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M1"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M3",
+      "title": "Streaming section walk",
+      "plan": "P-001",
+      "spec": "\u00a75 M3",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M2"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M4",
+      "title": "Lexemes",
+      "plan": "P-001",
+      "spec": "\u00a75 M4",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M2"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M5",
+      "title": "Metadata join",
+      "plan": "P-001",
+      "spec": "\u00a75 M5",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M3"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M6",
+      "title": "Whole-corpus invariants",
+      "plan": "P-001",
+      "spec": "\u00a75 M6",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M4",
+        "P-001.M5"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M7",
+      "title": "Round-trip and source preservation",
+      "plan": "P-001",
+      "spec": "\u00a75 M7",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M6"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M8",
+      "title": "Cross-validation vs oldbabylonian",
+      "plan": "P-001",
+      "spec": "\u00a75 M8",
+      "priority": "P1",
+      "blocked_by": [
+        "P-001.M6"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-001.M9",
+      "title": "Translation layer",
+      "plan": "P-001",
+      "spec": "\u00a75 M9",
+      "priority": "P1",
+      "blocked_by": [
+        "P-001.M6"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH0",
+      "title": "Version and publication model",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 0",
+      "priority": "P0",
+      "blocked_by": [],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH1",
+      "title": "Upstream config, lock, snapshot backfill",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 1",
+      "priority": "P0",
+      "blocked_by": [
+        "P-002.PH0"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH2",
+      "title": "Discovery client",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 2",
+      "priority": "P0",
+      "blocked_by": [
+        "P-002.PH1"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH3",
+      "title": "Safe download and extraction",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 3",
+      "priority": "P0",
+      "blocked_by": [
+        "P-002.PH2"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH4",
+      "title": "Source diff",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 4",
+      "priority": "P0",
+      "blocked_by": [
+        "P-002.PH3",
+        "P-001.M6"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH5",
+      "title": "Gates",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 5",
+      "priority": "P0",
+      "blocked_by": [
+        "P-002.PH4"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH6",
+      "title": "Rebuild and validate",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 6",
+      "priority": "P0",
+      "blocked_by": [
+        "P-002.PH5"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH7",
+      "title": "Package and publish",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 7",
+      "priority": "P1",
+      "blocked_by": [
+        "P-002.PH6"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH8",
+      "title": "Workflows",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 8",
+      "priority": "P1",
+      "blocked_by": [
+        "P-002.PH7"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-002.PH9",
+      "title": "Tests incl. etcsri replay",
+      "plan": "P-002",
+      "spec": "\u00a7Phase 9",
+      "priority": "P0",
+      "blocked_by": [
+        "P-002.PH5"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-003.PH0",
+      "title": "Docs skeleton, descriptions, generator, drift check",
+      "plan": "P-003",
+      "spec": "\u00a7Phase 0",
+      "priority": "P1",
+      "blocked_by": [
+        "P-001.M1"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-003.PH1",
+      "title": "Five hazard pages",
+      "plan": "P-003",
+      "spec": "\u00a7Phase 1",
+      "priority": "P1",
+      "blocked_by": [
+        "P-001.M6",
+        "P-003.PH0"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-003.PH2",
+      "title": "Orientation and reproducibility",
+      "plan": "P-003",
+      "spec": "\u00a7Phase 2",
+      "priority": "P1",
+      "blocked_by": [
+        "P-003.PH1",
+        "P-002.PH1"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-003.PH3",
+      "title": "Generated feature reference",
+      "plan": "P-003",
+      "spec": "\u00a7Phase 3",
+      "priority": "P1",
+      "blocked_by": [
+        "P-003.PH0"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-003.PH4",
+      "title": "Tutorial notebooks",
+      "plan": "P-003",
+      "spec": "\u00a7Phase 4",
+      "priority": "P2",
+      "blocked_by": [
+        "P-003.PH1"
+      ],
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "P-003.PH5",
+      "title": "Release furniture",
+      "plan": "P-003",
+      "spec": "\u00a7Phase 5",
+      "priority": "P2",
+      "blocked_by": [
+        "P-003.PH1"
+      ],
+      "status": "todo",
+      "evidence": null
+    }
+  ],
+  "selection_rule": "take the lowest-numbered task with status 'todo' whose blocked_by are all 'done', preferring P0 over P1 over P2; see docs/README.md",
+  "stop_conditions": [
+    "a P-002 gate fires",
+    "a philological judgement is required",
+    "a licence question arises",
+    "acceptance criteria cannot be evaluated"
+  ]
+}

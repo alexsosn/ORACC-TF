@@ -1,3 +1,14 @@
+---
+id: P-001
+title: TDD implementation of a joined RIAO + RINAP TF module
+type: plan
+status: draft
+priority: P0
+depends_on: [R-001]
+blocks: [P-002, P-003]
+updated: 2026-08-29
+---
+
 # TDD implementation plan: a joined RIAO + RINAP Text-Fabric module
 
 **Status:** plan, revision 3 (two rounds of independent review). Not yet implemented.

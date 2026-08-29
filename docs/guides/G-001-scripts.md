@@ -1,3 +1,13 @@
+---
+id: G-001
+title: Utility scripts
+type: guide
+status: active
+priority: P2
+depends_on: []
+updated: 2026-08-29
+---
+
 # Utility scripts
 
 Four small tools cover the pipeline from ORACC's published ZIPs to a
@@ -5,12 +15,13 @@ GitHub-hosted working copy. All are dependency-free (Python 3 stdlib + bash).
 
 | Script | Purpose |
 |---|---|
-| [`extract_archives.sh`](../scripts/extract_archives.sh) | Unpack ORACC ZIPs into their project/subproject tree |
-| [`verify_extraction.py`](../scripts/verify_extraction.py) | Check extracted files against the ZIP manifests |
-| [`check_repo_limits.py`](../scripts/check_repo_limits.py) | Find files GitHub will reject before pushing |
-| [`shard_index.py`](../scripts/shard_index.py) | Split/rejoin oversized ORACC index files |
-| [`scan_annotation.py`](../scripts/scan_annotation.py) | Measure annotation depth across every corpus |
-| [`audit_translations.py`](../scripts/audit_translations.py) | Audit English-translation coverage and joinability |
+| [`extract_archives.sh`](../../scripts/extract_archives.sh) | Unpack ORACC ZIPs into their project/subproject tree |
+| [`verify_extraction.py`](../../scripts/verify_extraction.py) | Check extracted files against the ZIP manifests |
+| [`check_repo_limits.py`](../../scripts/check_repo_limits.py) | Find files GitHub will reject before pushing |
+| [`shard_index.py`](../../scripts/shard_index.py) | Split/rejoin oversized ORACC index files |
+| [`scan_annotation.py`](../../scripts/scan_annotation.py) | Measure annotation depth across every corpus |
+| [`audit_translations.py`](../../scripts/audit_translations.py) | Audit English-translation coverage and joinability |
+| [`check_docs_registry.py`](../../scripts/check_docs_registry.py) | Validate `docs/registry.json` against the documents |
 
 ---
 
@@ -71,10 +82,29 @@ discourse labels, and how many signs carry cuneiform Unicode.
 
 This distinguishes genuinely lemmatised corpora from bulk transliteration
 dumps, which is what decides whether a corpus is worth converting to
-Text-Fabric. It is the evidence behind [research.md](research.md).
+Text-Fabric. It is the evidence behind [research.md](../research/R-001-corpus-selection.md).
 
 Takes roughly 10 minutes over the full 47k-file corpus. Writes a JSON report;
 `--csv` also prints a flat summary.
+
+## check_docs_registry.py
+
+```bash
+scripts/check_docs_registry.py [--docs docs]
+```
+
+`docs/registry.json` drives the automated development loop: an agent reads it
+to choose the next task. If it drifts from the documents on disk, the agent
+works from a false map.
+
+This checks that every document has complete front-matter with a unique id
+matching its filename, that all `depends_on`/`blocks` targets exist, that the
+registry agrees with the documents field for field, that every task's plan and
+spec section are findable, that the task graph is acyclic, and that nothing is
+marked `done` while a dependency is not. It also prints which tasks are ready
+to start.
+
+Exit code 1 on any problem, so it belongs in CI.
 
 ## audit_translations.py
 

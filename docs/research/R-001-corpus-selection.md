@@ -1,3 +1,14 @@
+---
+id: R-001
+title: Which ORACC projects are worth converting to Text-Fabric
+type: research
+status: done
+priority: P0
+depends_on: []
+informs: [P-001]
+updated: 2026-08-29
+---
+
 # Which ORACC projects are worth converting to Text-Fabric?
 
 **Date:** 2026-08-29
@@ -46,7 +57,7 @@ recursed but treated *any* parent as a structural wrapper — which silently
 replaced 6,584 numerals, plus qualified and compound signs, with contentless
 rendering references, and would have emitted compound operators as signs. The
 scanner now classifies each GDL object semantically (sign / wrapper /
-rendering reference); see `plan-riao-rinap-tf.md` §2.3 for the full census.
+rendering reference); see `plans/P-001-riao-rinap-tf.md` §2.3 for the full census.
 
 The unicode column below is the corrected figure, and sign totals dropped
 where pseudo-signs were being counted (`cdli` 1,418,208 → 1,138,238;
@@ -54,7 +65,7 @@ where pseudo-signs were being counted (`cdli` 1,418,208 → 1,138,238;
 `balt` 59.1 % → **98.1 %**, `riao` 78.3 % → **98.3 %**. Projects showing 0.0 %
 genuinely ship no sign Unicode. Rankings and recommendations are unaffected.
 
-Reproduce with [`scripts/scan_annotation.py`](../scripts/scan_annotation.py):
+Reproduce with [`scripts/scan_annotation.py`](../../scripts/scan_annotation.py):
 
 ```bash
 scripts/scan_annotation.py --csv -o annotation-report.json

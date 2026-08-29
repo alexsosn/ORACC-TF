@@ -46,7 +46,7 @@ scripts/verify_extraction.py
 ```
 
 The archives already encode their own paths (`atae-ctn1.zip` → `atae/ctn1/…`),
-so the grouping falls out of extraction — see [docs/scripts.md](docs/scripts.md).
+so the grouping falls out of extraction — see [docs/guides/G-001-scripts.md](docs/guides/G-001-scripts.md).
 
 ## Repository size
 
@@ -67,9 +67,22 @@ reject.
 
 ## Documentation
 
-- [docs/scripts.md](docs/scripts.md) — the utility scripts in detail
-- [docs/research.md](docs/research.md) — which ORACC projects are best suited
-  to Text-Fabric conversion, and why
+All documentation lives under [`docs/`](docs/), organised by type with stable
+ids, priorities and declared dependencies. Start at the
+[documentation index](docs/README.md).
+
+| | |
+|---|---|
+| [`docs/research/`](docs/research/) | `R-NNN` — measured findings behind each decision |
+| [`docs/plans/`](docs/plans/) | `P-NNN` — what will be built, with acceptance criteria |
+| [`docs/guides/`](docs/guides/) | `G-NNN` — how to operate this repository |
+| [`docs/registry.json`](docs/registry.json) | machine-readable index driving the automated development loop |
+
+Current work: [R-001](docs/research/R-001-corpus-selection.md) selects the
+conversion targets, [P-001](docs/plans/P-001-riao-rinap-tf.md) specifies the
+RIAO+RINAP converter, [P-002](docs/plans/P-002-upstream-automation.md) automates
+tracking ORACC upstream, and [P-003](docs/plans/P-003-documentation.md) covers
+user-facing documentation.
 
 ## Licence
 
@@ -81,6 +94,6 @@ RIAO/RINAP edition pages state that "the annotated edition is released under
 the Creative Commons Attribution Share-Alike license 3.0" and ask that the
 page be cited. Where the two disagree, the safer reading is **CC BY-SA 3.0
 with attribution** — particularly for the translation layer. See
-[docs/plan-riao-rinap-tf.md](docs/plan-riao-rinap-tf.md) §2.11.
+[docs/plans/P-001-riao-rinap-tf.md](docs/plans/P-001-riao-rinap-tf.md) §2.11.
 
 The scripts in `scripts/` are provided under the MIT licence.

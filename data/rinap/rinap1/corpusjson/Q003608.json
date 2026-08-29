@@ -1,0 +1,885 @@
+{
+  "type": "cdl",
+  "project": "rinap/rinap1",
+  "source": "http://oracc.org/rinap/rinap1",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2025-02-26T08:51:34",
+  "textid": "Q003608",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "Q003608.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "Q003608.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "tag": ".",
+              "id": "Q003608.U2",
+              "label": "1 - 4",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q003608.1",
+                  "n": "1",
+                  "label": "1"
+                },
+                {
+                  "node": "l",
+                  "frag": "E₂.GAL",
+                  "id": "Q003608.l02429",
+                  "ref": "Q003608.1.1",
+                  "inst": "ēkal[palace]N",
+                  "sig": "@rinap/rinap1%akk:E₂.GAL=ēkallu[palace//palace]N'N$ēkal",
+                  "f": {
+                    "lang": "akk",
+                    "form": "E₂.GAL",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "E₂",
+                            "oid": "o0000180",
+                            "gdl_sign": "E₂",
+                            "utf8": "𒂍",
+                            "key": "o0000180..",
+                            "id": "Q003608.1.1.0",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "."
+                          },
+                          {
+                            "s": "GAL",
+                            "oid": "o0000194",
+                            "gdl_sign": "GAL",
+                            "utf8": "𒃲",
+                            "key": "o0000194..",
+                            "id": "Q003608.1.1.1",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "ēkallu",
+                    "gw": "palace",
+                    "sense": "palace",
+                    "norm": "ēkal",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.1.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.1.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{m}tukul-ti-A-e₂-šar₂-ra",
+                  "id": "Q003608.l0242a",
+                  "ref": "Q003608.1.2",
+                  "inst": "Tukulti-apil-Ešarra[Tiglath-pileser III, king of Assyria]RN",
+                  "sig": "@rinap/rinap1%akk:{m}tukul-ti-A-e₂-šar₂-ra=Tukulti-apil-Ešarra_III[Tiglath-pileser III, king of Assyria//Tiglath-pileser III, king of Assyria]RN'RN$Tukulti-apil-Ešarra",
+                  "f": {
+                    "lang": "akk",
+                    "form": "{m}tukul-ti-A-e₂-šar₂-ra",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "m",
+                            "oid": "o0000145",
+                            "gdl_sign": "DIŠ",
+                            "utf8": "𒁹",
+                            "key": "o0000145..m",
+                            "id": "Q003608.1.2.0"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "tukul",
+                        "oid": "o0000289",
+                        "gdl_sign": "KU",
+                        "utf8": "𒆪",
+                        "key": "o0000289..tukul",
+                        "id": "Q003608.1.2.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ti",
+                        "oid": "o0000553",
+                        "gdl_sign": "TI",
+                        "utf8": "𒋾",
+                        "key": "o0000553..ti",
+                        "id": "Q003608.1.2.2",
+                        "delim": "-"
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "A",
+                            "oid": "o0000087",
+                            "gdl_sign": "A",
+                            "utf8": "𒀀",
+                            "key": "o0000087..",
+                            "id": "Q003608.1.2.3",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "e₂",
+                        "oid": "o0000180",
+                        "gdl_sign": "E₂",
+                        "utf8": "𒂍",
+                        "key": "o0000180..e₂",
+                        "id": "Q003608.1.2.4",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "šar₂",
+                        "oid": "o0002827",
+                        "gdl_sign": "ŠAR₂",
+                        "utf8": "𒊹",
+                        "key": "o0002827..šar₂",
+                        "id": "Q003608.1.2.5",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ra",
+                        "oid": "o0000510",
+                        "gdl_sign": "RA",
+                        "utf8": "𒊏",
+                        "key": "o0000510..ra",
+                        "id": "Q003608.1.2.6"
+                      }
+                    ],
+                    "cf": "Tukulti-apil-Ešarra_III",
+                    "gw": "Tiglath-pileser III, king of Assyria",
+                    "sense": "Tiglath-pileser III, king of Assyria",
+                    "norm": "Tukulti-apil-Ešarra",
+                    "pos": "RN",
+                    "epos": "RN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.1.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.1.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q003608.2",
+                  "n": "2",
+                  "label": "2"
+                },
+                {
+                  "node": "l",
+                  "frag": "MAN",
+                  "id": "Q003608.l0242b",
+                  "ref": "Q003608.2.1",
+                  "inst": "šarru[king]N",
+                  "sig": "@rinap/rinap1%akk:MAN=šarru[king//king]N'N$šarru",
+                  "f": {
+                    "lang": "akk",
+                    "form": "MAN",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "MAN",
+                            "oid": "o0002475",
+                            "gdl_sign": "|U.U|",
+                            "utf8": "𒎙",
+                            "key": "o0002475..",
+                            "id": "Q003608.2.1.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "šarru",
+                    "gw": "king",
+                    "sense": "king",
+                    "norm": "šarru",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "GAL-u₂",
+                  "id": "Q003608.l0242c",
+                  "ref": "Q003608.2.2",
+                  "inst": "rabû[great]AJ",
+                  "sig": "@rinap/rinap1%akk:GAL-u₂=rabû[great//great]AJ'AJ$rabû",
+                  "f": {
+                    "lang": "akk",
+                    "form": "GAL-u₂",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "GAL",
+                            "oid": "o0000194",
+                            "gdl_sign": "GAL",
+                            "utf8": "𒃲",
+                            "key": "o0000194..",
+                            "id": "Q003608.2.2.0",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "u₂",
+                        "oid": "o0000599",
+                        "gdl_sign": "U₂",
+                        "utf8": "𒌑",
+                        "key": "o0000599..u₂",
+                        "id": "Q003608.2.2.1"
+                      }
+                    ],
+                    "cf": "rabû",
+                    "gw": "great",
+                    "sense": "great",
+                    "norm": "rabû",
+                    "pos": "AJ",
+                    "epos": "AJ"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "MAN",
+                  "id": "Q003608.l0242d",
+                  "ref": "Q003608.2.3",
+                  "inst": "šarru[king]N",
+                  "sig": "@rinap/rinap1%akk:MAN=šarru[king//king]N'N$šarru",
+                  "f": {
+                    "lang": "akk",
+                    "form": "MAN",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "MAN",
+                            "oid": "o0002475",
+                            "gdl_sign": "|U.U|",
+                            "utf8": "𒎙",
+                            "key": "o0002475..",
+                            "id": "Q003608.2.3.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "šarru",
+                    "gw": "king",
+                    "sense": "king",
+                    "norm": "šarru",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "dan-nu",
+                  "id": "Q003608.l0242e",
+                  "ref": "Q003608.2.4",
+                  "inst": "dannu[strong]AJ",
+                  "sig": "@rinap/rinap1%akk:dan-nu=dannu[strong//strong]AJ'AJ$dannu",
+                  "f": {
+                    "lang": "akk",
+                    "form": "dan-nu",
+                    "gdl": [
+                      {
+                        "v": "dan",
+                        "oid": "o0000270",
+                        "gdl_sign": "KAL",
+                        "utf8": "𒆗",
+                        "key": "o0000270..dan",
+                        "id": "Q003608.2.4.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "nu",
+                        "oid": "o0000487",
+                        "gdl_sign": "NU",
+                        "utf8": "𒉡",
+                        "key": "o0000487..nu",
+                        "id": "Q003608.2.4.1"
+                      }
+                    ],
+                    "cf": "dannu",
+                    "gw": "strong",
+                    "sense": "strong",
+                    "norm": "dannu",
+                    "pos": "AJ",
+                    "epos": "AJ"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.4"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.2.4"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q003608.3",
+                  "n": "3",
+                  "label": "3"
+                },
+                {
+                  "node": "l",
+                  "frag": "MAN",
+                  "id": "Q003608.l0242f",
+                  "ref": "Q003608.3.1",
+                  "inst": "šar[king]N",
+                  "sig": "@rinap/rinap1%akk:MAN=šarru[king//king]N'N$šar",
+                  "f": {
+                    "lang": "akk",
+                    "form": "MAN",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "MAN",
+                            "oid": "o0002475",
+                            "gdl_sign": "|U.U|",
+                            "utf8": "𒎙",
+                            "key": "o0002475..",
+                            "id": "Q003608.3.1.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "šarru",
+                    "gw": "king",
+                    "sense": "king",
+                    "norm": "šar",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "ŠU₂",
+                  "id": "Q003608.l02430",
+                  "ref": "Q003608.3.2",
+                  "inst": "kiššati[world]N",
+                  "sig": "@rinap/rinap1%akk:ŠU₂=kiššatu[totality//world]N'N$kiššati",
+                  "f": {
+                    "lang": "akk",
+                    "form": "ŠU₂",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "ŠU₂",
+                            "oid": "o0002850",
+                            "gdl_sign": "ŠU₂",
+                            "utf8": "𒋙",
+                            "key": "o0002850..",
+                            "id": "Q003608.3.2.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "kiššatu",
+                    "gw": "totality",
+                    "sense": "world",
+                    "norm": "kiššati",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.3.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.3.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "MAN",
+                  "id": "Q003608.l02431",
+                  "ref": "Q003608.3.3",
+                  "inst": "šar[king]N",
+                  "sig": "@rinap/rinap1%akk:MAN=šarru[king//king]N'N$šar",
+                  "f": {
+                    "lang": "akk",
+                    "form": "MAN",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "MAN",
+                            "oid": "o0002475",
+                            "gdl_sign": "|U.U|",
+                            "utf8": "𒎙",
+                            "key": "o0002475..",
+                            "id": "Q003608.3.3.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "šarru",
+                    "gw": "king",
+                    "sense": "king",
+                    "norm": "šar",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.3.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.3.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "c",
+                  "type": "phrase",
+                  "tag": "phr",
+                  "id": "Q003608.U5",
+                  "ref": "Q003608.ls00000",
+                  "cdl": [
+                    {
+                      "node": "l",
+                      "frag": "KUR",
+                      "id": "Q003608.l02432",
+                      "ref": "Q003608.3.4",
+                      "inst": "māt[land]N",
+                      "sig": "@rinap/rinap1%akk:KUR=mātu[land//land]N'N$māt",
+                      "f": {
+                        "lang": "akk",
+                        "form": "KUR",
+                        "delim": "",
+                        "gdl": [
+                          {
+                            "gg": "logo",
+                            "gdl_type": "logo",
+                            "group": [
+                              {
+                                "s": "KUR",
+                                "oid": "o0000294",
+                                "gdl_sign": "KUR",
+                                "utf8": "𒆳",
+                                "key": "o0000294..",
+                                "id": "Q003608.3.4.0",
+                                "role": "logo",
+                                "logolang": "sux"
+                              }
+                            ]
+                          }
+                        ],
+                        "cf": "mātu",
+                        "gw": "land",
+                        "sense": "land",
+                        "norm": "māt",
+                        "pos": "N",
+                        "epos": "N"
+                      },
+                      "props": [
+                        {
+                          "name": "field",
+                          "group": "env",
+                          "ngram": "-1",
+                          "ref": "Q003608.3.4"
+                        },
+                        {
+                          "name": "discourse",
+                          "group": "env",
+                          "value": "body",
+                          "ngram": "-1",
+                          "ref": "Q003608.3.4"
+                        }
+                      ]
+                    },
+                    {
+                      "node": "l",
+                      "frag": "aš-šur",
+                      "id": "Q003608.l02433",
+                      "ref": "Q003608.3.5",
+                      "inst": "Aššur[Assyria]GN",
+                      "sig": "@rinap/rinap1%akk:aš-šur=Aššur[Assyria//Assyria]GN'GN$Aššur",
+                      "f": {
+                        "lang": "akk",
+                        "form": "aš-šur",
+                        "gdl": [
+                          {
+                            "v": "aš",
+                            "oid": "o0000106",
+                            "gdl_sign": "AŠ",
+                            "utf8": "𒀸",
+                            "key": "o0000106..aš",
+                            "id": "Q003608.3.5.0",
+                            "delim": "-"
+                          },
+                          {
+                            "v": "šur",
+                            "oid": "o0000539",
+                            "gdl_sign": "SUR",
+                            "utf8": "𒋩",
+                            "key": "o0000539..šur",
+                            "id": "Q003608.3.5.1"
+                          }
+                        ],
+                        "cf": "Aššur",
+                        "gw": "Assyria",
+                        "sense": "Assyria",
+                        "norm": "Aššur",
+                        "pos": "GN",
+                        "epos": "GN"
+                      },
+                      "props": [
+                        {
+                          "name": "field",
+                          "group": "env",
+                          "ngram": "-1",
+                          "ref": "Q003608.3.5"
+                        },
+                        {
+                          "name": "discourse",
+                          "group": "env",
+                          "value": "body",
+                          "ngram": "-1",
+                          "ref": "Q003608.3.5"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q003608.4",
+                  "n": "4",
+                  "label": "4"
+                },
+                {
+                  "node": "l",
+                  "frag": "15",
+                  "id": "Q003608.l02434",
+                  "ref": "Q003608.4.1",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk",
+                    "form": "15",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "1(u) 5(diš)",
+                        "oid": "o0000561",
+                        "gdl_sign": "U",
+                        "form": "15",
+                        "utf8": "𒌋",
+                        "key": "o0000561..",
+                        "id": "Q003608.4.1.0",
+                        "seq": [
+                          {
+                            "r": "15"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.4.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "MA.NA",
+                  "id": "Q003608.l02435",
+                  "ref": "Q003608.4.2",
+                  "inst": "manê[a unit of weight]N +.",
+                  "sig": "@rinap/rinap1%akk:MA.NA=manû[unit//a unit of weight]N'N$manê",
+                  "f": {
+                    "lang": "akk",
+                    "form": "MA.NA",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "MA",
+                            "oid": "o0000444",
+                            "gdl_sign": "MA",
+                            "utf8": "𒈠",
+                            "key": "o0000444..",
+                            "id": "Q003608.4.2.0",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "."
+                          },
+                          {
+                            "s": "NA",
+                            "oid": "o0000469",
+                            "gdl_sign": "NA",
+                            "utf8": "𒈾",
+                            "key": "o0000469..",
+                            "id": "Q003608.4.2.1",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "manû",
+                    "gw": "unit",
+                    "sense": "a unit of weight",
+                    "norm": "manê",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q003608.4.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q003608.4.2"
+                    }
+                  ],
+                  "para": [
+                    {
+                      "class": "boundary",
+                      "type": "sentence",
+                      "text": "+.",
+                      "val": "",
+                      "bracketing_level": "0"
+                    },
+                    {
+                      "class": "syntax",
+                      "type": "label",
+                      "text": ".",
+                      "val": "",
+                      "bracketing_level": "0"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkbase": [
+        {
+          "type": "linkset",
+          "xlink_title": "Mat Aššur[Assyria//Assyria]GN'GN",
+          "id": "Q003608.ls00000",
+          "xlink_type": "extended",
+          "xlink_role": "psu",
+          "sig": "{KUR aš-šur = mātu[land]N Aššur[Assyria]GN += Mat Aššur[Assyria//Assyria]GN'GN}::@rinap/rinap1%akk:KUR=mātu[land//land]N'N$māt++@rinap/rinap1%akk:aš-šur=Aššur[Assyria//Assyria]GN'GN$Aššur",
+          "links": [
+            {
+              "type": "link",
+              "xlink_title": "māt",
+              "xlink_type": "locator",
+              "xlink_href": "#Q003608.l02432",
+              "xlink_role": "elt"
+            },
+            {
+              "type": "link",
+              "xlink_title": "Aššur",
+              "xlink_type": "locator",
+              "xlink_href": "#Q003608.l02433",
+              "xlink_role": "elt"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

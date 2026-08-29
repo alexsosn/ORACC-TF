@@ -1,0 +1,192 @@
+{
+  "type": "cdl",
+  "project": "rinap/rinap5p1",
+  "source": "http://oracc.org/rinap/rinap5p1",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2023-11-10T05:38:54",
+  "textid": "Q006204",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "Q006204.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "Q006204.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "Q006204.U2",
+              "label": "1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q006204.1",
+                  "n": "1",
+                  "label": "1"
+                },
+                {
+                  "node": "l",
+                  "frag": "E₂.GAL",
+                  "id": "Q006204.l0a988",
+                  "ref": "Q006204.1.1",
+                  "inst": "ēkallu[palace]N$ēkal",
+                  "sig": "@rinap/rinap5p1%akk:E₂.GAL=ēkallu[palace//palace]N'N$ēkal",
+                  "f": {
+                    "lang": "akk",
+                    "form": "E₂.GAL",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "E₂",
+                            "utf8": "𒂍",
+                            "id": "Q006204.1.1.0",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "."
+                          },
+                          {
+                            "s": "GAL",
+                            "utf8": "𒃲",
+                            "id": "Q006204.1.1.1",
+                            "queried": "1",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "ēkallu",
+                    "gw": "palace",
+                    "sense": "palace",
+                    "norm": "ēkal",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q006204.1.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q006204.1.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{m}30-LUGAL-GAR",
+                  "id": "Q006204.l0a989",
+                  "ref": "Q006204.1.2",
+                  "inst": "Sin-šarra-iškun[king of Assyria]RN$",
+                  "sig": "@rinap/rinap5p1%akk:{m}30-LUGAL-GAR=Sin-šarra-iškun[king of Assyria//king of Assyria]RN'RN$Sin-šarra-iškun",
+                  "f": {
+                    "lang": "akk",
+                    "form": "{m}30-LUGAL-GAR",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "m",
+                            "utf8": "𒁹",
+                            "id": "Q006204.1.2.0"
+                          }
+                        ]
+                      },
+                      {
+                        "n": "n",
+                        "sexified": "3(u)",
+                        "form": "30",
+                        "utf8": "𒌍",
+                        "id": "Q006204.1.2.1",
+                        "delim": "-",
+                        "seq": [
+                          {
+                            "r": "30"
+                          }
+                        ]
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "LUGAL",
+                            "utf8": "𒈗",
+                            "id": "Q006204.1.2.2",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          },
+                          {
+                            "s": "GAR",
+                            "utf8": "𒃻",
+                            "id": "Q006204.1.2.3",
+                            "queried": "1",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "Sin-šarra-iškun",
+                    "gw": "king of Assyria",
+                    "sense": "king of Assyria",
+                    "norm": "Sin-šarra-iškun",
+                    "pos": "RN",
+                    "epos": "RN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q006204.1.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q006204.1.2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "type": "cdl",
+  "project": "rinap/sources",
+  "source": "http://oracc.org/rinap/sources",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2025-05-02T06:50:20",
+  "textid": "P514652",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P514652.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P514652.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P514652.U2",
+              "label": "1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P514652.1",
+                  "n": "1",
+                  "label": "1"
+                },
+                {
+                  "node": "d",
+                  "frag": "($lion$)",
+                  "type": "nonw",
+                  "ref": "P514652.1.0.a"
+                },
+                {
+                  "node": "d",
+                  "frag": "($table$)",
+                  "type": "nonw",
+                  "ref": "P514652.1.0.b"
+                },
+                {
+                  "node": "l",
+                  "frag": "KUR",
+                  "id": "P514652.l3cca0",
+                  "ref": "P514652.1.1",
+                  "inst": "%akk:KUR=",
+                  "f": {
+                    "lang": "akk",
+                    "form": "KUR",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "KUR",
+                            "oid": "o0000294",
+                            "gdl_sign": "KUR",
+                            "utf8": "𒆳",
+                            "key": "o0000294..",
+                            "id": "P514652.1.1.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P514652.1.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P514652.1.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{m}[...]",
+                  "id": "P514652.l3cca1",
+                  "ref": "P514652.1.2",
+                  "inst": "%akk:{m}x=",
+                  "f": {
+                    "lang": "akk",
+                    "form": "{m}x",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "m",
+                            "oid": "o0000145",
+                            "gdl_sign": "DIŠ",
+                            "utf8": "𒁹",
+                            "key": "o0000145..m",
+                            "id": "P514652.1.2.0"
+                          }
+                        ]
+                      },
+                      {
+                        "x": "ellipsis",
+                        "id": "P514652.1.2.1",
+                        "breakStart": "1",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P514652.1.2.1"
+                      }
+                    ]
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P514652.1.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P514652.1.2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

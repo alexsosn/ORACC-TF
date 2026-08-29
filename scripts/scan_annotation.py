@@ -13,7 +13,8 @@ Counted per word (CDL "l") node:
     sense   sense gloss                        base    morphological stem
     morph   morpheme segmentation              morph2  glossed morphemes
     para    sentence/paragraph boundary        discourse   discourse label
-    gdl     signs, and how many carry utf8
+    gdl     signs (recursing through group/seq), how many carry utf8,
+            how many are logograms, and their break states
 
 Structural CDL "d" nodes (object, surface, column, line-start, cell-*) are
 counted too, since they become the TF section hierarchy.
@@ -32,6 +33,24 @@ import sys
 from collections import Counter
 
 WORD_FIELDS = ("cf", "gw", "sense", "norm", "pos", "epos", "base", "morph", "morph2")
+
+
+def sign_leaves(entries):
+    """Yield leaf sign entries from a gdl list.
+
+    gdl is a tree, not a flat list: logograms nest their signs under "group"
+    and determinatives/numerals under "seq". Iterating the top level only
+    misses every sign inside those wrappers - about 11% of signs in RIAO and
+    RINAP, and it undercounts Unicode coverage badly, since the wrapper node
+    itself carries no utf8.
+    """
+    for g in entries:
+        if "group" in g:
+            yield from sign_leaves(g["group"])
+        elif "seq" in g:
+            yield from sign_leaves(g["seq"])
+        else:
+            yield g
 
 
 def scan_corpus(cdir):
@@ -63,10 +82,14 @@ def scan_corpus(cdir):
                 for p in n.get("props") or []:
                     if p.get("name") == "discourse" and p.get("value"):
                         st["discourse"] += 1
-                for g in f.get("gdl") or []:
+                for g in sign_leaves(f.get("gdl") or []):
                     st["signs"] += 1
                     if g.get("utf8"):
                         st["utf8"] += 1
+                    if g.get("role") == "logo":
+                        st["logo"] += 1
+                    if g.get("break"):
+                        st["break_" + g["break"]] += 1
             elif kind == "d":
                 dtypes[n.get("type", "?")] += 1
             stack.extend(n.get("cdl") or [])

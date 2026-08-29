@@ -1,0 +1,16 @@
+# ORACC distribution archives. The extracted JSON under data/ is the useful
+# form and compresses far better in git (~16x); the ZIPs are opaque binaries
+# git cannot delta. Re-fetch from http://oracc.org/doc/opendata/ and run
+# scripts/extract_archives.sh to reproduce data/ from scratch.
+data/*.zip
+
+# Reassembled output of scripts/shard_index.py join. The sharded directory
+# data/cdli/index-cat/ is the committed form; this file exceeds GitHub's
+# 100 MB per-file limit and must never be committed.
+data/cdli/index-cat.json
+
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+venv/

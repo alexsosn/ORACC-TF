@@ -73,6 +73,14 @@ reject.
 
 ## Licence
 
-ORACC corpus data is released by its projects under CC BY-SA 3.0 or CC0;
-each project states its own terms in `metadata.json` and its index files.
+ORACC corpus data is released by its projects; each states its own terms.
+
+**Note a conflict in ORACC's own metadata.** The JSON distribution's
+`metadata.json` and the TEI corpus exports declare **CC0**, while the live
+RIAO/RINAP edition pages state that "the annotated edition is released under
+the Creative Commons Attribution Share-Alike license 3.0" and ask that the
+page be cited. Where the two disagree, the safer reading is **CC BY-SA 3.0
+with attribution** — particularly for the translation layer. See
+[docs/plan-riao-rinap-tf.md](docs/plan-riao-rinap-tf.md) §2.11.
+
 The scripts in `scripts/` are provided under the MIT licence.

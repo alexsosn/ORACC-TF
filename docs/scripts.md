@@ -10,6 +10,7 @@ GitHub-hosted working copy. All are dependency-free (Python 3 stdlib + bash).
 | [`check_repo_limits.py`](../scripts/check_repo_limits.py) | Find files GitHub will reject before pushing |
 | [`shard_index.py`](../scripts/shard_index.py) | Split/rejoin oversized ORACC index files |
 | [`scan_annotation.py`](../scripts/scan_annotation.py) | Measure annotation depth across every corpus |
+| [`audit_translations.py`](../scripts/audit_translations.py) | Audit English-translation coverage and joinability |
 
 ---
 
@@ -74,6 +75,33 @@ Text-Fabric. It is the evidence behind [research.md](research.md).
 
 Takes roughly 10 minutes over the full 47k-file corpus. Writes a JSON report;
 `--csv` also prints a flat summary.
+
+## audit_translations.py
+
+```bash
+scripts/audit_translations.py [--data DATA_DIR] [--tei TEI_DIR] [--include-witnesses]
+```
+
+Reports two different things that both get called "translation coverage":
+
+- **declared** — `metadata.json` carries a `formats` block whose `tr-en` list
+  names the texts the project says have an English translation (99.9 % of
+  populated RIAO/RINAP editions).
+- **joinable** — translations you can actually obtain and align. ORACC's
+  per-text XTR URLs do not resolve, so in practice this means the published
+  TEI corpus export (89.2 %).
+
+Pass `--tei` a directory holding an unzipped TEI export to get the joinable
+figures and the alignment-span statistics. Fetch it from
+<http://oracc.museum.upenn.edu/riao/downloads/> — and note the export is
+misnamed: `riao-teiCorpus-*.zip` contains the RINAP texts too.
+
+The span statistics are the point: translation units span a median of 4 lines
+and only 1 of 8,310 spans a single line, so translation must be modelled as a
+node over a **line range**, never as a line feature.
+
+`*/sources` and `*/scores` are excluded by default — they are score editions
+with no translations. `--include-witnesses` counts them.
 
 ## shard_index.py
 

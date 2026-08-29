@@ -1,14 +1,18 @@
 # TDD implementation plan: a joined RIAO + RINAP Text-Fabric module
 
-**Status:** plan, revision 2 (after independent review). Not yet implemented.
+**Status:** plan, revision 3 (two rounds of independent review). Not yet implemented.
 **Target dataset:** `assyrian-royal-inscriptions` — RIAO parts 1–5 and RINAP
 1–5 (+5p1) as one continuous TF corpus.
 
-> **Revision note.** Revision 1 defined a sign slot as "any GDL object with no
-> `group`/`seq` child". A reviewer showed this is false, and the data confirms
-> it: see §2.3. Revision 1's sign ontology, lexeme key, catalogue join and
-> document cardinality have all been reworked. §9 records what changed and
-> which review points did not hold.
+> **Revision notes.**
+> *Rev 2:* revision 1 defined a sign slot as "any GDL object with no
+> `group`/`seq` child". A reviewer showed this is false (§2.3); the sign
+> ontology, lexeme key, catalogue join and document cardinality were reworked.
+> *Rev 3:* a second review showed translations are **not** out of scope. They
+> are declared for 99.9 % of populated editions and 89.2 % are joinable today
+> from one published TEI download, aligned by line range (§2.11). Translations
+> become milestone M9, and a licence conflict is recorded.
+> §9 records what changed and which review points did not hold.
 
 ---
 
@@ -261,7 +265,82 @@ dialect-scoped. **Decision:** key on `(lang, cf, gw, pos)`, and preserve the
 full `sig` on every word so source identity is never lost. A later
 `lex_equiv` edge can link cross-language equivalents if wanted.
 
-### 2.11 Catalogue metadata
+### 2.11 Translations exist, are aligned, and are obtainable
+
+Revision 2 called translations out of scope on the grounds that they are not in
+the JSON distribution. That was true of `corpusjson/` but wrong as a
+conclusion. `metadata.json` declares a `formats` block listing which texts have
+what, and `tr-en` is one of them:
+
+```
+formats: { atf: [...261], lem: [...238], tr-en: [...238], xtf: [...261] }
+```
+
+**Declared coverage is 99.9 %** — 1,843 of 1,845 populated editions:
+
+| subproject | populated | `tr-en` declared | joinable from TEI | |
+|---|--:|--:|--:|--:|
+| `riao/ria1`–`ria5` | 717 | 717 | 716 | ~100 % |
+| `rinap/rinap1` | 85 | 85 | 72 | 84.7 % |
+| `rinap/rinap2` | 145 | 145 | 134 | 92.4 % |
+| `rinap/rinap3` | 238 | 238 | 229 | 96.2 % |
+| `rinap/rinap4` | 178 | 177 | 162 | 91.0 % |
+| `rinap/rinap5` | 344 | 344 | 333 | 96.8 % |
+| `rinap/rinap5p1` | 138 | 138 | **0** | **0 %** |
+| **total** | **1,845** | **1,843** | **1,646** | **89.2 %** |
+
+**Source.** The direct XTR URL pattern (`/rinap/rinap3/Q003475-en.xtr`) does
+**not** resolve — it returns a soft-404 (body `404`, HTTP 200). The practical
+source is the published TEI corpus export. Note the useful accident:
+
+- `riao/downloads/riao-teiCorpus-20241202.zip` (7.8 MB → 60 MB XML) is
+  misleadingly named. It contains **1,941 texts: all 904 RIAO *and* all 1,037
+  RINAP1–5**, matching this snapshot exactly except `rinap5p1`.
+- `rinap/downloads/rinap-teiCorpus-20190823.zip` is older and partial (676
+  texts) and is superseded by the above.
+
+So one download covers everything but `rinap5p1`, whose 138 translations are
+declared in metadata but absent from both exports and need a separate route.
+
+**Alignment is by line range, not by line.** Each translation unit is a
+`<div3 type="tr">` carrying explicit references into the transliteration:
+
+```xml
+<div3 type="tr" xml:id="Q001801_project-en.0" n="(1)"
+      xtr:sref="Q001801.1"  xtr:eref="Q001801.15"
+      xtr:lab-start-lnum="1" xtr:lab-end-lnum="16"
+      xtr:rows="15" xtr:label="(1)" xtr:se_label="Zarriqum 2001, 1">
+```
+
+`xtr:sref`/`xtr:eref` are exactly the `ref` values on our `d type=line-start`
+markers, so the join is direct. Measured span sizes (RIAO): median **5** lines,
+p90 11, max 72 — and **1 unit out of 5,992 spans exactly one line**. A
+`line.translation` feature is therefore the wrong model; units must span line
+ranges.
+
+Unit subtypes: `tr` (6,849) is running translation; `dollar` (2,452) is
+editorial/structural material. Inside a unit the text is marked up per word
+(`<span type="w">`), with `type="i"` for italics and `type="r"` for editorial
+parentheses.
+
+**TEI word ids match ours.** `<w xml:id="Q001801.l00012">` is the same id as
+the corpusjson `l` node, so the TEI can also be used to cross-check the word
+layer independently.
+
+**Licence conflict — resolve before redistributing.** `metadata.json` and the
+TEI export both declare **CC0**. The live edition pages declare something
+different:
+
+> "The annotated edition is released under the Creative Commons Attribution
+> Share-Alike license 3.0. Please cite this page as
+> `http://oracc.org/riao/Q005808/`."
+
+Two ORACC-published statements disagree about the same material. Treat the
+translation layer as **CC BY-SA 3.0 with attribution** — the more restrictive
+reading — and carry per-document `license`/`license_type` through the build so
+the question stays auditable.
+
+### 2.12 Catalogue metadata
 
 Present on ≥90 % of 2,098 entries: `designation`, `genre`, `subgenre`,
 `period`, `provenience`, `language`, `supergenre`, `ruler` (96.4 %),
@@ -287,6 +366,8 @@ Slot type is **sign**, matching `Nino-cunei/oldbabylonian` so queries port.
 | `word` | `l` node | 320,975 |
 | `lex` | distinct `(lang, cf, gw, pos)` | 8,025 |
 | `sign` **(slot)** | semantically classified GDL object | 792,651 *(provisional, §2.3)* |
+| `translation_unit` | TEI `div3 type="tr"`, spanning `sref`→`eref` slots | ~9,500 |
+| `translation_note` | TEI note attached to a unit | tbd |
 
 Sections: `document` / `face` / `line`.
 
@@ -400,6 +481,24 @@ reconstructed from a flat sign sequence.
 **Exit:** 100 % of words round-trip or every exception is enumerated and
 justified.
 
+### M9 — Translation layer (v1.1)
+*Red:*
+- `Q001801`'s first unit spans lines 1–15 and its `oslots` equal the union of
+  those lines' signs — asserted against `xtr:sref`/`xtr:eref`, not recomputed
+  from prose;
+- a unit whose `xtr:rows` is 1 and one whose `rows` is 72 both round-trip;
+- `subtype="dollar"` units are kept but distinguished from `subtype="tr"`;
+- editorial markup survives: `type="i"` italics and `type="r"` parentheses are
+  recoverable, with `text` (plain) and `text_raw` (marked up) both present;
+- `rinap5p1` yields **zero** translation units and the build reports that gap
+  explicitly rather than silently producing an under-translated corpus;
+- every document's `license`/`license_type` is carried through.
+*Green:* TEI reader keyed on `(subproject, Q)`; `translation_unit` nodes whose
+`oslots` are the sign span of `sref`→`eref`; `translation_note` edges.
+**Exit:** 1,646 documents carry ≥1 translation unit; no unit has empty
+`oslots`; the TEI word ids (`Q001801.l00012`) reconcile 1:1 with our `word`
+nodes for every joined text.
+
 ### M8 — Cross-validation
 Load beside `akkadian_oldbabylonian`; assert shared feature names
 (`readingu`, `lnno`, `period`, `genre`) have compatible value domains.
@@ -415,18 +514,31 @@ Load beside `akkadian_oldbabylonian`; assert shared feature names
 | Catalogue attached to the wrong edition | `(subproject, Q)` join + the `Q003840` regression fixture |
 | COF arity assumptions | parser tested to 14 `inst` slots; edge degree asserted ≤3 |
 | Stub documents corrupt section invariants | invariants scoped to populated documents; stubs carry `populated=0` |
+| Translation licence: JSON/TEI say CC0, edition pages say CC BY-SA 3.0 | treat as BY-SA with attribution; carry per-document licence fields (§2.11) |
+| `rinap5p1` has no TEI translations | reported as an explicit gap, not silently absent; needs a separate source |
+| Forcing word-level translation alignment | units span line ranges only (median 5 lines); no token alignment is attempted |
 
 ---
 
-## 7. Out of scope for v1
+## 7. Scope
 
-Full text-aligned translations are **not embedded in the individual
-`corpusjson` edition files**, so they are out of scope. (The distribution does
-ship `index-tra.json` — a ~5 MB stemmed word index over translations with
-line-level references — but not running translation text.)
+**In v1:** the edition layer (§3), built from `corpusjson` alone.
 
-Also deferred: `rinap/sources` and `rinap/scores` witnesses (0 % lemmatised),
-and Q→P exemplar linkage.
+**In v1.1 — M9, translations.** Not out of scope: 89.2 % of populated editions
+can be joined to published English translations from one TEI download, and
+99.9 % are declared in `metadata.json` (§2.11).
+
+`index-tra.json` is **not** a translation file and cannot substitute. It is an
+inverted search index: English words are stemmed (`architrav`, `irrevers`) and
+`instances` hold translation-word ids. Surface forms and sentence structure are
+gone, so the running text is unrecoverable from it. It is, however, a good
+**cross-check**: every translation token imported from TEI should be explicable
+by the search index.
+
+**Deferred:** `rinap/sources` and `rinap/scores` witnesses (0 % lemmatised),
+Q→P exemplar linkage, and word-to-word alignment — ORACC promises unit↔line-range
+alignment only, and forcing token alignment would invent precision the source
+does not have.
 
 ---
 
@@ -439,7 +551,38 @@ words, 56,226 lines, 140 Q collisions of which 48 differ in content.
 
 ---
 
-## 9. Review response
+## 9. Review responses
+
+### Round 2 — translations
+
+**Adopted.** Translations are real, aligned and obtainable, and "out of scope"
+was the wrong call (§2.11). Verified: `metadata.json` declares `tr-en` for
+1,843 of 1,845 populated editions, and `xtr:sref`/`xtr:eref` give exact
+line-range references into the transliteration. The reviewer's model —
+`translation_unit` spanning a slot range, with `translation_note` attached, and
+no forced word alignment — is adopted as M9. The `index-tra.json` correction is
+right and now stated explicitly: instances are translation-word ids, so running
+text cannot be recovered from it. The licence warning is right and material:
+the edition pages say CC BY-SA 3.0 while `metadata.json` and the TEI both say
+CC0.
+
+**Refined by measurement.**
+- *XTR is the ideal source.* The documented per-text XTR URLs do not resolve —
+  `/rinap/rinap3/Q003475-en.xtr` returns a soft-404. TEI is the practical
+  source, not the fallback.
+- *RINAP's TEI is dated 2018–2019.* True, but irrelevant: the
+  **`riao-teiCorpus-20241202.zip` export is misnamed and contains all 1,037
+  RINAP1–5 texts as well as all 904 RIAO ones**, current as of Dec 2024. One
+  download covers everything in this snapshot except `rinap5p1`.
+- *Coverage "very substantial".* Quantified: 89.2 % joinable, but with a hole —
+  **`rinap5p1` yields 0 of 138**, absent from both exports despite being
+  declared in metadata. M9 reports that gap rather than hiding it.
+- *Alignment types vary.* Confirmed and quantified: median 5 lines per unit,
+  p90 11, max 72, and only **1 of 5,992** units spans a single line. Interlinear
+  alignment is effectively absent here, which strengthens the case against a
+  `line.translation` feature.
+
+### Round 1 — sign ontology
 
 **Adopted.** The GDL leaf rule was wrong (§2.3) — verified: 6,584 numerals
 plus 4 qualified/compound parents were discarded, and the compound case would

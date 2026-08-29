@@ -1,0 +1,516 @@
+{
+  "type": "cdl",
+  "project": "etcsri",
+  "source": "http://oracc.org/etcsri",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-08-14T14:39:32",
+  "textid": "Q001775",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "Q001775.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "nonx",
+          "ref": "Q001775.1",
+          "strict": "1",
+          "extent": "n",
+          "scope": "line",
+          "state": "missing"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "Q001775.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "tag": ".",
+              "id": "Q001775.U2",
+              "label": "1' - 5'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q001775.2",
+                  "n": "1'",
+                  "label": "1'"
+                },
+                {
+                  "node": "l",
+                  "id": "Q001775.l051bb",
+                  "ref": "Q001775.2.1",
+                  "inst": "namtil[life]",
+                  "sig": "@etcsri%sux:nam-til₃=namtil[life//life]N'N$namtil/nam-til₃#N1=namtil##N1=STEM",
+                  "f": {
+                    "lang": "sux",
+                    "form": "nam-til₃",
+                    "gdl": [
+                      {
+                        "v": "nam",
+                        "oid": "o0000474",
+                        "gdl_sign": "NAM",
+                        "utf8": "𒉆",
+                        "id": "Q001775.2.1.0",
+                        "breakStart": "1",
+                        "o": "]",
+                        "break": "missing",
+                        "breakEnd": "Q001775.2.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "til₃",
+                        "oid": "o0000553",
+                        "gdl_sign": "TI",
+                        "utf8": "𒋾",
+                        "id": "Q001775.2.1.1",
+                        "break": "damaged",
+                        "ho": "1",
+                        "hc": "1"
+                      }
+                    ],
+                    "cf": "namtil",
+                    "gw": "life",
+                    "sense": "life",
+                    "norm": "namtil",
+                    "pos": "N",
+                    "epos": "N",
+                    "base": "nam-til₃",
+                    "morph": "N1=namtil",
+                    "morph2": "N1=STEM"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q001775.2.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q001775.2.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q001775.3",
+                  "n": "2'",
+                  "label": "2'"
+                },
+                {
+                  "node": "l",
+                  "id": "Q001775.l051bc",
+                  "ref": "Q001775.3.1",
+                  "inst": "Šulgir[1]RN\\gen\\term",
+                  "sig": "@etcsri%sux:{d}šul-gi-še₃\\gen\\term=Šulgir[1//2nd king of the 3rd dynasty of Urim]RN'RN$Šulgir.ak.še/šul-gi#N1=Šulgir.N5=ak.N5=še##N1=NAME.N5=GEN.N5=TERM",
+                  "f": {
+                    "lang": "sux",
+                    "form": "{d}šul-gi-še₃",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "d",
+                            "oid": "o0000099",
+                            "gdl_sign": "AN",
+                            "utf8": "𒀭",
+                            "id": "Q001775.3.1.0",
+                            "breakStart": "1",
+                            "o": "]",
+                            "break": "missing",
+                            "breakEnd": "Q001775.3.1.0"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "šul",
+                        "oid": "o0000158",
+                        "gdl_sign": "DUN",
+                        "utf8": "𒂄",
+                        "id": "Q001775.3.1.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "gi",
+                        "oid": "o0000210",
+                        "gdl_sign": "GI",
+                        "utf8": "𒄀",
+                        "id": "Q001775.3.1.2",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "še₃",
+                        "oid": "o0000178",
+                        "gdl_sign": "EŠ₂",
+                        "utf8": "𒂠",
+                        "id": "Q001775.3.1.3"
+                      }
+                    ],
+                    "cf": "Šulgir",
+                    "gw": "1",
+                    "sense": "2nd king of the 3rd dynasty of Urim",
+                    "norm": "Šulgir.ak.še",
+                    "pos": "RN",
+                    "epos": "RN",
+                    "base": "šul-gi",
+                    "morph": "N1=Šulgir.N5=ak.N5=še",
+                    "morph2": "N1=NAME.N5=GEN.N5=TERM"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q001775.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q001775.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q001775.4",
+                  "n": "3'",
+                  "label": "3'"
+                },
+                {
+                  "node": "l",
+                  "id": "Q001775.l051bd",
+                  "ref": "Q001775.4.1",
+                  "inst": "X-saga[1]PN",
+                  "sig": "@etcsri%sux:x-sag₉-ga=X-saga[1//1]PN'PN$X-saga/x-sag₉-ga#N1=X-saga##N1=NAME",
+                  "f": {
+                    "lang": "sux",
+                    "form": "x-sag₉-ga",
+                    "gdl": [
+                      {
+                        "v": "x",
+                        "oid": "o0000601",
+                        "gdl_sign": "X",
+                        "utf8": "X",
+                        "id": "Q001775.4.1.0",
+                        "breakStart": "1",
+                        "o": "]",
+                        "break": "missing",
+                        "breakEnd": "Q001775.4.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "sag₉",
+                        "oid": "o0002829",
+                        "gdl_sign": "ŠA₆",
+                        "utf8": "𒊷",
+                        "id": "Q001775.4.1.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ga",
+                        "oid": "o0000187",
+                        "gdl_sign": "GA",
+                        "utf8": "𒂵",
+                        "id": "Q001775.4.1.2"
+                      }
+                    ],
+                    "cf": "X-saga",
+                    "gw": "1",
+                    "sense": "1",
+                    "norm": "X-saga",
+                    "pos": "PN",
+                    "epos": "PN",
+                    "base": "x-sag₉-ga",
+                    "morph": "N1=X-saga",
+                    "morph2": "N1=NAME"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q001775.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q001775.4.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q001775.5",
+                  "n": "4'",
+                  "label": "4'"
+                },
+                {
+                  "node": "l",
+                  "id": "Q001775.l051be",
+                  "ref": "Q001775.5.1",
+                  "inst": "nukirik[gardener]\\erg",
+                  "sig": "@etcsri%sux:nu-kiri₆\\erg=nukirik[gardener//gardener, horticulturalist]N'N$nukirik.e/nu-kiri₆#N1=nukirik.N5=e##N1=STEM.N5=ERG",
+                  "f": {
+                    "lang": "sux",
+                    "form": "nu-kiri₆",
+                    "gdl": [
+                      {
+                        "v": "nu",
+                        "oid": "o0000487",
+                        "gdl_sign": "NU",
+                        "utf8": "𒉡",
+                        "id": "Q001775.5.1.0",
+                        "break": "damaged",
+                        "ho": "1",
+                        "delim": "-",
+                        "hc": "1"
+                      },
+                      {
+                        "v": "kiri₆",
+                        "oid": "o0000524",
+                        "gdl_sign": "SAR",
+                        "utf8": "𒊬",
+                        "id": "Q001775.5.1.1"
+                      }
+                    ],
+                    "cf": "nukirik",
+                    "gw": "gardener",
+                    "sense": "gardener, horticulturalist",
+                    "norm": "nukirik.e",
+                    "pos": "N",
+                    "epos": "N",
+                    "base": "nu-kiri₆",
+                    "morph": "N1=nukirik.N5=e",
+                    "morph2": "N1=STEM.N5=ERG"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q001775.5.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q001775.5.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q001775.6",
+                  "n": "5'",
+                  "label": "5'"
+                },
+                {
+                  "node": "c",
+                  "type": "phrase",
+                  "tag": "phr",
+                  "id": "Q001775.U5",
+                  "ref": "Q001775.ls00000",
+                  "cdl": [
+                    {
+                      "node": "l",
+                      "id": "Q001775.l051bf",
+                      "ref": "Q001775.6.1",
+                      "inst": "a[water]\\abs",
+                      "sig": "@etcsri%sux:a\\abs=a[water//water]N'N$a.ø/a#N1=a.N5=ø##N1=STEM.N5=ABS",
+                      "f": {
+                        "lang": "sux",
+                        "form": "a",
+                        "delim": "",
+                        "gdl": [
+                          {
+                            "v": "a",
+                            "oid": "o0000087",
+                            "gdl_sign": "A",
+                            "utf8": "𒀀",
+                            "id": "Q001775.6.1.0",
+                            "breakStart": "1",
+                            "o": "[",
+                            "break": "missing"
+                          }
+                        ],
+                        "cf": "a",
+                        "gw": "water",
+                        "sense": "water",
+                        "norm": "a.ø",
+                        "pos": "N",
+                        "epos": "N",
+                        "base": "a",
+                        "morph": "N1=a.N5=ø",
+                        "morph2": "N1=STEM.N5=ABS"
+                      },
+                      "props": [
+                        {
+                          "name": "field",
+                          "group": "env",
+                          "ngram": "-1",
+                          "ref": "Q001775.6.1"
+                        },
+                        {
+                          "name": "discourse",
+                          "group": "env",
+                          "value": "body",
+                          "ngram": "-1",
+                          "ref": "Q001775.6.1"
+                        }
+                      ]
+                    },
+                    {
+                      "node": "l",
+                      "id": "Q001775.l051c0",
+                      "ref": "Q001775.6.2",
+                      "inst": "ru[cvve] +.",
+                      "sig": "@etcsri%sux:mu-na-ru=ru[cvve//(compound verb verbal element)]V/t'V/t$mu.nn.a.n.ru.ø/ru#V4=mu.V6=nn.V7=a.V11=n.V12=ru.V14=ø##V4=VEN.V6=3-SG-H.V7=DAT.V11=3-SG-H-A.V12=STEM.V14=3-SG-P",
+                      "f": {
+                        "lang": "sux",
+                        "form": "mu-na-ru",
+                        "gdl": [
+                          {
+                            "v": "mu",
+                            "oid": "o0000457",
+                            "gdl_sign": "MU",
+                            "utf8": "𒈬",
+                            "id": "Q001775.6.2.0",
+                            "break": "missing",
+                            "o": "]",
+                            "breakEnd": "Q001775.6.1.0",
+                            "delim": "-"
+                          },
+                          {
+                            "v": "na",
+                            "oid": "o0000469",
+                            "gdl_sign": "NA",
+                            "utf8": "𒈾",
+                            "id": "Q001775.6.2.1",
+                            "break": "damaged",
+                            "ho": "1",
+                            "delim": "-",
+                            "hc": "1"
+                          },
+                          {
+                            "v": "ru",
+                            "oid": "o0000516",
+                            "gdl_sign": "RU",
+                            "utf8": "𒊒",
+                            "id": "Q001775.6.2.2",
+                            "breakStart": "1",
+                            "o": "]",
+                            "break": "missing",
+                            "breakEnd": "Q001775.6.2.2"
+                          }
+                        ],
+                        "cf": "ru",
+                        "gw": "cvve",
+                        "sense": "(compound verb verbal element)",
+                        "norm": "mu.nn.a.n.ru.ø",
+                        "pos": "V/t",
+                        "epos": "V/t",
+                        "base": "ru",
+                        "morph": "V4=mu.V6=nn.V7=a.V11=n.V12=ru.V14=ø",
+                        "morph2": "V4=VEN.V6=3-SG-H.V7=DAT.V11=3-SG-H-A.V12=STEM.V14=3-SG-P"
+                      },
+                      "props": [
+                        {
+                          "name": "field",
+                          "group": "env",
+                          "ngram": "-1",
+                          "ref": "Q001775.6.2"
+                        },
+                        {
+                          "name": "discourse",
+                          "group": "env",
+                          "value": "body",
+                          "ngram": "-1",
+                          "ref": "Q001775.6.2"
+                        }
+                      ],
+                      "para": [
+                        {
+                          "class": "boundary",
+                          "type": "sentence",
+                          "text": "+.",
+                          "val": "",
+                          "bracketing_level": "0"
+                        },
+                        {
+                          "class": "syntax",
+                          "type": "label",
+                          "text": ".",
+                          "val": "",
+                          "bracketing_level": "0"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "node": "d",
+              "type": "nonx",
+              "ref": "Q001775.7",
+              "strict": "1",
+              "extent": "n",
+              "scope": "line",
+              "state": "missing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkbase": [
+        {
+          "type": "linkset",
+          "xlink_title": "a ru[dedicate//dedicate]V/t'V/t",
+          "id": "Q001775.ls00000",
+          "xlink_type": "extended",
+          "xlink_role": "psu",
+          "sig": "{a\\abs mu-na-ru = a[water]N ru[cvve]V/t += a ru[dedicate//dedicate]V/t'V/t}::@etcsri%sux:a\\abs=a[water//water]N'N$a.ø/a#N1=a.N5=ø##N1=STEM.N5=ABS++@etcsri%sux:mu-na-ru=ru[cvve//(compound verb verbal element)]V/t'V/t$mu.nn.a.n.ru.ø/ru#V4=mu.V6=nn.V7=a.V11=n.V12=ru.V14=ø##V4=VEN.V6=3-SG-H.V7=DAT.V11=3-SG-H-A.V12=STEM.V14=3-SG-P",
+          "links": [
+            {
+              "type": "link",
+              "xlink_title": "a",
+              "xlink_type": "locator",
+              "xlink_href": "#Q001775.l051bf",
+              "xlink_role": "elt"
+            },
+            {
+              "type": "link",
+              "xlink_title": "ru",
+              "xlink_type": "locator",
+              "xlink_href": "#Q001775.l051c0",
+              "xlink_role": "elt"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

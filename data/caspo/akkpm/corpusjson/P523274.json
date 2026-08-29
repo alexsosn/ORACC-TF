@@ -1,0 +1,155 @@
+{
+  "type": "cdl",
+  "project": "caspo/akkpm",
+  "source": "http://oracc.org/caspo/akkpm",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-12-12T00:03:15",
+  "textid": "P523274",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P523274.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "object",
+          "ref": "P523274.x12.1",
+          "label": "x12"
+        },
+        {
+          "node": "d",
+          "subtype": "surface a",
+          "type": "surface",
+          "ref": "P523274.a.2",
+          "n": "a",
+          "label": "a"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P523274.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P523274.U2",
+              "label": "a 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P523274.3",
+                  "n": "1",
+                  "label": "a 1"
+                },
+                {
+                  "node": "l",
+                  "frag": "{d}UTU",
+                  "id": "P523274.l01291",
+                  "ref": "P523274.3.1",
+                  "inst": "%akk-x-oldbab:{d}UTU=",
+                  "f": {
+                    "lang": "akk-x-oldbab",
+                    "form": "{d}UTU",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "det": "semantic",
+                            "pos": "pre",
+                            "seq": [
+                              {
+                                "v": "d",
+                                "oid": "o0000099",
+                                "gdl_sign": "AN",
+                                "utf8": "𒀭",
+                                "key": "o0000099..d",
+                                "id": "P523274.3.1.0",
+                                "queried": "1"
+                              }
+                            ]
+                          },
+                          {
+                            "s": "UTU",
+                            "oid": "o0000565",
+                            "gdl_sign": "UD",
+                            "utf8": "𒌓",
+                            "key": "o0000565..UTU",
+                            "id": "P523274.3.1.1",
+                            "queried": "1",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P523274.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P523274.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "[...]",
+                  "id": "P523274.l01292",
+                  "ref": "P523274.3.2",
+                  "inst": "%akk-x-oldbab:x=",
+                  "f": {
+                    "lang": "akk-x-oldbab",
+                    "form": "x",
+                    "gdl": [
+                      {
+                        "x": "ellipsis",
+                        "id": "P523274.3.2.0",
+                        "breakStart": "1",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P523274.3.2.0"
+                      }
+                    ]
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P523274.3.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P523274.3.2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

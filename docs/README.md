@@ -38,6 +38,7 @@ be reviewable in pull requests next to the code they describe.
 | [P-002](plans/P-002-upstream-automation.md) | Automate ORACC upstream updates | draft | P0 | R-002, P-001 |
 | [P-003](plans/P-003-documentation.md) | User documentation | draft | P1 | R-003, P-001 |
 | [G-001](guides/G-001-scripts.md) | Utility scripts | active | P2 | — |
+| [G-002](guides/G-002-development.md) | Development setup and conventions | active | P1 | — |
 
 ## Priorities
 

@@ -12,6 +12,24 @@
       "depends_on": []
     },
     {
+      "id": "G-002",
+      "title": "Development setup and conventions",
+      "type": "guide",
+      "status": "active",
+      "priority": "P1",
+      "path": "docs/guides/G-002-development.md",
+      "depends_on": []
+    },
+    {
+      "id": "INDEX",
+      "title": "ORACC-TF documentation index",
+      "type": "index",
+      "status": "active",
+      "priority": "P0",
+      "path": "docs/README.md",
+      "depends_on": []
+    },
+    {
       "id": "P-001",
       "title": "TDD implementation of a joined RIAO + RINAP TF module",
       "type": "plan",
@@ -77,15 +95,6 @@
         "R-001",
         "P-001"
       ]
-    },
-    {
-      "id": "INDEX",
-      "title": "ORACC-TF documentation index",
-      "type": "index",
-      "status": "active",
-      "priority": "P0",
-      "path": "docs/README.md",
-      "depends_on": []
     }
   ],
   "tasks": [
@@ -96,8 +105,13 @@
       "spec": "\u00a75 M0",
       "priority": "P0",
       "blocked_by": [],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m0_loader.py (10 passed)",
+        "command": "pytest -q",
+        "report": "python -m oracc_tf.loader --list-unreadable",
+        "result": "2,081 source files / 2,078 parseable / 1,845 populated / 233 stubs; 3 zero-byte files raise EmptySourceError"
+      }
     },
     {
       "id": "P-001.M1",

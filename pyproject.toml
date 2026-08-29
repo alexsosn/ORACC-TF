@@ -1,0 +1,24 @@
+[project]
+name = "oracc-tf"
+version = "0.1.0"
+description = "Text-Fabric datasets built from ORACC open data"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["oracc_tf"]
+package-dir = {"" = "programs"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["programs"]
+markers = [
+  "corpus: touches the whole corpus; slow (deselect with -m 'not corpus')",
+]

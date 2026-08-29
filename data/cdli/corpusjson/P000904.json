@@ -1,0 +1,126 @@
+{
+  "type": "cdl",
+  "project": "cdli",
+  "source": "http://oracc.org/cdli",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2019-01-12T01:36:27",
+  "textid": "P000904",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P000904.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "tablet",
+          "ref": "P000904.x820.1",
+          "label": "x820"
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "obverse",
+          "ref": "P000904.o.2",
+          "label": "o"
+        },
+        {
+          "node": "d",
+          "subtype": "column 1o",
+          "type": "column",
+          "ref": "P000904.o.i.3",
+          "n": "1",
+          "label": "o i"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P000904.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P000904.U2",
+              "label": "o i 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P000904.4",
+                  "n": "1",
+                  "label": "o i 1"
+                },
+                {
+                  "node": "d",
+                  "type": "field-start",
+                  "subtype": "default"
+                },
+                {
+                  "node": "l",
+                  "frag": "[...]",
+                  "id": "P000904.l04ce7",
+                  "ref": "P000904.4.1",
+                  "inst": "%qpc:x=",
+                  "f": {
+                    "lang": "qpc",
+                    "form": "x",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "x": "ellipsis",
+                        "id": "P000904.4.1.0",
+                        "breakStart": "1",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P000904.4.1.0"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "node": "l",
+                  "frag": "2(N01)",
+                  "id": "P000904.l04ce8",
+                  "ref": "P000904.4.2",
+                  "inst": "%qpc:2(N01)=",
+                  "f": {
+                    "lang": "qpc",
+                    "form": "2(N01)",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "form": "2(N01)",
+                        "id": "P000904.4.2.0",
+                        "break": "damaged",
+                        "ho": "1",
+                        "hc": "1",
+                        "seq": [
+                          {
+                            "r": "2"
+                          },
+                          {
+                            "s": "N01"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "node": "d",
+                  "type": "field-end",
+                  "subtype": "default"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

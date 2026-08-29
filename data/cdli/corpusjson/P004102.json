@@ -1,0 +1,126 @@
+{
+  "type": "cdl",
+  "project": "cdli",
+  "source": "http://oracc.org/cdli",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2019-01-12T01:42:34",
+  "textid": "P004102",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P004102.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "tablet",
+          "ref": "P004102.x3602.1",
+          "label": "x3602"
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "obverse",
+          "ref": "P004102.o.2",
+          "label": "o"
+        },
+        {
+          "node": "d",
+          "subtype": "column 1o",
+          "type": "column",
+          "ref": "P004102.o.i.3",
+          "n": "1",
+          "label": "o i"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P004102.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P004102.U2",
+              "label": "o i 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P004102.4",
+                  "n": "1",
+                  "label": "o i 1"
+                },
+                {
+                  "node": "d",
+                  "type": "field-start",
+                  "subtype": "default"
+                },
+                {
+                  "node": "l",
+                  "frag": "NUN~d",
+                  "id": "P004102.l0eb86",
+                  "ref": "P004102.4.1",
+                  "inst": "%qpc:NUN=",
+                  "f": {
+                    "lang": "qpc",
+                    "form": "NUN",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "form": "NUN~d",
+                        "id": "P004102.4.1.0",
+                        "mods": [
+                          {
+                            "b": "NUN"
+                          },
+                          {
+                            "a": "d"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "node": "l",
+                  "frag": "DIN@t",
+                  "id": "P004102.l0eb87",
+                  "ref": "P004102.4.2",
+                  "inst": "%qpc:DIN@t=",
+                  "f": {
+                    "lang": "qpc",
+                    "form": "DIN@t",
+                    "gdl": [
+                      {
+                        "form": "DIN@t",
+                        "id": "P004102.4.2.0",
+                        "mods": [
+                          {
+                            "b": "DIN"
+                          },
+                          {
+                            "m": "t"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "node": "d",
+                  "type": "field-end",
+                  "subtype": "default"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

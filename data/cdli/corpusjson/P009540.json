@@ -1,0 +1,125 @@
+{
+  "type": "cdl",
+  "project": "cdli",
+  "source": "http://oracc.org/cdli",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2019-01-12T01:50:37",
+  "textid": "P009540",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P009540.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "tablet",
+          "ref": "P009540.x6801.1",
+          "label": "x6801"
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "obverse",
+          "ref": "P009540.o.2",
+          "label": "o"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P009540.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P009540.U2",
+              "label": "o 1 - o 2",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P009540.3",
+                  "n": "1",
+                  "label": "o 1"
+                },
+                {
+                  "node": "d",
+                  "type": "field-start",
+                  "subtype": "default"
+                },
+                {
+                  "node": "l",
+                  "frag": "M327~p",
+                  "id": "P009540.l25de5",
+                  "ref": "P009540.3.1",
+                  "inst": "%qpc:M327=",
+                  "f": {
+                    "lang": "qpc",
+                    "form": "M327",
+                    "gdl": [
+                      {
+                        "form": "M327~p",
+                        "id": "P009540.3.1.0",
+                        "mods": [
+                          {
+                            "b": "M327"
+                          },
+                          {
+                            "a": "p"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "node": "d",
+                  "type": "field-end",
+                  "subtype": "default"
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P009540.4",
+                  "n": "2",
+                  "label": "o 2"
+                },
+                {
+                  "node": "l",
+                  "frag": "6(N14)",
+                  "id": "P009540.l25de6",
+                  "ref": "P009540.4.1",
+                  "inst": "%qpc:6(N14)=",
+                  "f": {
+                    "lang": "qpc",
+                    "form": "6(N14)",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "form": "6(N14)",
+                        "id": "P009540.4.1.0",
+                        "seq": [
+                          {
+                            "r": "6"
+                          },
+                          {
+                            "s": "N14"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "type": "metadata",
+  "project": "cams/selbi",
+  "source": "http://oracc.org/cams/selbi",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-05T11:42:01",
+  "config": {
+    "pathname": "cams/selbi",
+    "name": "CAMS/Seleucid Building Inscriptions",
+    "abbrev": "CAMS/SelBI",
+    "project-type": "corpus",
+    "blurb": "Third-century BC building inscriptions, from Borsippa and Uruk. Edition of the Antiochus (Borsippa) Cylinder by Kathryn Stevens; edition of the Anu-uballiṭs' inscriptions from Uruk by Eleanor Robson.",
+    "public": "yes",
+    "options": {
+      "%akk-x-stdbab": ". cams/gkab",
+      "cbd-mode": "mixed",
+      "build-outlined-policy": "atf",
+      "catalog-build-policy": "auto",
+      "pager-back-button": "Back to Geography of Knowledge",
+      "pager-back-url": "http://oracc.museum.upenn.edu/gkab",
+      "pager-cat-css": "pc20,pc20,pc20,pc20",
+      "pager-cat-fields": " designation|name,corpus|genre,subcorpus|subgenre,findspot_remarks",
+      "pager-cat-template": {
+        "parentvalue": "#xml",
+        "tr": "%s%s%s%s"
+      },
+      "pager-glossaries": "akk qpn",
+      "pager-outline-tpg": "yes"
+    }
+  },
+  "formats": {
+    "atf": [
+      "Q004179",
+      "Q004180",
+      "Q004181"
+    ],
+    "lem": [
+      "Q004179",
+      "Q004180",
+      "Q004181"
+    ],
+    "tr-en": [
+      "Q004179",
+      "Q004180",
+      "Q004181"
+    ]
+  }
+}

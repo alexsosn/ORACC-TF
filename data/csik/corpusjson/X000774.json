@@ -1,0 +1,99 @@
+{
+  "type": "cdl",
+  "project": "csik",
+  "source": "http://oracc.org/csik",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2022-08-17T14:56:34",
+  "textid": "X000774",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "X000774.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "X000774.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "X000774.U2",
+              "label": "1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X000774.1",
+                  "n": "1",
+                  "label": "1"
+                },
+                {
+                  "node": "l",
+                  "frag": "[...]-ru-uk",
+                  "id": "X000774.l01b9e",
+                  "ref": "X000774.1.1",
+                  "inst": "%akk-x-stdbab:x-ru-uk=",
+                  "f": {
+                    "lang": "akk-x-stdbab",
+                    "form": "x-ru-uk",
+                    "gdl": [
+                      {
+                        "x": "ellipsis",
+                        "id": "X000774.1.1.0",
+                        "breakStart": "1",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "X000774.1.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ru",
+                        "id": "X000774.1.1.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "uk",
+                        "id": "X000774.1.1.2"
+                      }
+                    ]
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X000774.1.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X000774.1.1"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

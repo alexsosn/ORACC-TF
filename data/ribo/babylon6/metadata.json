@@ -1,0 +1,853 @@
+{
+  "type": "metadata",
+  "project": "ribo/babylon6",
+  "source": "http://oracc.org/ribo/babylon6",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2023-03-20T09:24:30",
+  "config": {
+    "pathname": "ribo/babylon6",
+    "name": "The Inscriptions of the Period of the Uncertain Dynasties",
+    "abbrev": "Babylon 6",
+    "project-type": "corpus",
+    "blurb": "This sub-project includes editions of the official inscriptions of the the Period of the Uncertain Dynasties \"Uncertain Dynasties\" (978-626 BC), texts published in Frame, RIMB 2 pp. 5-69 and Leichty, RINAP 4. Grant Frame and Erle Leichty contributed the transliterations and translations and Alexa Bartelmus and Jamie Novotny updated and lemmatized the editions.",
+    "public": "yes",
+    "options": {
+      "catf-ok": "yes",
+      "views-TEI": "true",
+      "l2": "yes",
+      "catalog-build-policy": "local",
+      "cbd-mode": "mixed",
+      "build-approved-policy": "atf",
+      "build-outlined-policy": "atf",
+      "outline-default-sort-fields": "subgenre",
+      "catalog-pleiades": "yes",
+      "outline-default-catalog-fields": "designation,popular_name,language,provenience,object_type",
+      "outline-default-catalog-widths": "30,25,15,15,15",
+      "outline-default-select": "false",
+      "outline-special-select": "false",
+      "views-cuneify": "true",
+      "views-buy-book": "http://www.utppublishing.com/Rulers-of-Babylonia-Rimb-2.html",
+      "render-accents": "yes",
+      "render-heth": "yes",
+      "render-inter-det-char": "",
+      "render-lnum-char": ")",
+      "render-tlat-style": {
+        "parentvalue": "rinap",
+        "opener": "",
+        "closer": ") ",
+        "separator": "–"
+      },
+      "render-left-align-nonx": "yes"
+    },
+    "labels": {
+      "obverse": "Obv.",
+      "reverse": "Rev.",
+      "left": "Left edge",
+      "column": "Col.",
+      "o": "Obv.",
+      "o?": "Obv.?",
+      "r": "Rev.",
+      "r?": "Rev.?",
+      "l.e.": "Left edge",
+      "r.e.": "Right edge",
+      "b.e.": "Bottom edge",
+      "e.": "Edge"
+    }
+  },
+  "formats": {
+    "atf": [
+      "Q003333",
+      "Q003334",
+      "Q003335",
+      "Q003336",
+      "Q003337",
+      "Q003338",
+      "Q003339",
+      "Q003340",
+      "Q003341",
+      "Q003342",
+      "Q003343",
+      "Q003344",
+      "Q003345",
+      "Q003346",
+      "Q003347",
+      "Q003348",
+      "Q003349",
+      "Q003350",
+      "Q003351",
+      "Q003352",
+      "Q003353",
+      "Q003354",
+      "Q003355",
+      "Q003356",
+      "Q003357",
+      "Q003358",
+      "Q003359",
+      "Q003360",
+      "Q003361",
+      "Q003362",
+      "Q003363",
+      "Q003364",
+      "Q003365",
+      "Q003366",
+      "Q003367",
+      "Q003368",
+      "Q003373",
+      "Q003374",
+      "Q003375",
+      "Q003376",
+      "Q003382",
+      "Q003799",
+      "Q003800",
+      "Q003801",
+      "Q003802",
+      "Q003803",
+      "Q003804",
+      "Q003805",
+      "Q003806",
+      "Q003807",
+      "Q003808",
+      "Q003809",
+      "Q003810",
+      "Q003811",
+      "Q003812",
+      "Q003813",
+      "Q003814",
+      "Q003815",
+      "Q003816",
+      "Q003817",
+      "Q003818",
+      "Q003819",
+      "Q003820",
+      "Q003821",
+      "Q003840",
+      "Q003841",
+      "Q003842",
+      "Q003843",
+      "Q003844",
+      "Q003845",
+      "Q003846",
+      "Q003847",
+      "Q003848",
+      "Q003849",
+      "Q003850",
+      "Q003851",
+      "Q003852",
+      "Q003853",
+      "Q003854",
+      "Q003855",
+      "Q003857",
+      "Q003858",
+      "Q003859",
+      "Q003860",
+      "Q003861",
+      "Q004037",
+      "Q004038",
+      "Q006289",
+      "Q006290",
+      "Q006291",
+      "Q006292",
+      "Q006293",
+      "Q006294",
+      "Q006295",
+      "Q006296",
+      "Q006297",
+      "Q006298",
+      "Q006299",
+      "Q006300",
+      "Q006301",
+      "Q006302",
+      "Q006303",
+      "Q006304",
+      "Q006305",
+      "Q006306",
+      "Q006307",
+      "Q006308",
+      "Q006309",
+      "Q006310",
+      "Q006311",
+      "Q006312",
+      "Q006313",
+      "Q006314",
+      "Q006315",
+      "Q006316",
+      "Q006317",
+      "Q006318",
+      "Q006319",
+      "Q006320",
+      "Q006322",
+      "Q006323",
+      "Q006324",
+      "Q006325",
+      "Q006326",
+      "Q006327",
+      "Q006328"
+    ],
+    "lem": [
+      "Q003333",
+      "Q003334",
+      "Q003335",
+      "Q003336",
+      "Q003337",
+      "Q003338",
+      "Q003339",
+      "Q003340",
+      "Q003341",
+      "Q003342",
+      "Q003343",
+      "Q003345",
+      "Q003346",
+      "Q003347",
+      "Q003348",
+      "Q003349",
+      "Q003350",
+      "Q003351",
+      "Q003352",
+      "Q003353",
+      "Q003354",
+      "Q003355",
+      "Q003356",
+      "Q003357",
+      "Q003358",
+      "Q003359",
+      "Q003360",
+      "Q003361",
+      "Q003362",
+      "Q003363",
+      "Q003364",
+      "Q003365",
+      "Q003366",
+      "Q003367",
+      "Q003368",
+      "Q003373",
+      "Q003374",
+      "Q003375",
+      "Q003376",
+      "Q003382",
+      "Q003799",
+      "Q003800",
+      "Q003801",
+      "Q003802",
+      "Q003803",
+      "Q003804",
+      "Q003805",
+      "Q003806",
+      "Q003807",
+      "Q003808",
+      "Q003809",
+      "Q003810",
+      "Q003811",
+      "Q003812",
+      "Q003813",
+      "Q003814",
+      "Q003815",
+      "Q003816",
+      "Q003817",
+      "Q003818",
+      "Q003819",
+      "Q003820",
+      "Q003821",
+      "Q003840",
+      "Q003841",
+      "Q003842",
+      "Q003843",
+      "Q003844",
+      "Q003845",
+      "Q003846",
+      "Q003847",
+      "Q003848",
+      "Q003849",
+      "Q003850",
+      "Q003851",
+      "Q003852",
+      "Q003853",
+      "Q003854",
+      "Q003855",
+      "Q003857",
+      "Q003858",
+      "Q003859",
+      "Q003860",
+      "Q003861",
+      "Q004037",
+      "Q004038",
+      "Q006289",
+      "Q006290",
+      "Q006291",
+      "Q006292",
+      "Q006293",
+      "Q006294",
+      "Q006295",
+      "Q006296",
+      "Q006297",
+      "Q006298",
+      "Q006299",
+      "Q006300",
+      "Q006301",
+      "Q006302",
+      "Q006303",
+      "Q006304",
+      "Q006305",
+      "Q006306",
+      "Q006307",
+      "Q006308",
+      "Q006309",
+      "Q006310",
+      "Q006311",
+      "Q006312",
+      "Q006313",
+      "Q006314",
+      "Q006315",
+      "Q006316",
+      "Q006317",
+      "Q006318",
+      "Q006319",
+      "Q006320",
+      "Q006322",
+      "Q006323",
+      "Q006324",
+      "Q006325",
+      "Q006326",
+      "Q006327",
+      "Q006328"
+    ],
+    "tr-en": [
+      "Q003333",
+      "Q003334",
+      "Q003335",
+      "Q003336",
+      "Q003337",
+      "Q003338",
+      "Q003339",
+      "Q003340",
+      "Q003341",
+      "Q003342",
+      "Q003343",
+      "Q003345",
+      "Q003346",
+      "Q003347",
+      "Q003348",
+      "Q003349",
+      "Q003350",
+      "Q003351",
+      "Q003352",
+      "Q003353",
+      "Q003354",
+      "Q003355",
+      "Q003356",
+      "Q003357",
+      "Q003358",
+      "Q003359",
+      "Q003360",
+      "Q003361",
+      "Q003362",
+      "Q003363",
+      "Q003364",
+      "Q003365",
+      "Q003366",
+      "Q003367",
+      "Q003368",
+      "Q003373",
+      "Q003374",
+      "Q003375",
+      "Q003376",
+      "Q003382",
+      "Q003799",
+      "Q003800",
+      "Q003801",
+      "Q003802",
+      "Q003803",
+      "Q003804",
+      "Q003805",
+      "Q003806",
+      "Q003807",
+      "Q003808",
+      "Q003809",
+      "Q003810",
+      "Q003811",
+      "Q003812",
+      "Q003813",
+      "Q003814",
+      "Q003815",
+      "Q003816",
+      "Q003817",
+      "Q003818",
+      "Q003819",
+      "Q003820",
+      "Q003821",
+      "Q003840",
+      "Q003841",
+      "Q003842",
+      "Q003843",
+      "Q003844",
+      "Q003845",
+      "Q003846",
+      "Q003847",
+      "Q003848",
+      "Q003849",
+      "Q003850",
+      "Q003851",
+      "Q003852",
+      "Q003853",
+      "Q003854",
+      "Q003855",
+      "Q003857",
+      "Q003858",
+      "Q003859",
+      "Q003860",
+      "Q003861",
+      "Q004037",
+      "Q004038",
+      "Q006289",
+      "Q006290",
+      "Q006291",
+      "Q006292",
+      "Q006293",
+      "Q006294",
+      "Q006295",
+      "Q006296",
+      "Q006297",
+      "Q006298",
+      "Q006299",
+      "Q006300",
+      "Q006301",
+      "Q006302",
+      "Q006303",
+      "Q006304",
+      "Q006305",
+      "Q006306",
+      "Q006307",
+      "Q006308",
+      "Q006309",
+      "Q006310",
+      "Q006311",
+      "Q006312",
+      "Q006313",
+      "Q006314",
+      "Q006315",
+      "Q006316",
+      "Q006317",
+      "Q006318",
+      "Q006319",
+      "Q006320",
+      "Q006322",
+      "Q006323",
+      "Q006324",
+      "Q006325",
+      "Q006326",
+      "Q006327",
+      "Q006328"
+    ],
+    "xtf": [
+      "Q003333",
+      "Q003334",
+      "Q003335",
+      "Q003336",
+      "Q003337",
+      "Q003338",
+      "Q003339",
+      "Q003340",
+      "Q003341",
+      "Q003342",
+      "Q003343",
+      "Q003344",
+      "Q003345",
+      "Q003346",
+      "Q003347",
+      "Q003348",
+      "Q003349",
+      "Q003350",
+      "Q003351",
+      "Q003352",
+      "Q003353",
+      "Q003354",
+      "Q003355",
+      "Q003356",
+      "Q003357",
+      "Q003358",
+      "Q003359",
+      "Q003360",
+      "Q003361",
+      "Q003362",
+      "Q003363",
+      "Q003364",
+      "Q003365",
+      "Q003366",
+      "Q003367",
+      "Q003368",
+      "Q003373",
+      "Q003374",
+      "Q003375",
+      "Q003376",
+      "Q003382",
+      "Q003799",
+      "Q003800",
+      "Q003801",
+      "Q003802",
+      "Q003803",
+      "Q003804",
+      "Q003805",
+      "Q003806",
+      "Q003807",
+      "Q003808",
+      "Q003809",
+      "Q003810",
+      "Q003811",
+      "Q003812",
+      "Q003813",
+      "Q003814",
+      "Q003815",
+      "Q003816",
+      "Q003817",
+      "Q003818",
+      "Q003819",
+      "Q003820",
+      "Q003821",
+      "Q003840",
+      "Q003841",
+      "Q003842",
+      "Q003843",
+      "Q003844",
+      "Q003845",
+      "Q003846",
+      "Q003847",
+      "Q003848",
+      "Q003849",
+      "Q003850",
+      "Q003851",
+      "Q003852",
+      "Q003853",
+      "Q003854",
+      "Q003855",
+      "Q003857",
+      "Q003858",
+      "Q003859",
+      "Q003860",
+      "Q003861",
+      "Q004037",
+      "Q004038",
+      "Q006289",
+      "Q006290",
+      "Q006291",
+      "Q006292",
+      "Q006293",
+      "Q006294",
+      "Q006295",
+      "Q006296",
+      "Q006297",
+      "Q006298",
+      "Q006299",
+      "Q006300",
+      "Q006301",
+      "Q006302",
+      "Q006303",
+      "Q006304",
+      "Q006305",
+      "Q006306",
+      "Q006307",
+      "Q006308",
+      "Q006309",
+      "Q006310",
+      "Q006311",
+      "Q006312",
+      "Q006313",
+      "Q006314",
+      "Q006315",
+      "Q006316",
+      "Q006317",
+      "Q006318",
+      "Q006319",
+      "Q006320",
+      "Q006322",
+      "Q006323",
+      "Q006324",
+      "Q006325",
+      "Q006326",
+      "Q006327",
+      "Q006328"
+    ]
+  },
+  "witnesses": {
+    "Q003333": {
+      "has-witness": [
+        "rinap/sources:P345512",
+        "rinap/sources:P423861",
+        "rinap/sources:P450501",
+        "rinap/sources:P450502",
+        "rinap/sources:P450503"
+      ]
+    },
+    "Q003334": {
+      "has-witness": [
+        "rinap/sources:P345513",
+        "rinap/sources:P345514"
+      ]
+    },
+    "Q003335": {
+      "has-witness": [
+        "rinap/sources:P285940",
+        "rinap/sources:P345515",
+        "rinap/sources:P345516",
+        "rinap/sources:P450504",
+        "rinap/sources:P450505"
+      ]
+    },
+    "Q003336": {
+      "has-witness": [
+        "rinap/sources:P345518"
+      ]
+    },
+    "Q003337": {
+      "has-witness": [
+        "rinap/sources:P422068"
+      ]
+    },
+    "Q003338": {
+      "has-witness": [
+        "rinap/sources:P422403"
+      ]
+    },
+    "Q003339": {
+      "has-witness": [
+        "rinap/sources:P450507"
+      ]
+    },
+    "Q003340": {
+      "has-witness": [
+        "rinap/sources:P453467"
+      ]
+    },
+    "Q003341": {
+      "has-witness": [
+        "rinap/sources:P450508"
+      ]
+    },
+    "Q003342": {
+      "has-witness": [
+        "rinap/sources:P450509"
+      ]
+    },
+    "Q003343": {
+      "has-witness": [
+        "rinap/sources:P453468"
+      ]
+    },
+    "Q003344": {
+      "has-witness": [
+        "rinap/sources:P345512",
+        "rinap/sources:P345518",
+        "rinap/sources:P453467",
+        "rinap/sources:P453468"
+      ]
+    },
+    "Q003345": {
+      "has-witness": [
+        "rinap/sources:P393783"
+      ]
+    },
+    "Q003346": {
+      "has-witness": [
+        "rinap/sources:P450510"
+      ]
+    },
+    "Q003347": {
+      "has-witness": [
+        "rinap/sources:P450511"
+      ]
+    },
+    "Q003348": {
+      "has-witness": [
+        "rinap/sources:P450512",
+        "rinap/sources:P450513",
+        "rinap/sources:P450514",
+        "rinap/sources:P450596"
+      ]
+    },
+    "Q003349": {
+      "has-witness": [
+        "rinap/sources:P450515",
+        "rinap/sources:P450516",
+        "rinap/sources:P450517"
+      ]
+    },
+    "Q003350": {
+      "has-witness": [
+        "rinap/sources:P450518",
+        "rinap/sources:P450519",
+        "rinap/sources:P450520",
+        "rinap/sources:P450521"
+      ]
+    },
+    "Q003351": {
+      "has-witness": [
+        "rinap/sources:P450522",
+        "rinap/sources:P450523",
+        "rinap/sources:P450524",
+        "rinap/sources:P450525",
+        "rinap/sources:P450526",
+        "rinap/sources:P450527",
+        "rinap/sources:P450528"
+      ]
+    },
+    "Q003352": {
+      "has-witness": [
+        "rinap/sources:P450529"
+      ]
+    },
+    "Q003353": {
+      "has-witness": [
+        "rinap/sources:P450530"
+      ]
+    },
+    "Q003354": {
+      "has-witness": [
+        "rinap/sources:P450531"
+      ]
+    },
+    "Q003355": {
+      "has-witness": [
+        "rinap/sources:P257579",
+        "rinap/sources:P450532",
+        "rinap/sources:P450533",
+        "rinap/sources:P450534",
+        "rinap/sources:P450535",
+        "rinap/sources:P450536",
+        "rinap/sources:P450537",
+        "rinap/sources:P450538"
+      ]
+    },
+    "Q003356": {
+      "has-witness": [
+        "rinap/sources:P366022"
+      ]
+    },
+    "Q003357": {
+      "has-witness": [
+        "rinap/sources:P223806",
+        "rinap/sources:P226077",
+        "rinap/sources:P301563",
+        "rinap/sources:P301920",
+        "rinap/sources:P450539",
+        "rinap/sources:P450540",
+        "rinap/sources:P450541",
+        "rinap/sources:P450542",
+        "rinap/sources:P450543",
+        "rinap/sources:P450544",
+        "rinap/sources:P450545",
+        "rinap/sources:P450546",
+        "rinap/sources:P450547",
+        "rinap/sources:P450548",
+        "rinap/sources:P450549"
+      ]
+    },
+    "Q003358": {
+      "has-witness": [
+        "rinap/sources:P259355",
+        "rinap/sources:P450550",
+        "rinap/sources:P450551",
+        "rinap/sources:P450552"
+      ]
+    },
+    "Q003359": {
+      "has-witness": [
+        "rinap/sources:P450553"
+      ]
+    },
+    "Q003360": {
+      "has-witness": [
+        "rinap/sources:P264848",
+        "rinap/sources:P450554"
+      ]
+    },
+    "Q003361": {
+      "has-witness": [
+        "rinap/sources:P257443",
+        "rinap/sources:P263443"
+      ]
+    },
+    "Q003362": {
+      "has-witness": [
+        "rinap/sources:P238636",
+        "rinap/sources:P297261",
+        "rinap/sources:P298274",
+        "rinap/sources:P407926",
+        "rinap/sources:P450555",
+        "rinap/sources:P450556",
+        "rinap/sources:P450557"
+      ]
+    },
+    "Q003363": {
+      "has-witness": [
+        "rinap/sources:P297260",
+        "rinap/sources:P304565",
+        "rinap/sources:P450597"
+      ]
+    },
+    "Q003364": {
+      "has-witness": [
+        "rinap/sources:P345496",
+        "rinap/sources:P450558",
+        "rinap/sources:P450559"
+      ]
+    },
+    "Q003365": {
+      "has-witness": [
+        "rinap/sources:P304564"
+      ]
+    },
+    "Q003366": {
+      "has-witness": [
+        "rinap/sources:P450560",
+        "rinap/sources:P450561",
+        "rinap/sources:P450562",
+        "rinap/sources:P450563"
+      ]
+    },
+    "Q003367": {
+      "has-witness": [
+        "rinap/sources:P450564"
+      ]
+    },
+    "Q003368": {
+      "has-witness": [
+        "rinap/sources:P349312"
+      ]
+    },
+    "Q003373": {
+      "has-witness": [
+        "rinap/sources:P450569"
+      ]
+    },
+    "Q003374": {
+      "has-witness": [
+        "rinap/sources:P450570"
+      ]
+    },
+    "Q003375": {
+      "has-witness": [
+        "rinap/sources:P450571"
+      ]
+    },
+    "Q003376": {
+      "has-witness": [
+        "rinap/sources:P424528"
+      ]
+    },
+    "Q003382": {
+      "has-witness": [
+        "rinap/sources:P414186"
+      ]
+    },
+    "Q004037": {
+      "has-witness": [
+        "rinap/sources:P467052"
+      ]
+    },
+    "Q004038": {
+      "has-witness": [
+        "rinap/sources:P467053"
+      ]
+    }
+  }
+}

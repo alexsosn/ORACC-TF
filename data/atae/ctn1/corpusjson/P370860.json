@@ -1,0 +1,953 @@
+{
+  "type": "cdl",
+  "project": "atae/ctn1",
+  "source": "http://oracc.org/atae/ctn1",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2023-03-20T11:32:05",
+  "textid": "P370860",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P370860.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "surface",
+          "ref": "P370860.o.1",
+          "label": "o"
+        },
+        {
+          "node": "d",
+          "type": "nonx",
+          "ref": "P370860.2",
+          "strict": "0",
+          "extent": "beginning",
+          "state": "missing"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P370860.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P370860.U2",
+              "label": "o 1' - o 5'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P370860.3",
+                  "n": "1'",
+                  "label": "o 1'"
+                },
+                {
+                  "node": "l",
+                  "frag": "3",
+                  "id": "P370860.l00d34",
+                  "ref": "P370860.3.1",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "3",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "3(diš)",
+                        "form": "3",
+                        "id": "P370860.3.1.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "seq": [
+                          {
+                            "r": "3"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "BAN₂",
+                  "id": "P370860.l00d35",
+                  "ref": "P370860.3.2",
+                  "inst": "sūtu[a unit of capacity]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:BAN₂=sūtu[unit//a unit of capacity]N'N$sūtu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "BAN₂",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "BAN₂",
+                            "id": "P370860.3.2.0",
+                            "queried": "1",
+                            "break": "missing",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "sūtu",
+                    "gw": "unit",
+                    "sense": "a unit of capacity",
+                    "norm": "sūtu",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.3.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.3.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{lu₂]}qur-bu-[ti]",
+                  "id": "P370860.l00d36",
+                  "ref": "P370860.3.3",
+                  "inst": "ša-qurbūti[(royal) confidant]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:{LU₂}qur-bu-ti=ša-qurbūti[close follower//(royal) confidant]N'N$ša-qurbūti",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "{LU₂}qur-bu-ti",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "gg": "logo",
+                            "gdl_type": "logo",
+                            "group": [
+                              {
+                                "s": "LU₂",
+                                "id": "P370860.3.3.0",
+                                "gdl_collated": "1",
+                                "break": "missing",
+                                "role": "logo",
+                                "logolang": "sux",
+                                "o": "]",
+                                "breakEnd": "P370860.3.1.0"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "v": "qur",
+                        "id": "P370860.3.3.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "bu",
+                        "id": "P370860.3.3.2",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ti",
+                        "id": "P370860.3.3.3",
+                        "breakStart": "1",
+                        "o": "]",
+                        "break": "missing",
+                        "breakEnd": "P370860.3.3.3"
+                      }
+                    ],
+                    "cf": "ša-qurbūti",
+                    "gw": "close follower",
+                    "sense": "(royal) confidant",
+                    "norm": "ša-qurbūti",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.3.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.3.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P370860.4",
+                  "n": "2'",
+                  "label": "o 2'"
+                },
+                {
+                  "node": "l",
+                  "frag": "2",
+                  "id": "P370860.l00d37",
+                  "ref": "P370860.4.1",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "2",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "2(diš)",
+                        "form": "2",
+                        "id": "P370860.4.1.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "seq": [
+                          {
+                            "r": "2"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.4.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "BAN₂]",
+                  "id": "P370860.l00d38",
+                  "ref": "P370860.4.2",
+                  "inst": "sūtu[a unit of capacity]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:BAN₂=sūtu[unit//a unit of capacity]N'N$sūtu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "BAN₂",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "BAN₂",
+                            "id": "P370860.4.2.0",
+                            "break": "missing",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "o": "]",
+                            "breakEnd": "P370860.4.1.0"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "sūtu",
+                    "gw": "unit",
+                    "sense": "a unit of capacity",
+                    "norm": "sūtu",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.4.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.4.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{⸢lu₂⸣}rak-su-[te]",
+                  "id": "P370860.l00d39",
+                  "ref": "P370860.4.3",
+                  "inst": "raksūte[conscript]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:{LU₂}rak-su-te=raksu[recruit//conscript]N'N$raksūte",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "{LU₂}rak-su-te",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "gg": "logo",
+                            "gdl_type": "logo",
+                            "group": [
+                              {
+                                "s": "LU₂",
+                                "id": "P370860.4.3.0",
+                                "break": "damaged",
+                                "gdl_collated": "1",
+                                "ho": "1",
+                                "role": "logo",
+                                "logolang": "sux",
+                                "hc": "1"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "v": "rak",
+                        "id": "P370860.4.3.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "su",
+                        "id": "P370860.4.3.2",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "te",
+                        "id": "P370860.4.3.3",
+                        "breakStart": "1",
+                        "o": "]",
+                        "break": "missing",
+                        "breakEnd": "P370860.4.3.3"
+                      }
+                    ],
+                    "cf": "raksu",
+                    "gw": "recruit",
+                    "sense": "conscript",
+                    "norm": "raksūte",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.4.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.4.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P370860.5",
+                  "n": "3'",
+                  "label": "o 3'"
+                },
+                {
+                  "node": "l",
+                  "frag": "1",
+                  "id": "P370860.l00d3a",
+                  "ref": "P370860.5.1",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "1",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "1(diš)",
+                        "form": "1",
+                        "id": "P370860.5.1.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "seq": [
+                          {
+                            "r": "1"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.5.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.5.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "BAN₂]",
+                  "id": "P370860.l00d3b",
+                  "ref": "P370860.5.2",
+                  "inst": "sūtu[a unit of capacity]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:BAN₂=sūtu[unit//a unit of capacity]N'N$sūtu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "BAN₂",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "BAN₂",
+                            "id": "P370860.5.2.0",
+                            "break": "missing",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "o": "]",
+                            "breakEnd": "P370860.5.1.0"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "sūtu",
+                    "gw": "unit",
+                    "sense": "a unit of capacity",
+                    "norm": "sūtu",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.5.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.5.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "⸢ša⸣-E₂-02-[e]",
+                  "id": "P370860.l00d3c",
+                  "ref": "P370860.5.3",
+                  "inst": "ša-bēti-šanie[domestic servant]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:ša-E₂-02-e=ša-bēti-šanie[domestic servant//domestic servant]N'N$ša-bēti-šanie",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "ša-E₂-02-e",
+                    "gdl": [
+                      {
+                        "v": "ša",
+                        "id": "P370860.5.3.0",
+                        "break": "damaged",
+                        "ho": "1",
+                        "delim": "-",
+                        "hc": "1"
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "E₂",
+                            "id": "P370860.5.3.1",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          }
+                        ]
+                      },
+                      {
+                        "n": "n",
+                        "sexified": "2(diš)",
+                        "form": "02",
+                        "id": "P370860.5.3.2",
+                        "delim": "-",
+                        "seq": [
+                          {
+                            "r": "02"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "e",
+                        "id": "P370860.5.3.3",
+                        "breakStart": "1",
+                        "o": "]",
+                        "break": "missing",
+                        "breakEnd": "P370860.5.3.3"
+                      }
+                    ],
+                    "cf": "ša-bēti-šanie",
+                    "gw": "domestic servant",
+                    "sense": "domestic servant",
+                    "norm": "ša-bēti-šanie",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.5.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.5.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P370860.6",
+                  "n": "4'",
+                  "label": "o 4'"
+                },
+                {
+                  "node": "l",
+                  "frag": "09",
+                  "id": "P370860.l00d3d",
+                  "ref": "P370860.6.1",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "09",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "9(diš)",
+                        "form": "09",
+                        "id": "P370860.6.1.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "seq": [
+                          {
+                            "r": "09"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.6.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.6.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "qa]",
+                  "id": "P370860.l00d3e",
+                  "ref": "P370860.6.2",
+                  "inst": "qa[a unit of capacity]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:qa=qû[unit//a unit of capacity]N'N$qa",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "qa",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "qa",
+                        "id": "P370860.6.2.0",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P370860.6.1.0"
+                      }
+                    ],
+                    "cf": "qû",
+                    "gw": "unit",
+                    "sense": "a unit of capacity",
+                    "norm": "qa",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.6.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.6.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{⸢lu₂⸣}3.U₅-⸢MEŠ⸣",
+                  "id": "P370860.l00d3f",
+                  "ref": "P370860.6.3",
+                  "inst": "tašlīšāni[third man on chariot]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:{LU₂}3.U₅-MEŠ=tašlīšu[third man on chariot//third man on chariot]N'N$tašlīšāni",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "{LU₂}3.U₅-MEŠ",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "gg": "logo",
+                            "gdl_type": "logo",
+                            "group": [
+                              {
+                                "s": "LU₂",
+                                "id": "P370860.6.3.0",
+                                "break": "damaged",
+                                "gdl_collated": "1",
+                                "ho": "1",
+                                "role": "logo",
+                                "logolang": "sux",
+                                "hc": "1"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "n": "n",
+                            "sexified": "3(diš)",
+                            "form": "3",
+                            "id": "P370860.6.3.1",
+                            "delim": ".",
+                            "seq": [
+                              {
+                                "r": "3"
+                              }
+                            ]
+                          },
+                          {
+                            "s": "U₅",
+                            "id": "P370860.6.3.2",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          },
+                          {
+                            "s": "MEŠ",
+                            "id": "P370860.6.3.3",
+                            "break": "damaged",
+                            "ho": "1",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "hc": "1"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "tašlīšu",
+                    "gw": "third man on chariot",
+                    "sense": "third man on chariot",
+                    "norm": "tašlīšāni",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.6.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.6.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P370860.7",
+                  "n": "5'",
+                  "label": "o 5'"
+                },
+                {
+                  "node": "l",
+                  "frag": "09",
+                  "id": "P370860.l00d40",
+                  "ref": "P370860.7.1",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "09",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "9(diš)",
+                        "form": "09",
+                        "id": "P370860.7.1.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "seq": [
+                          {
+                            "r": "09"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.7.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.7.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "qa]",
+                  "id": "P370860.l00d41",
+                  "ref": "P370860.7.2",
+                  "inst": "qa[a unit of capacity]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:qa=qû[unit//a unit of capacity]N'N$qa",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "qa",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "qa",
+                        "id": "P370860.7.2.0",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P370860.7.1.0"
+                      }
+                    ],
+                    "cf": "qû",
+                    "gw": "unit",
+                    "sense": "a unit of capacity",
+                    "norm": "qa",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.7.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.7.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "⸢ša-E₂⸣-[ku-din-ni]",
+                  "id": "P370860.l00d42",
+                  "ref": "P370860.7.3",
+                  "inst": "ša-bēt-kūdinni[mule stable man]N",
+                  "sig": "@atae/ctn1%akk-x-neoass:ša-E₂-ku-din-ni=ša-bēt-kūdini[mule stable man//mule stable man]N'N$ša-bēt-kūdinni",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "ša-E₂-ku-din-ni",
+                    "gdl": [
+                      {
+                        "v": "ša",
+                        "id": "P370860.7.3.0",
+                        "break": "damaged",
+                        "ho": "1",
+                        "delim": "-"
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "E₂",
+                            "id": "P370860.7.3.1",
+                            "break": "damaged",
+                            "queried": "1",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-",
+                            "hc": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "ku",
+                        "id": "P370860.7.3.2",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "din",
+                        "id": "P370860.7.3.3",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ni",
+                        "id": "P370860.7.3.4",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P370860.7.3.2"
+                      }
+                    ],
+                    "cf": "ša-bēt-kūdini",
+                    "gw": "mule stable man",
+                    "sense": "mule stable man",
+                    "norm": "ša-bēt-kūdinni",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P370860.7.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P370860.7.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "P370860.8",
+                  "strict": "0",
+                  "extent": "rest",
+                  "state": "missing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

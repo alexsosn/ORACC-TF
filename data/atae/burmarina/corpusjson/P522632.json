@@ -1,0 +1,610 @@
+{
+  "type": "cdl",
+  "project": "atae/burmarina",
+  "source": "http://oracc.org/atae/burmarina",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2023-07-28T12:17:15",
+  "textid": "P522632",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P522632.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "surface",
+          "ref": "P522632.o.1",
+          "label": "o"
+        },
+        {
+          "node": "d",
+          "type": "nonx",
+          "ref": "P522632.2",
+          "strict": "0",
+          "extent": "beginning",
+          "state": "other"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P522632.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P522632.U2",
+              "label": "o 1' - o 3'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P522632.3",
+                  "n": "1'",
+                  "label": "o 1'"
+                },
+                {
+                  "node": "l",
+                  "frag": "⸢il⸣-qe",
+                  "id": "P522632.l00270",
+                  "ref": "P522632.3.1",
+                  "inst": "ilqe[purchase]V",
+                  "sig": "@atae/burmarina%akk-x-neoass:il-qe=leqû[take//purchase]V'V$ilqe",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "il-qe",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "il",
+                        "id": "P522632.3.1.0",
+                        "break": "damaged",
+                        "ho": "1",
+                        "delim": "-",
+                        "hc": "1"
+                      },
+                      {
+                        "v": "qe",
+                        "id": "P522632.3.1.1"
+                      }
+                    ],
+                    "cf": "leqû",
+                    "gw": "take",
+                    "sense": "purchase",
+                    "norm": "ilqe",
+                    "pos": "V",
+                    "epos": "V"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "[kas-pu",
+                  "id": "P522632.l00271",
+                  "ref": "P522632.3.2",
+                  "inst": "kaspu[money]N",
+                  "sig": "@atae/burmarina%akk-x-neoass:kas-pu=kaspu[silver//money]N'N$kaspu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "kas-pu",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "kas",
+                        "id": "P522632.3.2.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "pu",
+                        "id": "P522632.3.2.1",
+                        "break": "missing"
+                      }
+                    ],
+                    "cf": "kaspu",
+                    "gw": "silver",
+                    "sense": "money",
+                    "norm": "kaspu",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.3.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.3.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "gam-mur]",
+                  "id": "P522632.l00272",
+                  "ref": "P522632.3.3",
+                  "inst": "gammur[completed]AJ",
+                  "sig": "@atae/burmarina%akk-x-neoass:gam-mur=gammuru[finished//completed]AJ'AJ$gammur",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "gam-mur",
+                    "gdl": [
+                      {
+                        "v": "gam",
+                        "id": "P522632.3.3.0",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "mur",
+                        "id": "P522632.3.3.1",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P522632.3.2.0"
+                      }
+                    ],
+                    "cf": "gammuru",
+                    "gw": "finished",
+                    "sense": "completed",
+                    "norm": "gammur",
+                    "pos": "AJ",
+                    "epos": "AJ"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.3.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.3.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P522632.4",
+                  "n": "2'",
+                  "label": "o 2'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[ta]-⸢din⸣",
+                  "id": "P522632.l00273",
+                  "ref": "P522632.4.1",
+                  "inst": "tadin[paid]AJ",
+                  "sig": "@atae/burmarina%akk-x-neoass:ta-din=tadnu[given//paid]AJ'AJ$tadin",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "ta-din",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "ta",
+                        "id": "P522632.4.1.0",
+                        "breakStart": "1",
+                        "o": "]",
+                        "break": "missing",
+                        "breakEnd": "P522632.4.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "din",
+                        "id": "P522632.4.1.1",
+                        "break": "damaged",
+                        "ho": "1",
+                        "hc": "1"
+                      }
+                    ],
+                    "cf": "tadnu",
+                    "gw": "given",
+                    "sense": "paid",
+                    "norm": "tadin",
+                    "pos": "AJ",
+                    "epos": "AJ"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.4.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "UN.[MEŠ",
+                  "id": "P522632.l00274",
+                  "ref": "P522632.4.2",
+                  "inst": "nišē[people]N",
+                  "sig": "@atae/burmarina%akk-x-neoass:UN.MEŠ=nišu[people//people]N'N$nišē",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "UN.MEŠ",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "UN",
+                            "id": "P522632.4.2.0",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "."
+                          },
+                          {
+                            "s": "MEŠ",
+                            "id": "P522632.4.2.1",
+                            "breakStart": "1",
+                            "o": "[",
+                            "break": "missing",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "nišu",
+                    "gw": "people",
+                    "sense": "people",
+                    "norm": "nišē",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.4.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.4.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "zar₄-pu",
+                  "id": "P522632.l00275",
+                  "ref": "P522632.4.3",
+                  "inst": "zarpu[purchased]AJ",
+                  "sig": "@atae/burmarina%akk-x-neoass:zar₄-pu=zarpu[purchased//purchased]AJ'AJ$zarpu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "zar₄-pu",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "zar₄",
+                        "id": "P522632.4.3.0",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "pu",
+                        "id": "P522632.4.3.1",
+                        "break": "missing"
+                      }
+                    ],
+                    "cf": "zarpu",
+                    "gw": "purchased",
+                    "sense": "purchased",
+                    "norm": "zarpu",
+                    "pos": "AJ",
+                    "epos": "AJ"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.4.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.4.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "la-qi-u]",
+                  "id": "P522632.l00276",
+                  "ref": "P522632.4.4",
+                  "inst": "laqiu[acquired]AJ",
+                  "sig": "@atae/burmarina%akk-x-neoass:la-qi-u=leqû[taken//acquired]AJ'AJ$laqiu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "la-qi-u",
+                    "gdl": [
+                      {
+                        "v": "la",
+                        "id": "P522632.4.4.0",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "qi",
+                        "id": "P522632.4.4.1",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "u",
+                        "id": "P522632.4.4.2",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P522632.4.2.1"
+                      }
+                    ],
+                    "cf": "leqû",
+                    "gw": "taken",
+                    "sense": "acquired",
+                    "norm": "laqiu",
+                    "pos": "AJ",
+                    "epos": "AJ"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.4.4"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.4.4"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P522632.5",
+                  "n": "3'",
+                  "label": "o 3'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[tu]-a-⸢ru⸣",
+                  "id": "P522632.l00277",
+                  "ref": "P522632.5.1",
+                  "inst": "tuāru[revocation]'N",
+                  "sig": "@atae/burmarina%akk-x-neoass:tu-a-ru=târu[turn//revocation]V'N$tuāru",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "tu-a-ru",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "tu",
+                        "id": "P522632.5.1.0",
+                        "breakStart": "1",
+                        "o": "]",
+                        "break": "missing",
+                        "breakEnd": "P522632.5.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "a",
+                        "id": "P522632.5.1.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ru",
+                        "id": "P522632.5.1.2",
+                        "break": "damaged",
+                        "ho": "1",
+                        "hc": "1"
+                      }
+                    ],
+                    "cf": "târu",
+                    "gw": "turn",
+                    "sense": "revocation",
+                    "norm": "tuāru",
+                    "pos": "V",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.5.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.5.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "[de-e-nu",
+                  "id": "P522632.l00278",
+                  "ref": "P522632.5.2",
+                  "inst": "dēnu[lawsuit]N",
+                  "sig": "@atae/burmarina%akk-x-neoass:de-e-nu=dīnu[legal decision//lawsuit]N'N$dēnu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "de-e-nu",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "de",
+                        "id": "P522632.5.2.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "e",
+                        "id": "P522632.5.2.1",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "nu",
+                        "id": "P522632.5.2.2",
+                        "break": "missing"
+                      }
+                    ],
+                    "cf": "dīnu",
+                    "gw": "legal decision",
+                    "sense": "lawsuit",
+                    "norm": "dēnu",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.5.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.5.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "DUG₄.DUG₄]",
+                  "id": "P522632.l00279",
+                  "ref": "P522632.5.3",
+                  "inst": "dabābu[litigation]'N",
+                  "sig": "@atae/burmarina%akk-x-neoass:DUG₄.DUG₄=dabābu[speak//litigation]V'N$dabābu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "DUG₄.DUG₄",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "DUG₄",
+                            "id": "P522632.5.3.0",
+                            "break": "missing",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "."
+                          },
+                          {
+                            "s": "DUG₄",
+                            "id": "P522632.5.3.1",
+                            "break": "missing",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "o": "]",
+                            "breakEnd": "P522632.5.2.0"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "dabābu",
+                    "gw": "speak",
+                    "sense": "litigation",
+                    "norm": "dabābu",
+                    "pos": "V",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P522632.5.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P522632.5.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "P522632.6",
+                  "strict": "0",
+                  "state": "other"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

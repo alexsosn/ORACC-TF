@@ -1,0 +1,202 @@
+{
+  "type": "cdl",
+  "project": "atae/tuszhan",
+  "source": "http://oracc.org/atae/tuszhan",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2023-07-28T13:08:33",
+  "textid": "P509069",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P509069.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "object",
+          "ref": "P509069.x23.1",
+          "label": "x23"
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "surface",
+          "ref": "P509069.o.2",
+          "label": "o"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P509069.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P509069.U2",
+              "label": "o 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P509069.3",
+                  "n": "1",
+                  "label": "o 1"
+                },
+                {
+                  "node": "l",
+                  "frag": "{m}PAB-AŠ",
+                  "id": "P509069.l0059c",
+                  "ref": "P509069.3.1",
+                  "inst": "Ahu-iddina[1]PN",
+                  "sig": "@atae/tuszhan%akk-x-neoass:{m}PAB-AŠ=Ahu-iddina[1//1]PN'PN$Ahu-iddina",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "{m}PAB-AŠ",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "det": "semantic",
+                            "pos": "pre",
+                            "seq": [
+                              {
+                                "v": "m",
+                                "id": "P509069.3.1.0"
+                              }
+                            ]
+                          },
+                          {
+                            "s": "PAB",
+                            "id": "P509069.3.1.1",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          },
+                          {
+                            "s": "AŠ",
+                            "id": "P509069.3.1.2",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "Ahu-iddina",
+                    "gw": "1",
+                    "sense": "1",
+                    "norm": "Ahu-iddina",
+                    "pos": "PN",
+                    "epos": "PN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P509069.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P509069.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "01",
+                  "id": "P509069.l0059d",
+                  "ref": "P509069.3.2",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "01",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "1(diš)",
+                        "form": "01",
+                        "id": "P509069.3.2.0",
+                        "seq": [
+                          {
+                            "r": "01"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P509069.3.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P509069.3.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "lim",
+                  "id": "P509069.l0059e",
+                  "ref": "P509069.3.3",
+                  "inst": "līmu[thousand]NU",
+                  "sig": "@atae/tuszhan%akk-x-neoass:lim=līm[thousand//thousand]NU'NU$līmu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "lim",
+                    "gdl": [
+                      {
+                        "v": "lim",
+                        "id": "P509069.3.3.0"
+                      }
+                    ],
+                    "cf": "līm",
+                    "gw": "thousand",
+                    "sense": "thousand",
+                    "norm": "līmu",
+                    "pos": "NU",
+                    "epos": "NU"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P509069.3.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P509069.3.3"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

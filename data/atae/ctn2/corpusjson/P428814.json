@@ -1,0 +1,107 @@
+{
+  "type": "cdl",
+  "project": "atae/ctn2",
+  "source": "http://oracc.org/atae/ctn2",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2023-03-20T11:32:43",
+  "textid": "P428814",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P428814.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P428814.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P428814.U2",
+              "label": "1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P428814.1",
+                  "n": "1",
+                  "label": "1"
+                },
+                {
+                  "node": "l",
+                  "frag": "GAG-ME",
+                  "id": "P428814.l02420",
+                  "ref": "P428814.1.1",
+                  "inst": "+sikkatu[peg//nail]N'N$sikkāti",
+                  "sig": "@atae/ctn2%akk-x-neoass:GAG-ME=sikkatu[peg//nail]N'N$sikkāti",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "GAG-ME",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "GAG",
+                            "id": "P428814.1.1.0",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          },
+                          {
+                            "s": "ME",
+                            "id": "P428814.1.1.1",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "sikkatu",
+                    "gw": "peg",
+                    "sense": "nail",
+                    "norm": "sikkāti",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P428814.1.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P428814.1.1"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

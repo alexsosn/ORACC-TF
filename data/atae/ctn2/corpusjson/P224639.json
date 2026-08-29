@@ -1,0 +1,345 @@
+{
+  "type": "cdl",
+  "project": "atae/ctn2",
+  "source": "http://oracc.org/atae/ctn2",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2023-03-20T11:32:33",
+  "textid": "P224639",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P224639.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "nonx",
+          "ref": "P224639.1",
+          "strict": "0",
+          "extent": "beginning",
+          "state": "missing"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P224639.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P224639.U2",
+              "label": "1'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P224639.2",
+                  "n": "1'",
+                  "label": "1'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[lim-mu",
+                  "id": "P224639.l0287b",
+                  "ref": "P224639.2.1",
+                  "inst": "limmu[eponym (of year)]N",
+                  "sig": "@atae/ctn2%akk-x-neoass:lim-mu=līmu[eponym (of year)//eponym (of year)]N'N$limmu",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "lim-mu",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "lim",
+                        "id": "P224639.2.1.0",
+                        "breakStart": "1",
+                        "o": "[",
+                        "break": "missing",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "mu",
+                        "id": "P224639.2.1.1",
+                        "break": "missing"
+                      }
+                    ],
+                    "cf": "līmu",
+                    "gw": "eponym (of year)",
+                    "sense": "eponym (of year)",
+                    "norm": "limmu",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P224639.2.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P224639.2.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{1}aš]-⸢šur⸣-KALAG-an-ni",
+                  "id": "P224639.l0287c",
+                  "ref": "P224639.2.2",
+                  "inst": "+Aššur-daʾʾinanni[eunuch, governor of Mazamua, and eponym of the year 733//eunuch, governor of Mazamua, and eponym of the year 733]PN'PN$",
+                  "sig": "@atae/ctn2%akk-x-neoass:{1}aš-šur-KALAG-an-ni=Aššur-daʾʾinanni[eunuch, governor of Mazamua, and eponym of the year 733//eunuch, governor of Mazamua, and eponym of the year 733]PN'PN$Aššur-daʾʾinanni",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "{1}aš-šur-KALAG-an-ni",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "n": "n",
+                            "sexified": "1(diš)",
+                            "form": "1",
+                            "id": "P224639.2.2.0",
+                            "break": "missing",
+                            "seq": [
+                              {
+                                "r": "1"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "v": "aš",
+                        "id": "P224639.2.2.1",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P224639.2.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "šur",
+                        "id": "P224639.2.2.2",
+                        "break": "damaged",
+                        "queried": "1",
+                        "ho": "1",
+                        "delim": "-",
+                        "hc": "1"
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "KALAG",
+                            "id": "P224639.2.2.3",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "an",
+                        "id": "P224639.2.2.4",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ni",
+                        "id": "P224639.2.2.5"
+                      }
+                    ],
+                    "cf": "Aššur-daʾʾinanni",
+                    "gw": "eunuch, governor of Mazamua, and eponym of the year 733",
+                    "sense": "eunuch, governor of Mazamua, and eponym of the year 733",
+                    "norm": "Aššur-daʾʾinanni",
+                    "pos": "PN",
+                    "epos": "PN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P224639.2.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P224639.2.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "x+[x",
+                  "id": "P224639.l0287d",
+                  "ref": "P224639.2.3",
+                  "inst": "u",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "x+x",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "ligature",
+                        "gdl_type": "ligature",
+                        "group": [
+                          {
+                            "v": "x",
+                            "id": "P224639.2.3.0",
+                            "delim": "+"
+                          },
+                          {
+                            "v": "x",
+                            "id": "P224639.2.3.1",
+                            "breakStart": "1",
+                            "o": "[",
+                            "break": "missing"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "u"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P224639.2.3"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P224639.2.3"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "x",
+                  "id": "P224639.l0287e",
+                  "ref": "P224639.2.4",
+                  "inst": "u",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "x",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "x",
+                        "id": "P224639.2.4.0",
+                        "break": "missing"
+                      }
+                    ],
+                    "pos": "u"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P224639.2.4"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P224639.2.4"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "x]",
+                  "id": "P224639.l0287f",
+                  "ref": "P224639.2.5",
+                  "inst": "u",
+                  "f": {
+                    "lang": "akk-x-neoass",
+                    "form": "x",
+                    "gdl": [
+                      {
+                        "v": "x",
+                        "id": "P224639.2.5.0",
+                        "break": "missing",
+                        "o": "]",
+                        "breakEnd": "P224639.2.3.1"
+                      }
+                    ],
+                    "pos": "u"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P224639.2.5"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P224639.2.5"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "P224639.3",
+                  "strict": "1",
+                  "extent": "n",
+                  "scope": "space",
+                  "state": "blank"
+                },
+                {
+                  "node": "d",
+                  "subtype": "reverse",
+                  "type": "surface",
+                  "ref": "P224639.r.4",
+                  "label": "r"
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "P224639.5",
+                  "strict": "0",
+                  "state": "missing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

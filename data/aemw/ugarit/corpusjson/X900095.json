@@ -1,0 +1,144 @@
+{
+  "type": "cdl",
+  "project": "aemw/ugarit",
+  "source": "http://oracc.org/aemw/ugarit",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-25T19:34:13",
+  "textid": "X900095",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "X900095.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "object",
+          "ref": "X900095.x117.1",
+          "label": "x117"
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "surface",
+          "ref": "X900095.o.2",
+          "label": "o"
+        },
+        {
+          "node": "d",
+          "type": "nonx",
+          "ref": "X900095.3",
+          "strict": "1",
+          "extent": "beginning",
+          "scope": "obverse",
+          "state": "missing"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "X900095.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "X900095.U2",
+              "label": "o 1'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X900095.4",
+                  "n": "1'",
+                  "label": "o 1'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[...]⸢m⸣ʾi[...]",
+                  "id": "X900095.l01713",
+                  "ref": "X900095.4.1",
+                  "inst": "%uga-040:xmʾix=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "xmʾix"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900095.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900095.4.1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "tag": "#auto",
+              "id": "X900095.U4",
+              "label": "o 2'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X900095.5",
+                  "n": "2'",
+                  "label": "o 2'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[...]⸢ml⸣[...]",
+                  "id": "X900095.l01714",
+                  "ref": "X900095.5.1",
+                  "inst": "%uga-040:xmlx=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "xmlx"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900095.5.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900095.5.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "X900095.6",
+                  "strict": "1",
+                  "extent": "rest",
+                  "scope": "tablet",
+                  "state": "missing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

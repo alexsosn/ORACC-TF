@@ -1,0 +1,127 @@
+{
+  "type": "cdl",
+  "project": "aemw/ugarit",
+  "source": "http://oracc.org/aemw/ugarit",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-25T19:35:14",
+  "textid": "X900466",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "X900466.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "object",
+          "ref": "X900466.x402.1",
+          "label": "x402"
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "surface",
+          "ref": "X900466.o.2",
+          "label": "o"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "X900466.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "X900466.U2",
+              "label": "o 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X900466.3",
+                  "n": "1",
+                  "label": "o 1"
+                },
+                {
+                  "node": "l",
+                  "frag": "[...]",
+                  "id": "X900466.l03e88",
+                  "ref": "X900466.3.1",
+                  "inst": "%uga-040:x=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "x"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900466.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900466.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "tlmyn",
+                  "id": "X900466.l03e89",
+                  "ref": "X900466.3.2",
+                  "inst": "%uga-040:tlmyn=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "tlmyn"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900466.3.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900466.3.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "X900466.4",
+                  "strict": "1",
+                  "extent": "1",
+                  "scope": "line",
+                  "state": "ruling"
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "X900466.5",
+                  "strict": "1",
+                  "extent": "rest",
+                  "scope": "tablet",
+                  "state": "missing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

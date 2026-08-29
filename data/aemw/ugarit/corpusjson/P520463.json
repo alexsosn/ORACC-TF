@@ -1,0 +1,108 @@
+{
+  "type": "cdl",
+  "project": "aemw/ugarit",
+  "source": "http://oracc.org/aemw/ugarit",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-25T19:33:02",
+  "textid": "P520463",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P520463.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "object weight",
+          "type": "object",
+          "ref": "P520463.x989.1",
+          "n": "weight",
+          "label": "x989"
+        },
+        {
+          "node": "d",
+          "subtype": "face",
+          "type": "surface",
+          "ref": "P520463.a.2",
+          "n": "a",
+          "label": "a"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P520463.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P520463.U2",
+              "label": "a 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P520463.3",
+                  "n": "1",
+                  "label": "a 1"
+                },
+                {
+                  "node": "l",
+                  "frag": "2",
+                  "id": "P520463.l08c80",
+                  "ref": "P520463.3.1",
+                  "inst": "n",
+                  "f": {
+                    "lang": "akk-x-mbperi",
+                    "form": "2",
+                    "gdl": [
+                      {
+                        "n": "n",
+                        "sexified": "2(diš)",
+                        "oid": "o0000456",
+                        "gdl_sign": "MIN",
+                        "form": "2",
+                        "utf8": "𒈫",
+                        "key": "o0000456..2(diš)",
+                        "id": "P520463.3.1.0",
+                        "seq": [
+                          {
+                            "r": "2"
+                          }
+                        ]
+                      }
+                    ],
+                    "pos": "n"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P520463.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P520463.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonw",
+                  "ref": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "type": "cdl",
+  "project": "aemw/ugarit",
+  "source": "http://oracc.org/aemw/ugarit",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-25T19:33:24",
+  "textid": "P521012",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P521012.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "object label",
+          "type": "object",
+          "ref": "P521012.x1008.1",
+          "n": "label",
+          "label": "x1008"
+        },
+        {
+          "node": "d",
+          "subtype": "face",
+          "type": "surface",
+          "ref": "P521012.a.2",
+          "n": "a",
+          "label": "a"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P521012.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P521012.U2",
+              "label": "a 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P521012.3",
+                  "n": "1",
+                  "label": "a 1"
+                },
+                {
+                  "node": "l",
+                  "frag": "spr",
+                  "id": "P521012.l08cd2",
+                  "ref": "P521012.3.1",
+                  "inst": "spr[tablet]N",
+                  "sig": "@aemw/ugarit%uga-040:spr=spr[tablet//tablet]N'N$spr",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "spr",
+                    "cf": "spr",
+                    "gw": "tablet",
+                    "sense": "tablet",
+                    "norm": "spr",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P521012.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P521012.3.1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "tag": "#auto",
+              "id": "P521012.U4",
+              "label": "a 2",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P521012.4",
+                  "n": "2",
+                  "label": "a 2"
+                },
+                {
+                  "node": "l",
+                  "frag": "synym",
+                  "id": "P521012.l08cd3",
+                  "ref": "P521012.4.1",
+                  "inst": "+Siyannayu[]EN$synym",
+                  "sig": "@aemw/ugarit%uga-040:synym=Siyannayu[1//1]EN'EN$synym",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "synym",
+                    "cf": "Siyannayu",
+                    "gw": "1",
+                    "sense": "1",
+                    "norm": "synym",
+                    "pos": "EN",
+                    "epos": "EN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P521012.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P521012.4.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonw",
+                  "ref": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

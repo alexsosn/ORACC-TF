@@ -1,0 +1,151 @@
+{
+  "type": "cdl",
+  "project": "aemw/ugarit",
+  "source": "http://oracc.org/aemw/ugarit",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-25T19:35:09",
+  "textid": "X900432",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "X900432.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "object",
+          "ref": "X900432.x363.1",
+          "label": "x363"
+        },
+        {
+          "node": "d",
+          "subtype": "obverse",
+          "type": "surface",
+          "ref": "X900432.o.2",
+          "label": "o"
+        },
+        {
+          "node": "d",
+          "type": "nonx",
+          "ref": "X900432.3",
+          "strict": "1",
+          "extent": "beginning",
+          "scope": "obverse",
+          "state": "missing"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "X900432.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "X900432.U2",
+              "label": "o 1'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X900432.4",
+                  "n": "1'",
+                  "label": "o 1'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[...]⸢xl⸣x",
+                  "id": "X900432.l03a2c",
+                  "ref": "X900432.4.1",
+                  "inst": "%uga-040:xxlx=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "xxlx"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900432.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900432.4.1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "tag": "#auto",
+              "id": "X900432.U4",
+              "label": "o 2'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X900432.5",
+                  "n": "2'",
+                  "label": "o 2'"
+                },
+                {
+                  "node": "l",
+                  "frag": "⸢bʿ⸣lšlm",
+                  "id": "X900432.l03a2d",
+                  "ref": "X900432.5.1",
+                  "inst": "%uga-040:bʿlšlm=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "bʿlšlm"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900432.5.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900432.5.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "subtype": "reverse",
+                  "type": "surface",
+                  "ref": "X900432.r.6",
+                  "label": "r"
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "X900432.7",
+                  "strict": "1",
+                  "extent": "0",
+                  "scope": "reverse",
+                  "state": "missing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

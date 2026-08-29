@@ -1,0 +1,145 @@
+{
+  "type": "cdl",
+  "project": "aemw/ugarit",
+  "source": "http://oracc.org/aemw/ugarit",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-25T19:36:37",
+  "textid": "X900860",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "X900860.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "tablet",
+          "type": "object",
+          "ref": "X900860.x837.1",
+          "label": "x837"
+        },
+        {
+          "node": "d",
+          "subtype": "surface a",
+          "type": "surface",
+          "ref": "X900860.a.2",
+          "n": "a",
+          "label": "a"
+        },
+        {
+          "node": "d",
+          "type": "nonx",
+          "ref": "X900860.3",
+          "strict": "1",
+          "extent": "beginning",
+          "scope": "surface",
+          "state": "missing"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "X900860.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "X900860.U2",
+              "label": "a 1'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X900860.4",
+                  "n": "1'",
+                  "label": "a 1'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[xx]x[xx]⸢kr⸣[...]",
+                  "id": "X900860.l0731b",
+                  "ref": "X900860.4.1",
+                  "inst": "%uga-040:xxxxxkrx=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "xxxxxkrx"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900860.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900860.4.1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "tag": "#auto",
+              "id": "X900860.U4",
+              "label": "a 2'",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X900860.5",
+                  "n": "2'",
+                  "label": "a 2'"
+                },
+                {
+                  "node": "l",
+                  "frag": "[š]⸢p⸣šyn",
+                  "id": "X900860.l0731c",
+                  "ref": "X900860.5.1",
+                  "inst": "%uga-040:špšyn=",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "špšyn"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X900860.5.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X900860.5.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "X900860.6",
+                  "strict": "1",
+                  "extent": "1",
+                  "scope": "line",
+                  "state": "ruling"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

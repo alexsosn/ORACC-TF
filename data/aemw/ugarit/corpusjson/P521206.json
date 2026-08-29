@@ -1,0 +1,97 @@
+{
+  "type": "cdl",
+  "project": "aemw/ugarit",
+  "source": "http://oracc.org/aemw/ugarit",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-11-25T19:33:37",
+  "textid": "P521206",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "P521206.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "subtype": "object ball",
+          "type": "object",
+          "ref": "P521206.x991.1",
+          "n": "ball",
+          "label": "x991"
+        },
+        {
+          "node": "d",
+          "subtype": "face",
+          "type": "surface",
+          "ref": "P521206.a.2",
+          "n": "a",
+          "label": "a"
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "P521206.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "P521206.U2",
+              "label": "a 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "P521206.3",
+                  "n": "1",
+                  "label": "a 1"
+                },
+                {
+                  "node": "l",
+                  "frag": "šmn",
+                  "id": "P521206.l08c83",
+                  "ref": "P521206.3.1",
+                  "inst": "šmn[oil]N",
+                  "sig": "@aemw/ugarit%uga-040:šmn=šmn[oil//oil]N'N$šmn",
+                  "f": {
+                    "lang": "uga-040",
+                    "form": "šmn",
+                    "cf": "šmn",
+                    "gw": "oil",
+                    "sense": "oil",
+                    "norm": "šmn",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "P521206.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "P521206.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonw",
+                  "ref": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

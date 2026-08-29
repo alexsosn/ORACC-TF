@@ -1,0 +1,165 @@
+{
+  "type": "cdl",
+  "project": "ario",
+  "source": "http://oracc.org/ario",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2024-01-23T14:03:55",
+  "textid": "Q009267",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "Q009267.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "Q009267.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "Q009267.U2",
+              "label": "Persian 1",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q009267.1",
+                  "n": "1",
+                  "label": "Persian 1"
+                },
+                {
+                  "node": "l",
+                  "frag": "<a-d>-m",
+                  "id": "Q009267.l02e05",
+                  "ref": "Q009267.1.1",
+                  "inst": "adam[I]IP",
+                  "sig": "@ario%peo:a-d-m=adam[I//I]IP'IP$adam",
+                  "f": {
+                    "lang": "peo",
+                    "form": "a-d-m",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "a",
+                        "id": "Q009267.1.1.0",
+                        "statusStart": "1",
+                        "o": "<",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "d",
+                        "id": "Q009267.1.1.1",
+                        "o": ">",
+                        "statusStart": "Q009267.1.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "m",
+                        "id": "Q009267.1.1.2"
+                      }
+                    ],
+                    "cf": "adam",
+                    "gw": "I",
+                    "sense": "I",
+                    "norm": "adam",
+                    "pos": "IP",
+                    "epos": "IP"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q009267.1.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q009267.1.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "frag": ":",
+                  "type": "nonw",
+                  "ref": "Q009267.1.1.a",
+                  "lang": "peo",
+                  "delim": ""
+                },
+                {
+                  "node": "l",
+                  "frag": "x-;",
+                  "id": "Q009267.l02e06",
+                  "ref": "Q009267.1.2",
+                  "inst": "u",
+                  "f": {
+                    "lang": "peo",
+                    "form": "x-r-š-a-š-y-a",
+                    "headform": "x",
+                    "contrefs": "Q009267.1.2 Q009267.2.1 Q009267.3.1",
+                    "gdl": [
+                      {
+                        "v": "x",
+                        "id": "Q009267.1.2.0",
+                        "delim": "-"
+                      }
+                    ],
+                    "pos": "u"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "Q009267.1.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "Q009267.1.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q009267.2",
+                  "n": "2",
+                  "label": "Persian 2"
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "Q009267.3",
+                  "n": "3",
+                  "label": "Persian 3"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

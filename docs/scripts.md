@@ -9,6 +9,7 @@ GitHub-hosted working copy. All are dependency-free (Python 3 stdlib + bash).
 | [`verify_extraction.py`](../scripts/verify_extraction.py) | Check extracted files against the ZIP manifests |
 | [`check_repo_limits.py`](../scripts/check_repo_limits.py) | Find files GitHub will reject before pushing |
 | [`shard_index.py`](../scripts/shard_index.py) | Split/rejoin oversized ORACC index files |
+| [`scan_annotation.py`](../scripts/scan_annotation.py) | Measure annotation depth across every corpus |
 
 ---
 
@@ -54,6 +55,25 @@ anything would be rejected.
 
 These limits apply to the file as stored, so git's compression does not help:
 a 545 MB JSON that packs to 30 MB is still rejected.
+
+## scan_annotation.py
+
+```bash
+scripts/scan_annotation.py [--data DATA_DIR] [-o report.json] [--csv]
+```
+
+Walks the CDL tree of every `corpusjson` file and reports, per project or
+subproject, how much of each annotation layer is actually present — lemma
+(`cf`), guide word, sense, normalisation, part of speech, morphological
+segmentation (`base`/`morph`/`morph2`), sentence boundaries (`para`),
+discourse labels, and how many signs carry cuneiform Unicode.
+
+This distinguishes genuinely lemmatised corpora from bulk transliteration
+dumps, which is what decides whether a corpus is worth converting to
+Text-Fabric. It is the evidence behind [research.md](research.md).
+
+Takes roughly 10 minutes over the full 47k-file corpus. Writes a JSON report;
+`--csv` also prints a flat summary.
 
 ## shard_index.py
 

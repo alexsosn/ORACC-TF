@@ -40,8 +40,11 @@ nodes and the presence of each annotation field on them, plus the structural
 `d` nodes. Reference TF corpora were measured from the loaded datasets
 themselves, not from their READMEs.
 
-Scan scripts: `scan.py` / `scan2.py` (kept in the session scratchpad; the
-logic is ~40 lines of stdlib `json` and is reproduced in the appendix below).
+Reproduce with [`scripts/scan_annotation.py`](../scripts/scan_annotation.py):
+
+```bash
+scripts/scan_annotation.py --csv -o annotation-report.json
+```
 
 ---
 

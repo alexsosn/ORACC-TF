@@ -35,22 +35,38 @@ from collections import Counter
 WORD_FIELDS = ("cf", "gw", "sense", "norm", "pos", "epos", "base", "morph", "morph2")
 
 
-def sign_leaves(entries):
-    """Yield leaf sign entries from a gdl list.
+CHILD_KEYS = ("group", "seq", "qualified", "mods")
 
-    gdl is a tree, not a flat list: logograms nest their signs under "group"
-    and determinatives/numerals under "seq". Iterating the top level only
-    misses every sign inside those wrappers - about 11% of signs in RIAO and
-    RINAP, and it undercounts Unicode coverage badly, since the wrapper node
-    itself carries no utf8.
+
+def sign_leaves(entries):
+    """Yield the sign-bearing objects of a gdl tree.
+
+    gdl is a tree, not a flat list, and "has children" does NOT mean
+    "structural wrapper". Three cases must be told apart:
+
+    * wrapper - children, no utf8 of its own (logogram, determinative,
+      alternation, ligature). Recurse; the wrapper itself is not a sign.
+    * composite sign - children AND its own utf8 (numeral, qualified sign,
+      compound like |URU x GU|). The PARENT is the sign: emit it and do not
+      recurse, or you replace a real sign carrying utf8/sexified/id with a
+      contentless rendering reference such as {"r": "1"}, and in the compound
+      case you emit the operator ("containing") as if it were a sign.
+    * leaf - a plain sign (v/s/x), or a rendering reference (r) or operator
+      (o), which are not signs at all.
+
+    Iterating the top level only, or treating every parent as a wrapper,
+    both give wrong answers. See docs/plan-riao-rinap-tf.md section 2.3.
     """
     for g in entries:
-        if "group" in g:
-            yield from sign_leaves(g["group"])
-        elif "seq" in g:
-            yield from sign_leaves(g["seq"])
-        else:
-            yield g
+        kids = [k for k in CHILD_KEYS if k in g]
+        if kids and g.get("utf8"):
+            yield g                       # composite sign: parent is the sign
+        elif kids:
+            for k in kids:                # structural wrapper
+                yield from sign_leaves(g[k])
+        elif "v" in g or "s" in g or "x" in g:
+            yield g                       # plain sign
+        # else: rendering reference / operator - not a sign
 
 
 def scan_corpus(cdir):

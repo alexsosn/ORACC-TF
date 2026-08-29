@@ -40,14 +40,19 @@ nodes and the presence of each annotation field on them, plus the structural
 `d` nodes. Reference TF corpora were measured from the loaded datasets
 themselves, not from their READMEs.
 
-**Correction (later pass):** the first version of the scanner iterated `gdl`
-flatly. `gdl` is a tree — logograms nest signs under `group`, determinatives
-and numerals under `seq` — so that pass missed ~11 % of signs and, because the
-wrapper nodes carry no `utf8` of their own, badly understated Unicode
-coverage. The unicode column below is the corrected, recursive figure
-(e.g. `riao` 78.3 % → **97.4 %**, `saao` 79.4 % → **96.1 %**, `balt`
-59.1 % → **93.7 %**). Projects showing 0.0 % genuinely ship no sign Unicode.
-Conclusions are unaffected; the sign layer is in better shape than first reported.
+**Corrections applied (two passes).** The first scanner iterated `gdl` flatly,
+missing every sign nested inside a logogram or determinative. The second
+recursed but treated *any* parent as a structural wrapper — which silently
+replaced 6,584 numerals, plus qualified and compound signs, with contentless
+rendering references, and would have emitted compound operators as signs. The
+scanner now classifies each GDL object semantically (sign / wrapper /
+rendering reference); see `plan-riao-rinap-tf.md` §2.3 for the full census.
+
+The unicode column below is the corrected figure, and sign totals dropped
+where pseudo-signs were being counted (`cdli` 1,418,208 → 1,138,238;
+`adsd` 324,463 → 273,346). Examples: `saao` 79.4 % → **100.0 %**,
+`balt` 59.1 % → **98.1 %**, `riao` 78.3 % → **98.3 %**. Projects showing 0.0 %
+genuinely ship no sign Unicode. Rankings and recommendations are unaffected.
 
 Reproduce with [`scripts/scan_annotation.py`](../scripts/scan_annotation.py):
 
@@ -113,37 +118,37 @@ Score/source subprojects excluded (see below). Projects under 4,000 words omitte
 
 | project | subs | texts | words | lines | lemma % | pos % | morph % | unicode % | languages |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|---|
-| `saao` | 22 | 5,055 | 547,670 | 101,263 | 57.2 | 100.0 | 0.0 | 96.1 | akk-x-neoass, akk-x-neobab |
-| `rinap` | 6 | 1,174 | 241,656 | 42,502 | 89.7 | 99.5 | 0.4 | 97.4 | akk, sux |
+| `saao` | 22 | 5,055 | 547,670 | 101,263 | 57.2 | 100.0 | 0.0 | 100.0 | akk-x-neoass, akk-x-neobab |
+| `rinap` | 6 | 1,174 | 241,656 | 42,502 | 89.7 | 99.5 | 0.4 | 98.2 | akk, sux |
 | `adsd` | 5 | 692 | 263,714 | 23,629 | 66.2 | 100.0 | 0.0 | 0.0 | akk |
-| `balt` | 1 | 2,990 | 185,175 | 44,723 | 79.6 | 99.7 | 0.0 | 93.7 | akk-x-neobab, arc |
-| `tcma` | 29 | 2,179 | 169,061 | 45,414 | 70.2 | 99.2 | 0.0 | 82.0 | akk-x-midass, akk-x-neoass |
+| `balt` | 1 | 2,990 | 185,175 | 44,723 | 79.6 | 99.7 | 0.0 | 98.1 | akk-x-neobab, arc |
+| `tcma` | 29 | 2,179 | 169,061 | 45,414 | 70.2 | 99.2 | 0.0 | 87.7 | akk-x-midass, akk-x-neoass |
 | `hbtin` | 1 | 485 | 123,644 | 20,816 | 87.1 | 94.9 | 0.0 | 0.0 | akk-x-ltebab |
-| `aemw` | 3 | 2,207 | 131,007 | 40,823 | 62.4 | 72.6 | 0.0 | 95.0 | akk-x-mbperi, uga-040 |
-| `riao` | 5 | 904 | 79,319 | 13,724 | 91.2 | 100.0 | 0.0 | 97.4 | akk |
-| `cams` | 5 | 659 | 107,935 | 18,353 | 64.4 | 89.5 | 1.6 | 88.8 | akk-x-stdbab, akk-x-ltebab |
+| `aemw` | 3 | 2,207 | 131,007 | 40,823 | 62.4 | 72.6 | 0.0 | 96.5 | akk-x-mbperi, uga-040 |
+| `riao` | 5 | 904 | 79,319 | 13,724 | 91.2 | 100.0 | 0.0 | 98.3 | akk |
+| `cams` | 5 | 659 | 107,935 | 18,353 | 64.4 | 89.5 | 1.6 | 93.4 | akk-x-stdbab, akk-x-ltebab |
 | `atae` | 22 | 2,167 | 129,677 | 36,032 | 48.0 | 80.7 | 0.0 | 0.0 | akk-x-neoass, arc |
-| `ribo` | 8 | 411 | 60,592 | 15,257 | 89.2 | 99.8 | 2.2 | 98.2 | akk, sux |
-| `cmawro` | 4 | 261 | 58,896 | 21,900 | 87.3 | 99.8 | 2.5 | 83.0 | akk-949, akk |
-| `asbp` | 2 | 183 | 66,167 | 7,530 | 61.7 | 94.1 | 1.7 | 94.8 | akk-x-stdbab, sux |
+| `ribo` | 8 | 411 | 60,592 | 15,257 | 89.2 | 99.8 | 2.2 | 98.6 | akk, sux |
+| `cmawro` | 4 | 261 | 58,896 | 21,900 | 87.3 | 99.8 | 2.5 | 84.3 | akk-949, akk |
+| `asbp` | 2 | 183 | 66,167 | 7,530 | 61.7 | 94.1 | 1.7 | 96.2 | akk-x-stdbab, sux |
 | `blms` | 1 | 213 | 41,940 | 9,118 | 69.7 | 92.9 | 38.8 | 0.0 | sux, akk-x-stdbab |
-| `etcsri` | 1 | 1,456 | 29,573 | 16,886 | 95.3 | 100.0 | 95.3 | 97.8 | sux, akk |
+| `etcsri` | 1 | 1,456 | 29,573 | 16,886 | 95.3 | 100.0 | 95.3 | 98.9 | sux, akk |
 | `babcity` | 1 | 224 | 28,350 | 5,213 | 87.2 | 100.0 | 0.0 | 0.0 | akk-x-neobab |
 | `ccpo` | 1 | 205 | 35,888 | 5,233 | 66.0 | 99.8 | 1.0 | 0.0 | akk-x-stdbab, sux |
 | `borsippa` | 1 | 224 | 25,436 | 4,591 | 86.2 | 100.0 | 0.0 | 0.0 | akk-x-neobab, akk-x-neobab-949 |
 | `btto` | 1 | 132 | 19,818 | 4,754 | 56.8 | 72.9 | 0.2 | 0.0 | akk, sux |
 | `obabat` | 1 | 121 | 9,517 | 3,242 | 93.9 | 99.1 | 0.0 | 0.0 | akk-x-oldbab, akk |
 | `rimanum` | 1 | 338 | 10,261 | 4,195 | 81.5 | 99.7 | 12.8 | 0.0 | akk-x-oldbab, sux |
-| `ario` | 1 | 173 | 11,713 | 2,374 | 71.2 | 91.3 | 0.0 | 25.2 | peo, akk |
-| `suhu` | 1 | 33 | 5,577 | 918 | 79.2 | 100.0 | 0.0 | 94.7 | akk |
-| `glass` | 1 | 19 | 4,953 | 993 | 74.8 | 99.9 | 0.0 | 89.0 | akk-x-stdbab, akk-x-midass |
-| `akklove` | 1 | 31 | 4,434 | 1,277 | 79.6 | 82.5 | 0.0 | 96.2 | akk-x-oldbab, akk-x-midass |
+| `ario` | 1 | 173 | 11,713 | 2,374 | 71.2 | 91.3 | 0.0 | 25.9 | peo, akk |
+| `suhu` | 1 | 33 | 5,577 | 918 | 79.2 | 100.0 | 0.0 | 96.4 | akk |
+| `glass` | 1 | 19 | 4,953 | 993 | 74.8 | 99.9 | 0.0 | 92.3 | akk-x-stdbab, akk-x-midass |
+| `akklove` | 1 | 31 | 4,434 | 1,277 | 79.6 | 82.5 | 0.0 | 97.0 | akk-x-oldbab, akk-x-midass |
 | `urap` | 1 | 147 | 8,291 | 2,288 | 39.5 | 89.1 | 0.7 | 0.0 | akk-x-oldbab, sux |
-| `obta` | 1 | 35 | 5,972 | 810 | 47.7 | 99.9 | 4.0 | 57.2 | akk-x-oldbab, sux |
+| `obta` | 1 | 35 | 5,972 | 810 | 47.7 | 99.9 | 4.0 | 95.2 | akk-x-oldbab, sux |
 | `csik` | 1 | 711 | 8,130 | 3,379 | 17.2 | 18.8 | 0.0 | 0.0 | akk-x-stdbab, akk-x-stdbab-949 |
-| `caspo` | 2 | 286 | 38,479 | 7,888 | 0.0 | 0.0 | 0.0 | 14.0 | akk-x-stdbab, akk-x-oldbab |
+| `caspo` | 2 | 286 | 38,479 | 7,888 | 0.0 | 0.0 | 0.0 | 14.1 | akk-x-stdbab, akk-x-oldbab |
 | `cdli` | 1 | 18,524 | 777,741 | 254,844 | 0.0 | 0.0 | 0.0 | 0.0 | sux, qpc |
-| `contrib` | 1 | 345 | 52,743 | 11,298 | 0.0 | 0.0 | 0.0 | 98.1 | akk-x-mbperi, akk-x-stdbab |
+| `contrib` | 1 | 345 | 52,743 | 11,298 | 0.0 | 0.0 | 0.0 | 99.2 | akk-x-mbperi, akk-x-stdbab |
 
 ---
 

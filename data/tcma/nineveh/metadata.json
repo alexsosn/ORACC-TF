@@ -1,0 +1,128 @@
+{
+  "type": "metadata",
+  "project": "tcma/nineveh",
+  "source": "http://oracc.org/tcma/nineveh",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2025-05-20T14:21:19",
+  "config": {
+    "pathname": "tcma/nineveh",
+    "name": "Ninua (mod. Nineveh)",
+    "abbrev": "nineveh",
+    "project-type": "corpus",
+    "blurb": "",
+    "public": "",
+    "options": {
+      "views-TEI": "true",
+      "%akk-x-midass": ". tcma akkec:akk-x-midass",
+      "%akk-x-midbab": ". tcma akkec:akk-x-midbab",
+      "%sux": ". tcma/ali1 tcma epsd2:sux",
+      "%qpn": ". tcma/ali1 tcma akkec:qpn",
+      "build-approved-policy": "catalog",
+      "build-outlined-policy": "static",
+      "catalog-build-policy": "local",
+      "cbd-mode": "mixed",
+      "cbd-unify": "akk",
+      "outline-default-sort-fields": "period,provenience,archive",
+      "outline-default-sort-labels": "Time,Genre,Place",
+      "outline-special-select": "true",
+      "outline-special-list-name": "outlined.lst",
+      "outline-special-sort-fields": "text_remarks",
+      "outline-special-heading-template": "1 2",
+      "outline-special-catalog-fields": "designation,subgenre,text_remarks",
+      "outline-special-catalog-widths": "20,25,52"
+    }
+  },
+  "formats": {
+    "atf": [
+      "P238889",
+      "P282465",
+      "P393790",
+      "P393862",
+      "P397118",
+      "P422371",
+      "P422417",
+      "P422466",
+      "P424939",
+      "P425166",
+      "P426369",
+      "P426485",
+      "P451849",
+      "P452137",
+      "P543069",
+      "Q009576"
+    ],
+    "lem": [
+      "P238889",
+      "P282465",
+      "P393862",
+      "P397118",
+      "P422371",
+      "P422417",
+      "P422466",
+      "P424939",
+      "P425166",
+      "P426369",
+      "P451849",
+      "P452137",
+      "Q009576"
+    ],
+    "tr-en": [
+      "P393862",
+      "P422371",
+      "P282465",
+      "P424939",
+      "Q009576",
+      "P238889",
+      "P422466",
+      "P451849",
+      "P397118",
+      "P426369",
+      "P452137",
+      "P425166"
+    ],
+    "xtf": [
+      "P238889",
+      "P282465",
+      "P393790",
+      "P393862",
+      "P397118",
+      "P422371",
+      "P422417",
+      "P422466",
+      "P424939",
+      "P425166",
+      "P426369",
+      "P426485",
+      "P451849",
+      "P452137",
+      "P543069",
+      "Q009576"
+    ]
+  },
+  "witnesses": {
+    "P393790": {
+      "is-witness-of": [
+        "tcma/nineveh:Q009576"
+      ]
+    },
+    "P426485": {
+      "is-witness-of": [
+        "tcma/nineveh:Q009576"
+      ]
+    },
+    "P543069": {
+      "is-witness-of": [
+        "tcma/nineveh:Q009576"
+      ]
+    },
+    "Q009576": {
+      "has-witness": [
+        "tcma/nineveh:P393790",
+        "tcma/nineveh:P426485",
+        "tcma/nineveh:P543069"
+      ]
+    }
+  }
+}

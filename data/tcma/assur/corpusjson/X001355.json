@@ -1,0 +1,932 @@
+{
+  "type": "cdl",
+  "project": "tcma/assur",
+  "source": "http://oracc.org/tcma/assur",
+  "license": "This data is released under the CC0 license",
+  "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "more-info": "http://oracc.org/doc/opendata/",
+  "UTC-timestamp": "2025-05-30T06:45:56",
+  "textid": "X001355",
+  "cdl": [
+    {
+      "node": "c",
+      "type": "text",
+      "id": "X001355.U0",
+      "cdl": [
+        {
+          "node": "d",
+          "type": "object",
+          "ref": ""
+        },
+        {
+          "node": "d",
+          "type": "surface",
+          "ref": ""
+        },
+        {
+          "node": "c",
+          "type": "discourse",
+          "subtype": "body",
+          "id": "X001355.U1",
+          "cdl": [
+            {
+              "node": "c",
+              "type": "sentence",
+              "implicit": "yes",
+              "id": "X001355.U2",
+              "label": "1 - 7",
+              "cdl": [
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X001355.1",
+                  "n": "1",
+                  "label": "1"
+                },
+                {
+                  "node": "l",
+                  "frag": "ṣa-lam",
+                  "id": "X001355.l14b69",
+                  "ref": "X001355.1.1",
+                  "inst": "ṣalmu[effigy//stele]N'N$ṣalam",
+                  "sig": "@tcma/assur%akk-x-midass:ṣa-lam=ṣalmu[effigy//stele]N'N$ṣalam",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "ṣa-lam",
+                    "gdl": [
+                      {
+                        "v": "ṣa",
+                        "oid": "o0000603",
+                        "gdl_sign": "ZA",
+                        "utf8": "𒍝",
+                        "key": "o0000603..ṣa",
+                        "id": "X001355.1.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "lam",
+                        "oid": "o0000424",
+                        "gdl_sign": "LAM",
+                        "utf8": "𒇴",
+                        "key": "o0000424..lam",
+                        "id": "X001355.1.1.1"
+                      }
+                    ],
+                    "cf": "ṣalmu",
+                    "gw": "effigy",
+                    "sense": "stele",
+                    "norm": "ṣalam",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.1.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.1.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X001355.2",
+                  "n": "2",
+                  "label": "2"
+                },
+                {
+                  "node": "l",
+                  "frag": "{m}{d}e-ru-A-PAP",
+                  "id": "X001355.l14b6a",
+                  "ref": "X001355.2.1",
+                  "inst": "Eru-aha-iddina[]PN$",
+                  "sig": "@tcma/assur%akk-x-midass:{m}{d}e-ru-A-PAP=Eru-aha-iddina[1//1]PN'PN$Eru-aha-iddina",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "{m}{d}e-ru-A-PAP",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "m",
+                            "oid": "o0000145",
+                            "gdl_sign": "DIŠ",
+                            "utf8": "𒁹",
+                            "key": "o0000145..m",
+                            "id": "X001355.2.1.0"
+                          }
+                        ]
+                      },
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "d",
+                            "oid": "o0000099",
+                            "gdl_sign": "AN",
+                            "utf8": "𒀭",
+                            "key": "o0000099..d",
+                            "id": "X001355.2.1.1"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "e",
+                        "oid": "o0000166",
+                        "gdl_sign": "E",
+                        "utf8": "𒂊",
+                        "key": "o0000166..e",
+                        "id": "X001355.2.1.2",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "ru",
+                        "oid": "o0000516",
+                        "gdl_sign": "RU",
+                        "utf8": "𒊒",
+                        "key": "o0000516..ru",
+                        "id": "X001355.2.1.3",
+                        "delim": "-"
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "A",
+                            "oid": "o0000087",
+                            "gdl_sign": "A",
+                            "utf8": "𒀀",
+                            "key": "o0000087..",
+                            "id": "X001355.2.1.4",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          },
+                          {
+                            "s": "PAP",
+                            "oid": "o0000500",
+                            "gdl_sign": "PAP",
+                            "utf8": "𒉽",
+                            "key": "o0000500..",
+                            "id": "X001355.2.1.5",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "Eru-aha-iddina",
+                    "gw": "1",
+                    "sense": "1",
+                    "norm": "Eru-aha-iddina",
+                    "pos": "PN",
+                    "epos": "PN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.2.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.2.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X001355.3",
+                  "n": "3",
+                  "label": "3"
+                },
+                {
+                  "node": "l",
+                  "frag": "{lu₂}SUKKAL",
+                  "id": "X001355.l14b6b",
+                  "ref": "X001355.3.1",
+                  "inst": "šukkallu[(a court official)//minister]N'N$sukkalle",
+                  "sig": "@tcma/assur%akk-x-midass:{lu₂}SUKKAL=šukkallu[(a court official)//minister]N'N$sukkalle",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "{lu₂}SUKKAL",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "det": "semantic",
+                            "pos": "pre",
+                            "seq": [
+                              {
+                                "v": "lu₂",
+                                "oid": "o0000439",
+                                "gdl_sign": "LU₂",
+                                "utf8": "𒇽",
+                                "key": "o0000439..lu₂",
+                                "id": "X001355.3.1.0"
+                              }
+                            ]
+                          },
+                          {
+                            "s": "SUKKAL",
+                            "oid": "o0000436",
+                            "gdl_sign": "LUH",
+                            "utf8": "𒈛",
+                            "key": "o0000436..",
+                            "id": "X001355.3.1.1",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "šukkallu",
+                    "gw": "(a court official)",
+                    "sense": "minister",
+                    "norm": "sukkalle",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.3.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.3.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "GAL{e}",
+                  "id": "X001355.l14b6c",
+                  "ref": "X001355.3.2",
+                  "inst": "rabie[great]AJ",
+                  "sig": "@tcma/assur%akk-x-midass:GAL{+e}=rabû[big//great]AJ'AJ$rabie",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "GAL{+e}",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "GAL",
+                            "oid": "o0000194",
+                            "gdl_sign": "GAL",
+                            "utf8": "𒃲",
+                            "key": "o0000194..",
+                            "id": "X001355.3.2.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          },
+                          {
+                            "det": "phonetic",
+                            "pos": "post",
+                            "seq": [
+                              {
+                                "v": "e",
+                                "oid": "o0000166",
+                                "gdl_sign": "E",
+                                "utf8": "𒂊",
+                                "key": "o0000166..e",
+                                "id": "X001355.3.2.1"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "rabû",
+                    "gw": "big",
+                    "sense": "great",
+                    "norm": "rabie",
+                    "pos": "AJ",
+                    "epos": "AJ"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.3.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.3.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X001355.4",
+                  "n": "4",
+                  "label": "4"
+                },
+                {
+                  "node": "l",
+                  "frag": "ša₂-kin₃",
+                  "id": "X001355.l14b6d",
+                  "ref": "X001355.4.1",
+                  "inst": "šaknu[placed//governor]AJ'N$šakin",
+                  "sig": "@tcma/assur%akk-x-midass:ša₂-kin₃=šaknu[placed//governor]AJ'N$šakin",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "ša₂-kin₃",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "ša₂",
+                        "oid": "o0000202",
+                        "gdl_sign": "GAR",
+                        "utf8": "𒃻",
+                        "key": "o0000202..ša₂",
+                        "id": "X001355.4.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "kin₃",
+                        "oid": "o0000294",
+                        "gdl_sign": "KUR",
+                        "utf8": "𒆳",
+                        "key": "o0000294..kin₃",
+                        "id": "X001355.4.1.1"
+                      }
+                    ],
+                    "cf": "šaknu",
+                    "gw": "placed",
+                    "sense": "governor",
+                    "norm": "šakin",
+                    "pos": "AJ",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.4.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.4.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{kur}ha-lah₂-hi",
+                  "id": "X001355.l14b6e",
+                  "ref": "X001355.4.2",
+                  "inst": "+Halahhu[]SN'GN$Halahhe",
+                  "sig": "@tcma/assur%akk-x-midass:{kur}ha-lah₂-hi=Halahhu[1//1]SN'GN$Halahhe",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "{kur}ha-lah₂-hi",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "kur",
+                            "oid": "o0000294",
+                            "gdl_sign": "KUR",
+                            "utf8": "𒆳",
+                            "key": "o0000294..kur",
+                            "id": "X001355.4.2.0"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "ha",
+                        "oid": "o0000232",
+                        "gdl_sign": "HA",
+                        "utf8": "𒄩",
+                        "key": "o0000232..ha",
+                        "id": "X001355.4.2.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "lah₂",
+                        "oid": "o0032009",
+                        "gdl_sign": "PIR₂",
+                        "utf8": "𒎕",
+                        "key": "o0032009..lah₂",
+                        "id": "X001355.4.2.2",
+                        "gdl_remarked": "1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "hi",
+                        "oid": "o0000237",
+                        "gdl_sign": "HI",
+                        "utf8": "𒄭",
+                        "key": "o0000237..hi",
+                        "id": "X001355.4.2.3",
+                        "gdl_remarked": "1"
+                      }
+                    ],
+                    "cf": "Halahhu",
+                    "gw": "1",
+                    "sense": "1",
+                    "norm": "Halahhe",
+                    "pos": "SN",
+                    "epos": "GN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.4.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.4.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X001355.5",
+                  "n": "5",
+                  "label": "5"
+                },
+                {
+                  "node": "l",
+                  "frag": "A",
+                  "id": "X001355.l14b6f",
+                  "ref": "X001355.5.1",
+                  "inst": "māru[son]N$mār",
+                  "sig": "@tcma/assur%akk-x-midass:A=māru[son//son]N'N$mār",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "A",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "A",
+                            "oid": "o0000087",
+                            "gdl_sign": "A",
+                            "utf8": "𒀀",
+                            "key": "o0000087..",
+                            "id": "X001355.5.1.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "māru",
+                    "gw": "son",
+                    "sense": "son",
+                    "norm": "mār",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.5.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.5.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{m}sa-me-di",
+                  "id": "X001355.l14b70",
+                  "ref": "X001355.5.2",
+                  "inst": "Samidu[1]PN$Samede",
+                  "sig": "@tcma/assur%akk-x-midass:{m}sa-me-di=Samidu[1//1]PN'PN$Samede",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "{m}sa-me-di",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "m",
+                            "oid": "o0000145",
+                            "gdl_sign": "DIŠ",
+                            "utf8": "𒁹",
+                            "key": "o0000145..m",
+                            "id": "X001355.5.2.0"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "sa",
+                        "oid": "o0000517",
+                        "gdl_sign": "SA",
+                        "utf8": "𒊓",
+                        "key": "o0000517..sa",
+                        "id": "X001355.5.2.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "me",
+                        "oid": "o0000453",
+                        "gdl_sign": "ME",
+                        "utf8": "𒈨",
+                        "key": "o0000453..me",
+                        "id": "X001355.5.2.2",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "di",
+                        "oid": "o0000139",
+                        "gdl_sign": "DI",
+                        "utf8": "𒁲",
+                        "key": "o0000139..di",
+                        "id": "X001355.5.2.3"
+                      }
+                    ],
+                    "cf": "Samidu",
+                    "gw": "1",
+                    "sense": "1",
+                    "norm": "Samede",
+                    "pos": "PN",
+                    "epos": "PN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.5.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.5.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X001355.6",
+                  "n": "6",
+                  "label": "6"
+                },
+                {
+                  "node": "l",
+                  "frag": "ša₂-kin₃",
+                  "id": "X001355.l14b71",
+                  "ref": "X001355.6.1",
+                  "inst": "šaknu[placed//governor]AJ'N$šakin",
+                  "sig": "@tcma/assur%akk-x-midass:ša₂-kin₃=šaknu[placed//governor]AJ'N$šakin",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "ša₂-kin₃",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "v": "ša₂",
+                        "oid": "o0000202",
+                        "gdl_sign": "GAR",
+                        "utf8": "𒃻",
+                        "key": "o0000202..ša₂",
+                        "id": "X001355.6.1.0",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "kin₃",
+                        "oid": "o0000294",
+                        "gdl_sign": "KUR",
+                        "utf8": "𒆳",
+                        "key": "o0000294..kin₃",
+                        "id": "X001355.6.1.1"
+                      }
+                    ],
+                    "cf": "šaknu",
+                    "gw": "placed",
+                    "sense": "governor",
+                    "norm": "šakin",
+                    "pos": "AJ",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.6.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.6.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{iri}ni-nu-a",
+                  "id": "X001355.l14b72",
+                  "ref": "X001355.6.2",
+                  "inst": "Ninua[Nineveh]SN",
+                  "sig": "@tcma/assur%akk-x-midass:{iri}ni-nu-a=Ninua[Nineveh//Nineveh]SN'SN$Ninua",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "{iri}ni-nu-a",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "iri",
+                            "oid": "o0000582",
+                            "gdl_sign": "URU",
+                            "utf8": "𒌷",
+                            "key": "o0000582..iri",
+                            "id": "X001355.6.2.0"
+                          }
+                        ]
+                      },
+                      {
+                        "v": "ni",
+                        "oid": "o0000479",
+                        "gdl_sign": "NI",
+                        "utf8": "𒉌",
+                        "key": "o0000479..ni",
+                        "id": "X001355.6.2.1",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "nu",
+                        "oid": "o0000487",
+                        "gdl_sign": "NU",
+                        "utf8": "𒉡",
+                        "key": "o0000487..nu",
+                        "id": "X001355.6.2.2",
+                        "delim": "-"
+                      },
+                      {
+                        "v": "a",
+                        "oid": "o0000087",
+                        "gdl_sign": "A",
+                        "utf8": "𒀀",
+                        "key": "o0000087..a",
+                        "id": "X001355.6.2.3"
+                      }
+                    ],
+                    "cf": "Ninua",
+                    "gw": "Nineveh",
+                    "sense": "Nineveh",
+                    "norm": "Ninua",
+                    "pos": "SN",
+                    "epos": "SN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.6.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.6.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "line-start",
+                  "ref": "X001355.7",
+                  "n": "7",
+                  "label": "7"
+                },
+                {
+                  "node": "l",
+                  "frag": "A",
+                  "id": "X001355.l14b73",
+                  "ref": "X001355.7.1",
+                  "inst": "māru[son]N$mār",
+                  "sig": "@tcma/assur%akk-x-midass:A=māru[son//son]N'N$mār",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "A",
+                    "delim": "",
+                    "gdl": [
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "s": "A",
+                            "oid": "o0000087",
+                            "gdl_sign": "A",
+                            "utf8": "𒀀",
+                            "key": "o0000087..",
+                            "id": "X001355.7.1.0",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "māru",
+                    "gw": "son",
+                    "sense": "son",
+                    "norm": "mār",
+                    "pos": "N",
+                    "epos": "N"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.7.1"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.7.1"
+                    }
+                  ]
+                },
+                {
+                  "node": "l",
+                  "frag": "{m}aš+šur-NUMUN-PAP",
+                  "id": "X001355.l14b74",
+                  "ref": "X001355.7.2",
+                  "inst": "Aššur-zera-uṣur[]PN$",
+                  "sig": "@tcma/assur%akk-x-midass:{m}aš+šur-NUMUN-PAP=Aššur-zera-uṣur[1//1]PN'PN$Aššur-zera-uṣur",
+                  "f": {
+                    "lang": "akk-x-midass",
+                    "form": "{m}aš+šur-NUMUN-PAP",
+                    "gdl": [
+                      {
+                        "det": "semantic",
+                        "pos": "pre",
+                        "seq": [
+                          {
+                            "v": "m",
+                            "oid": "o0000145",
+                            "gdl_sign": "DIŠ",
+                            "utf8": "𒁹",
+                            "key": "o0000145..m",
+                            "id": "X001355.7.2.0"
+                          }
+                        ]
+                      },
+                      {
+                        "gg": "logo",
+                        "gdl_type": "logo",
+                        "group": [
+                          {
+                            "gg": "ligature",
+                            "gdl_type": "ligature",
+                            "group": [
+                              {
+                                "v": "aš",
+                                "oid": "o0000106",
+                                "gdl_sign": "AŠ",
+                                "utf8": "𒀸",
+                                "key": "o0000106..aš",
+                                "id": "X001355.7.2.1",
+                                "delim": "+"
+                              },
+                              {
+                                "v": "šur",
+                                "oid": "o0000539",
+                                "gdl_sign": "SUR",
+                                "utf8": "𒋩",
+                                "key": "o0000539..šur",
+                                "id": "X001355.7.2.2",
+                                "delim": "-"
+                              }
+                            ]
+                          },
+                          {
+                            "s": "NUMUN",
+                            "oid": "o0000291",
+                            "gdl_sign": "KUL",
+                            "utf8": "𒆰",
+                            "key": "o0000291..",
+                            "id": "X001355.7.2.3",
+                            "role": "logo",
+                            "logolang": "sux",
+                            "delim": "-"
+                          },
+                          {
+                            "s": "PAP",
+                            "oid": "o0000500",
+                            "gdl_sign": "PAP",
+                            "utf8": "𒉽",
+                            "key": "o0000500..",
+                            "id": "X001355.7.2.4",
+                            "role": "logo",
+                            "logolang": "sux"
+                          }
+                        ]
+                      }
+                    ],
+                    "cf": "Aššur-zera-uṣur",
+                    "gw": "1",
+                    "sense": "1",
+                    "norm": "Aššur-zera-uṣur",
+                    "pos": "PN",
+                    "epos": "PN"
+                  },
+                  "props": [
+                    {
+                      "name": "field",
+                      "group": "env",
+                      "ngram": "-1",
+                      "ref": "X001355.7.2"
+                    },
+                    {
+                      "name": "discourse",
+                      "group": "env",
+                      "value": "body",
+                      "ngram": "-1",
+                      "ref": "X001355.7.2"
+                    }
+                  ]
+                },
+                {
+                  "node": "d",
+                  "type": "nonx",
+                  "ref": "X001355.8",
+                  "strict": "1",
+                  "extent": "rest",
+                  "scope": "line",
+                  "state": "missing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -82,7 +82,7 @@ def test_unlemmatised_word_survives_with_form_and_zero_lemmaknown():
     assert word.norm is None
     assert word.sig is None
     assert word.sign_count == 1
-    assert word.signs[0].value.get("x") == "ellipsis"
+    assert word.signs[0].value.get("v") == "x"
 
 
 def test_document_word_spans_are_contiguous_and_non_overlapping():

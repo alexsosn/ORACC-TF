@@ -170,8 +170,12 @@
       "blocked_by": [
         "P-001.M2"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m4_lexemes.py; initial RED run 33784395913; source-format RED runs 33784826212, 33785353542 and 33785851515; core GREEN 33786319344; hardening RED 33786760548; final GREEN 33787212022: 38 fast + 8 corpus tests passed",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "words=320975 and sig_records=320975; canonical (lang,cf,gw,pos) lexemes=8025 with 29 cross-language triples; project excluded from LexemeKey; max inst slots=14 and max distinct word→lex degree=3; Q003333 links 3 lexemes, Q009276 parses 14 inst slots but links 2; whole-corpus TDD additionally pinned valid ORACC inst variants with empty gloss, opaque bare token 'n', and missing POS without fabricating lexical fields"
+      }
     },
     {
       "id": "P-001.M5",

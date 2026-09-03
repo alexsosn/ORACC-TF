@@ -65,7 +65,11 @@ def test_qualified_parent_with_utf8_is_one_slot_and_children_are_modifiers():
     )] == ["surₓ(SAG)"]
 
 
-def test_compound_parent_is_slot_and_operator_is_never_a_slot():
+def test_no_utf8_qualified_grapheme_uses_sign_name_as_the_single_slot():
+    # ORACC GDL defines q as one qualified grapheme: a sign value followed by
+    # a sign name. In this real source shape the wrapper has no utf8, while the
+    # sign-name compound does. The value ŠIGₓ is a reading/qualification, not
+    # a second textual position.
     tree = [{
         "q": "ŠIGₓ(|URU×GU|)",
         "qualified": [
@@ -78,14 +82,13 @@ def test_compound_parent_is_slot_and_operator_is_never_a_slot():
     classified = list(gdl.classify_tree(tree, word_id="Q005620.l00999"))
     assert Counter(item.disposition for item in classified) == Counter({
         gdl.Disposition.STRUCTURAL: 1,
-        gdl.Disposition.SLOT: 2,
-        gdl.Disposition.MODIFIER: 3,
+        gdl.Disposition.SLOT: 1,
+        gdl.Disposition.MODIFIER: 4,
     })
     slots = list(gdl.signs(tree, word_id="Q005620.l00999"))
-    assert [slot.value.get("v") or slot.value.get("c") for slot in slots] == [
-        "ŠIGₓ", "|URU×GU|"
-    ]
-    assert slots[1].value["utf8"] == "𒍀"
+    assert len(slots) == 1
+    assert slots[0].value["c"] == "|URU×GU|"
+    assert slots[0].value["utf8"] == "𒍀"
     assert all("o" not in slot.value for slot in slots)
 
 

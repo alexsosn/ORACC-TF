@@ -33,26 +33,15 @@ def word_by_id(doc: dict, word_id: str) -> dict:
     raise AssertionError(f"word not found: {word_id}")
 
 
-# --------------------------------------------------------------------------
-# pure classification rules
-# --------------------------------------------------------------------------
-
 def test_composite_numeral_parent_is_the_slot_and_r_child_is_rendering():
     tree = [{
-        "n": "n",
-        "sexified": "1(diš)",
-        "form": "1",
-        "utf8": "𒁹",
-        "id": "Q005620.44.1.0",
-        "seq": [{"r": "1"}],
+        "n": "n", "sexified": "1(diš)", "form": "1", "utf8": "𒁹",
+        "id": "Q005620.44.1.0", "seq": [{"r": "1"}],
     }]
-
     classified = list(gdl.classify_tree(tree, word_id="Q005620.l00a19"))
     assert [item.disposition for item in classified] == [
-        gdl.Disposition.SLOT,
-        gdl.Disposition.RENDERING,
+        gdl.Disposition.SLOT, gdl.Disposition.RENDERING,
     ]
-
     slots = list(gdl.signs(tree, word_id="Q005620.l00a19"))
     assert len(slots) == 1
     assert slots[0].value["utf8"] == "𒁹"
@@ -64,16 +53,12 @@ def test_composite_numeral_parent_is_the_slot_and_r_child_is_rendering():
 
 def test_qualified_parent_with_utf8_is_one_slot_and_children_are_modifiers():
     tree = [{
-        "q": "surₓ(SAG)",
-        "utf8": "𒊕",
-        "id": "Q005278.5.1.1",
+        "q": "surₓ(SAG)", "utf8": "𒊕", "id": "Q005278.5.1.1",
         "qualified": [{"v": "surₓ"}, {"s": "SAG"}],
     }]
-
     classified = list(gdl.classify_tree(tree, word_id="Q005278.l009f8"))
     assert Counter(item.disposition for item in classified) == Counter({
-        gdl.Disposition.SLOT: 1,
-        gdl.Disposition.MODIFIER: 2,
+        gdl.Disposition.SLOT: 1, gdl.Disposition.MODIFIER: 2,
     })
     assert [item.value.get("q") for item in gdl.signs(
         tree, word_id="Q005278.l009f8"
@@ -81,33 +66,21 @@ def test_qualified_parent_with_utf8_is_one_slot_and_children_are_modifiers():
 
 
 def test_compound_parent_is_slot_and_operator_is_never_a_slot():
-    # This is the shape nested in Q005620's ŠIGₓ(|URU×GU|).  The outer q has
-    # no utf8 and is therefore structural; its v child remains a positional
-    # sign, while the c parent is the compound sign and its s/o/s children are
-    # internal modifiers.
     tree = [{
         "q": "ŠIGₓ(|URU×GU|)",
         "qualified": [
             {"v": "ŠIGₓ"},
-            {
-                "c": "|URU×GU|",
-                "utf8": "𒍀",
-                "seq": [
-                    {"s": "URU"},
-                    {"o": "containing"},
-                    {"s": "GU"},
-                ],
-            },
+            {"c": "|URU×GU|", "utf8": "𒍀", "seq": [
+                {"s": "URU"}, {"o": "containing"}, {"s": "GU"},
+            ]},
         ],
     }]
-
     classified = list(gdl.classify_tree(tree, word_id="Q005620.l00999"))
     assert Counter(item.disposition for item in classified) == Counter({
         gdl.Disposition.STRUCTURAL: 1,
         gdl.Disposition.SLOT: 2,
         gdl.Disposition.MODIFIER: 3,
     })
-
     slots = list(gdl.signs(tree, word_id="Q005620.l00999"))
     assert [slot.value.get("v") or slot.value.get("c") for slot in slots] == [
         "ŠIGₓ", "|URU×GU|"
@@ -127,14 +100,8 @@ def test_unknown_leaf_shape_fails_loudly_with_source_path():
         list(gdl.classify_tree([{"mystery": "shape"}], word_id="Q.l1"))
 
 
-# --------------------------------------------------------------------------
-# real hazard fixtures named by P-001 section 4
-# --------------------------------------------------------------------------
-
 def test_q005620_numeral_keeps_parent_content_and_src_path_resolves():
     edition = loader.load_edition(src(NUMERAL))
-    # P-001 cites the numeral at source id Q005620.44.1.0.  Find its word from
-    # the source rather than hard-coding a generated TF node number.
     target = None
     stack = [edition.doc]
     while stack and target is None:
@@ -146,7 +113,6 @@ def test_q005620_numeral_keeps_parent_content_and_src_path_resolves():
                     target = (node, item)
                     break
         stack.extend(node.get("cdl") or [])
-
     assert target is not None
     word, slot = target
     assert slot.value["utf8"] == "𒁹"
@@ -155,7 +121,6 @@ def test_q005620_numeral_keeps_parent_content_and_src_path_resolves():
     assert gdl.resolve_src_path(
         (word.get("f") or {})["gdl"], slot.src_path, word_id=word["id"]
     ) == slot.value
-
     classified = list(gdl.classify_tree(
         (word.get("f") or {})["gdl"], word_id=word["id"]
     ))
@@ -169,7 +134,6 @@ def test_q005278_qualified_sign_is_parent_borne_single_slot():
     edition = loader.load_edition(src(QUALIFIED))
     word = word_by_id(edition.doc, "Q005278.l009f8")
     slots = list(gdl.signs((word.get("f") or {})["gdl"], word_id=word["id"]))
-
     qualified = [slot for slot in slots if slot.value.get("q") == "surₓ(SAG)"]
     assert len(qualified) == 1
     assert qualified[0].value["utf8"] == "𒊕"
@@ -178,10 +142,6 @@ def test_q005278_qualified_sign_is_parent_borne_single_slot():
         (word.get("f") or {})["gdl"], qualified[0].src_path, word_id=word["id"]
     ) == qualified[0].value
 
-
-# --------------------------------------------------------------------------
-# whole-corpus M1 exit criterion
-# --------------------------------------------------------------------------
 
 @pytest.mark.corpus
 def test_four_way_gdl_census_matches_measured_ground_truth():
@@ -192,3 +152,38 @@ def test_four_way_gdl_census_matches_measured_ground_truth():
     assert census.rendering == 6584
     assert census.total == 978114
     assert census.unknown == 0
+
+
+@pytest.mark.corpus
+def test_diagnostic_modifier_shapes():
+    """Temporary measurement: localise the M1 corpus-census mismatch."""
+    shapes = Counter()
+    examples = {}
+    for edition in loader.iter_editions(paths.DATA, skip_unreadable=True):
+        stack = [edition.doc]
+        while stack:
+            node = stack.pop()
+            if node.get("node") == "l":
+                word_id = node.get("id")
+                entries = (node.get("f") or {}).get("gdl") or []
+                for item in gdl.classify_tree(entries, word_id=word_id):
+                    if item.disposition != gdl.Disposition.MODIFIER:
+                        continue
+                    marker = next((k for k in (
+                        "v", "s", "x", "n", "q", "c", "o", "r", "m", "a", "f"
+                    ) if k in item.value), "other")
+                    if "/mods[" in item.src_path:
+                        relation = "mods"
+                    elif "/qualified[" in item.src_path:
+                        relation = "qualified"
+                    elif "/seq[" in item.src_path:
+                        relation = "seq"
+                    elif "/group[" in item.src_path:
+                        relation = "group"
+                    else:
+                        relation = "root"
+                    key = (relation, marker)
+                    shapes[key] += 1
+                    examples.setdefault(key, (item.src_path, dict(item.value)))
+            stack.extend(node.get("cdl") or [])
+    raise AssertionError(f"modifier shapes={shapes}; examples={examples}")

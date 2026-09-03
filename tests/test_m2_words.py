@@ -7,7 +7,8 @@ Acceptance criteria from P-001 §5 M2:
 - whole-corpus word count matches the direct l-node count exactly.
 
 The word layer consumes M1's semantic sign classifier; it never counts raw GDL
-leaves independently.
+leaves independently. Sign ordinals are 1-based, matching Text-Fabric node
+numbers, and word spans are represented as half-open [slot_start, slot_end).
 """
 
 from __future__ import annotations
@@ -68,7 +69,7 @@ def test_unlemmatised_word_survives_with_form_and_zero_lemmaknown():
     edition = loader.load_edition(src(UNLEMMATISED))
     node = source_word(edition.doc, "Q005621.l005dd")
 
-    word = words.from_source(node, start_slot=0)
+    word = words.from_source(node, start_slot=1)
 
     assert word.source_id == "Q005621.l005dd"
     assert word.form == "x"
@@ -90,7 +91,7 @@ def test_document_word_spans_are_contiguous_and_non_overlapping():
 
     assert records[:3][0].source_id == "Q005202.l00510"
     assert [(w.slot_start, w.slot_end) for w in records[:3]] == [
-        (0, 5), (5, 6), (6, 7)
+        (1, 6), (6, 7), (7, 8)
     ]
     assert all(left.slot_end == right.slot_start
                for left, right in zip(records, records[1:]))
@@ -99,7 +100,7 @@ def test_document_word_spans_are_contiguous_and_non_overlapping():
 
 def test_from_source_rejects_non_word_nodes():
     with pytest.raises(words.InvalidWordSource, match="node='l'"):
-        words.from_source({"node": "d", "type": "line-start"}, start_slot=0)
+        words.from_source({"node": "d", "type": "line-start"}, start_slot=1)
 
 
 @pytest.mark.corpus

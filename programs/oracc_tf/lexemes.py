@@ -149,7 +149,12 @@ def _split_top_level(text: str, separator: str) -> tuple[str, ...]:
 
 
 def _analysis_parts(text: str, *, source: str) -> tuple[str, str, str | None, str]:
-    """Return form/cf, gw, sense and the suffix after the closing bracket."""
+    """Return form/cf, gw, sense and the suffix after the closing bracket.
+
+    ORACC uses an empty bracket pair for some valid occurrence analyses (for
+    example ``Zarpanitu[]DN$Zer-banitum``).  Empty ``gw`` is therefore
+    preserved as source data rather than treated as malformed syntax.
+    """
     left = text.find("[")
     if left <= 0:
         exc = InvalidInst if source == "inst" else InvalidSignature
@@ -178,9 +183,6 @@ def _analysis_parts(text: str, *, source: str) -> tuple[str, str, str | None, st
         gw, sense = gloss.split("//", 1)
     else:
         gw, sense = gloss, None
-    if not gw:
-        exc = InvalidInst if source == "inst" else InvalidSignature
-        raise exc(f"{source} analysis has empty gw: {text!r}")
     return head, gw, sense, suffix
 
 

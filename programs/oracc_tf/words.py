@@ -61,23 +61,27 @@ class WordRecord:
 
 @dataclass(frozen=True)
 class WordCensus:
-    """Whole-corpus M2 word/sign accounting."""
+    """Whole-corpus M2 word/sign and completeness accounting."""
 
     words: int
     signs: int
     lemmatised: int
     unlemmatised: int
     zero_sign_words: int
+    incomplete_lemmatised: int
+    unlemmatised_without_form: int
     span_errors: int
 
     def report(self) -> str:
         return (
-            f"words          : {self.words:>8,}\n"
-            f"signs          : {self.signs:>8,}\n"
-            f"lemmatised     : {self.lemmatised:>8,}\n"
-            f"unlemmatised   : {self.unlemmatised:>8,}\n"
-            f"zero-sign words: {self.zero_sign_words:>8,}\n"
-            f"span errors    : {self.span_errors:>8,}"
+            f"words                    : {self.words:>8,}\n"
+            f"signs                    : {self.signs:>8,}\n"
+            f"lemmatised               : {self.lemmatised:>8,}\n"
+            f"unlemmatised             : {self.unlemmatised:>8,}\n"
+            f"zero-sign words          : {self.zero_sign_words:>8,}\n"
+            f"incomplete lemmatised    : {self.incomplete_lemmatised:>8,}\n"
+            f"unlemmatised without form: {self.unlemmatised_without_form:>8,}\n"
+            f"span errors              : {self.span_errors:>8,}"
         )
 
 
@@ -213,6 +217,8 @@ def census(data: Path = paths.DATA) -> WordCensus:
     lemmatised = 0
     unlemmatised = 0
     zero_sign_words = 0
+    incomplete_lemmatised = 0
+    unlemmatised_without_form = 0
     span_errors = 0
     next_slot = 1
 
@@ -223,8 +229,15 @@ def census(data: Path = paths.DATA) -> WordCensus:
             word_count += 1
             if word.lemmaknown:
                 lemmatised += 1
+                if any(
+                    value is None
+                    for value in (word.cf, word.gw, word.sense, word.norm, word.pos, word.epos)
+                ):
+                    incomplete_lemmatised += 1
             else:
                 unlemmatised += 1
+                if word.form is None:
+                    unlemmatised_without_form += 1
             if word.sign_count == 0:
                 zero_sign_words += 1
             next_slot = word.slot_end
@@ -235,5 +248,7 @@ def census(data: Path = paths.DATA) -> WordCensus:
         lemmatised=lemmatised,
         unlemmatised=unlemmatised,
         zero_sign_words=zero_sign_words,
+        incomplete_lemmatised=incomplete_lemmatised,
+        unlemmatised_without_form=unlemmatised_without_form,
         span_errors=span_errors,
     )

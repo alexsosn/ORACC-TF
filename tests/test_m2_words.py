@@ -115,3 +115,6 @@ def test_whole_corpus_word_count_matches_direct_l_node_count_exactly():
     assert result.words == direct
     assert result.signs == 792651
     assert result.span_errors == 0
+    assert result.zero_sign_words == 0
+    assert result.incomplete_lemmatised == 0
+    assert result.unlemmatised_without_form == 0

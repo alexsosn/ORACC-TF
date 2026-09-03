@@ -124,9 +124,9 @@
       ],
       "status": "done",
       "evidence": {
-        "tests": "tests/test_m1_gdl.py; CI run 33772782940: 14 fast + 5 corpus tests passed",
+        "tests": "tests/test_m1_gdl.py; final CI run 33773932651 passed fast + corpus suites",
         "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
-        "result": "GDL census: slot=792651, structural=178869, modifier=10, rendering=6584, unknown=0; numeral, qualified-sign, compound, overloaded-o and src_path hazards pinned by content tests"
+        "result": "GDL census: slot=792651, structural=178869, modifier=10, rendering=6584, unknown=0; numeral, qualified-sign, compound, overloaded-o, nested-unknown and src_path hazards pinned by content tests"
       }
     },
     {
@@ -138,8 +138,12 @@
       "blocked_by": [
         "P-001.M1"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m2_words.py; final CI run 33778024418: 23 fast + 6 corpus tests passed",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "word count=320975 equals direct l-node count; sign count=792651; span_errors=0; lemmatised=289205, unlemmatised=31770, zero-sign words=295, lemmatised without norm=878, norm-only unlemmatised=230, unlemmatised without form=0"
+      }
     },
     {
       "id": "P-001.M3",

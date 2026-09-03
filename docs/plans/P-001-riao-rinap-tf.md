@@ -198,11 +198,21 @@ for query ergonomics — justified because, unlike the others, it is genuinely
 phrase-sized (median 2 words). Nothing is named `sentence`. Any `c` type not
 in the table above fails the build rather than being dropped.
 
-### 2.6 Unlemmatised words must survive
+### 2.6 Unlemmatised and signless words must survive
 
-9.9 % of words have no `cf`/`gw`/`sense`/`norm`/`sig` but do have `form`,
-`gdl`, and usually `pos`: `u` 26,176, `n` 3,862, absent 1,114, `X` 616.
-Dropping them would delete 10 % of the corpus and corrupt every offset.
+M2 pins the word layer at **320,975** source `l` nodes: **289,205** carry
+lexical evidence and **31,770** do not. `lemmaknown` is based on `cf`, `gw`,
+`sense`, or the occurrence `sig`; `norm` is preserved independently because
+**230** source words have a normalization string but no lexical evidence.
+Conversely, **878** genuinely lemmatised words have no `norm`, so the converter
+must not invent one merely to make the feature matrix rectangular.
+
+All 31,770 unlemmatised words retain `form`; dropping them would delete about
+10 % of the corpus and corrupt every offset. M2 also finds **295** source words
+whose GDL contributes zero semantic sign slots. These words survive with an
+empty half-open sign span rather than being discarded or assigned a fabricated
+slot. Word spans remain contiguous and non-overlapping across the whole joined
+corpus despite these empty spans.
 
 ### 2.7 One word can carry **two to fourteen** lexemes
 
@@ -449,10 +459,13 @@ populated / 233 stubs; zero-byte files raise a typed `EmptySourceError`.
 census matches §2.3.
 
 ### M2 — Word layer
-*Red:* lemmatised words carry `cf/gw/sense/norm/pos/epos`; unlemmatised words
-still exist with `form` and `lemmaknown=0`; word sign-spans are contiguous and
-non-overlapping.
-**Exit:** word count matches a direct `l`-node count exactly.
+*Red:* a fully analysed word preserves `cf/gw/sense/norm/pos/epos`; a genuine
+lemmatised source word may lack `norm` without fabrication; a norm-only
+placeholder stays `lemmaknown=0`; unlemmatised words survive with `form`; a
+signless source word survives with an empty span; word sign-spans are
+contiguous and non-overlapping.
+**Exit:** word count matches the direct `l`-node count exactly, with the measured
+word classes in §2.6 pinned by the whole-corpus census.
 
 ### M3 — Streaming section walk
 *Red:* line 1 of `Q004473` holds exactly its source words; every word belongs
@@ -560,9 +573,10 @@ does not have.
 
 ## 8. Provisional figures
 
-M1 pins the sign slot count in §2.3. Unicode coverage, lex node count and chunk
-count remain provisional until their validating milestones. Firm now: 2,081
-files, 2,078 parseable, 1,845 populated, 233 stubs, 320,975 words, 56,226 lines,
+M1 pins the sign slot count in §2.3; M2 pins the word count and source classes
+in §2.6. Unicode coverage, lex node count and chunk count remain provisional
+until their validating milestones. Firm now: 2,081 files, 2,078 parseable,
+1,845 populated, 233 stubs, 320,975 words, 792,651 sign slots, 56,226 lines,
 140 Q collisions of which 48 differ in content.
 
 ---

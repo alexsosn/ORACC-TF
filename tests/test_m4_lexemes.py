@@ -112,6 +112,16 @@ def test_inst_parser_preserves_real_bare_token_as_opaque_slot():
     )
 
 
+def test_inst_parser_preserves_partial_bracketed_analysis_without_pos():
+    slot = lexemes.parse_inst("ūlid[produce]")[0]
+
+    assert slot.raw == "ūlid[produce]"
+    assert slot.opaque is False
+    assert (slot.form, slot.gw, slot.sense, slot.pos, slot.norm) == (
+        "ūlid", "produce", None, None, None
+    )
+
+
 def test_index_keeps_every_source_word_even_when_it_has_no_lexeme():
     doc = {
         "type": "cdl",

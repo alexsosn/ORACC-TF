@@ -11,7 +11,7 @@ updated: 2026-09-03
 
 # TDD implementation plan: a joined RIAO + RINAP Text-Fabric module
 
-**Status:** implementation in progress, revision 3 (two rounds of independent review).
+**Status:** implementation in progress, revision 4 (two rounds of independent review plus implementation measurements).
 **Target dataset:** `assyrian-royal-inscriptions` — RIAO parts 1–5 and RINAP
 1–5 (+5p1) as one continuous TF corpus.
 
@@ -23,6 +23,11 @@ updated: 2026-09-03
 > are declared for 99.9 % of populated editions and 89.2 % are joinable today
 > from one published TEI download, aligned by line range (§2.11). Translations
 > become milestone M9, and a licence conflict is recorded.
+> *Rev 4:* M5 corpus-wide TDD measured the catalogue join and source licence
+> fields. 2,075 of 2,078 parseable editions have a catalogue member; 1,844 of
+> 1,845 populated editions have `ruler`; all 2,078 corpusjson documents carry
+> `license` and `license-url`, while **none carries `license_type`**. The plan
+> no longer asks the converter to fabricate that absent field (§2.12, M5).
 > §9 records what changed and which review points did not hold.
 
 ---
@@ -363,17 +368,26 @@ different:
 
 Two ORACC-published statements disagree about the same material. Treat the
 translation layer as **CC BY-SA 3.0 with attribution** — the more restrictive
-reading — and carry per-document `license`/`license_type` through the build so
-the question stays auditable.
+reading. For the corpusjson edition layer, preserve the raw per-document
+`license` and `license-url` fields. Do **not** derive `license_type` from their
+text or URL: M5 measured that the field is absent from every current
+corpusjson document. If a future upstream snapshot supplies an explicit
+`license_type`/`license-type`, preserve its raw value.
 
 ### 2.12 Catalogue metadata
 
 Present on ≥90 % of 2,098 entries: `designation`, `genre`, `subgenre`,
 `period`, `provenience`, `language`, `supergenre`, `ruler` (96.4 %),
 `object_type`, `material`, `script`, `exemplars`, `primary_publication`,
-`pleiades_id`/`pleiades_coord` (98.8 %), `cdli_id` (79.3 %). Source
-`license` and `license_type` (including `restricted`) are retained on the
-document node for provenance auditing.
+`pleiades_id`/`pleiades_coord` (98.8 %), `cdli_id` (79.3 %).
+
+M5 measured the actual join against this snapshot: **2,075 of 2,078**
+parseable editions have a catalogue member, **3** do not, and no catalogue
+record is attached more than once. Among populated editions, **1,844 of
+1,845 (99.95 %)** have `ruler`. All **2,078** parseable corpusjson documents
+carry source `license` and `license-url`; **0** carry `license_type` or
+`license-type`. The document layer preserves those raw source fields and never
+manufactures a licence type.
 
 ---
 
@@ -488,10 +502,13 @@ COF linking leaves the word count unchanged.
 ### M5 — Metadata join
 *Red:* the join is keyed on **`(subproject, Q)`**; the regression fixture
 `Q003840` retains *different* catalogue fields for `rinap5` and `rinap5p1`; a
-text missing from the catalogue still converts with empty metadata; `license`
-and `license_type` are preserved.
-**Exit:** ≥96 % of populated documents have `ruler`; no metadata record is
-attached to more than one document.
+text missing from the catalogue still converts with empty metadata; raw source
+`license` and `license-url` are preserved; `license_type` is preserved only
+when an explicit source field exists and is never inferred.
+**Exit:** 2,075 of 2,078 parseable documents attach exactly one catalogue
+record, 3 attach none; 1,844 of 1,845 populated documents have `ruler`; no
+metadata record is attached to more than one document; source licence coverage
+is `license=2,078`, `license-url=2,078`, `license_type=0` for this snapshot.
 
 ### M6 — Whole-corpus invariants
 - **word count == 320,975** (hard target — derived directly from `l` nodes)
@@ -521,7 +538,8 @@ justified.
   recoverable, with `text` (plain) and `text_raw` (marked up) both present;
 - `rinap5p1` yields **zero** translation units and the build reports that gap
   explicitly rather than silently producing an under-translated corpus;
-- every document's `license`/`license_type` is carried through.
+- translation-source licence/provenance is explicit, while the corpusjson
+  document's raw `license`/`license-url` fields remain unchanged.
 *Green:* TEI reader keyed on `(subproject, Q)`; `translation_unit` nodes whose
 `oslots` are the sign span of `sref`→`eref`; `translation_note` edges.
 **Exit:** 1,646 documents carry ≥1 translation unit; no unit has empty
@@ -543,7 +561,7 @@ Load beside `akkadian_oldbabylonian`; assert shared feature names
 | Catalogue attached to the wrong edition | `(subproject, Q)` join + the `Q003840` regression fixture |
 | COF arity assumptions | parser tested to 14 `inst` slots; edge degree asserted ≤3 |
 | Stub documents corrupt section invariants | invariants scoped to populated documents; stubs carry `populated=0` |
-| Translation licence: JSON/TEI say CC0, edition pages say CC BY-SA 3.0 | treat as BY-SA with attribution; carry per-document licence fields (§2.11) |
+| Translation licence: JSON/TEI say CC0, edition pages say CC BY-SA 3.0 | treat as BY-SA with attribution; preserve raw source licence fields and explicit translation-source provenance (§2.11) |
 | `rinap5p1` has no TEI translations | reported as an explicit gap, not silently absent; needs a separate source |
 | Forcing word-level translation alignment | units span line ranges only (median 5 lines); no token alignment is attempted |
 
@@ -577,7 +595,9 @@ M1 pins the sign slot count in §2.3; M2 pins the word count and source classes
 in §2.6. Unicode coverage, lex node count and chunk count remain provisional
 until their validating milestones. Firm now: 2,081 files, 2,078 parseable,
 1,845 populated, 233 stubs, 320,975 words, 792,651 sign slots, 56,226 lines,
-140 Q collisions of which 48 differ in content.
+140 Q collisions of which 48 differ in content. M5 additionally pins 2,098
+catalogue entries, 2,075 attached parseable editions, 3 missing catalogue
+members, and 1,844/1,845 populated editions with `ruler`.
 
 ---
 

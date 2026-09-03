@@ -2,11 +2,11 @@
 
 ORACC Q-numbers are not globally unique inside the joined RIAO/RINAP corpus.
 In particular, rinap5p1 reuses 140 Q-numbers from rinap5 and some of those are
-materially different editions.  Catalogue records are therefore keyed by the
+materially different editions. Catalogue records are therefore keyed by the
 same stable identity as :class:`oracc_tf.loader.Edition`: ``subproject:Q``.
 
 Catalogue fields and source-level licence provenance deliberately remain
-separate.  A missing catalogue member does not delete a document, and a
+separate. A missing catalogue member does not delete a document, and a
 catalogue record cannot overwrite the licence fields shipped on corpusjson.
 """
 
@@ -61,14 +61,18 @@ class DocumentMetadata:
 
 @dataclass(frozen=True)
 class MetadataCensus:
-    """Whole-corpus M5 join measurements."""
+    """Whole-corpus M5 join and source-provenance measurements."""
 
+    parseable_documents: int
     populated_documents: int
     catalogue_entries: int
     catalogue_attached_documents: int
     missing_catalogue_documents: int
     populated_with_ruler: int
     multiply_attached_records: int
+    source_license_documents: int
+    source_license_url_documents: int
+    source_license_type_documents: int
 
     def report(self) -> str:
         ruler_pct = (
@@ -77,12 +81,16 @@ class MetadataCensus:
             else 0.0
         )
         return "\n".join((
+            f"parseable documents       : {self.parseable_documents:>8,}",
             f"populated documents       : {self.populated_documents:>8,}",
             f"catalogue entries         : {self.catalogue_entries:>8,}",
             f"catalogue attached docs   : {self.catalogue_attached_documents:>8,}",
             f"missing catalogue docs    : {self.missing_catalogue_documents:>8,}",
             f"populated with ruler      : {self.populated_with_ruler:>8,} ({ruler_pct:.2f}%)",
             f"multiply attached records : {self.multiply_attached_records:>8,}",
+            f"source license docs       : {self.source_license_documents:>8,}",
+            f"source license-url docs   : {self.source_license_url_documents:>8,}",
+            f"source license_type docs  : {self.source_license_type_documents:>8,}",
         ))
 
 
@@ -96,7 +104,7 @@ def index_catalogue(
 ) -> dict[str, Mapping[str, object]]:
     """Index one parsed ORACC ``catalogue.json`` by qualified document key.
 
-    The catalogue root must identify the exact filesystem subproject.  Member
+    The catalogue root must identify the exact filesystem subproject. Member
     records are older/mixed provenance: some valid RIAO records state only the
     parent project (for example ``project='riao'`` inside ``riao/ria4``).
     Accept the exact subproject or its parent project, but fail closed on a
@@ -137,7 +145,7 @@ def index_catalogue(
         key = f"{subproject}:{text_id}"
         if key in indexed:
             raise DuplicateCatalogueKey(key)
-        # Keep the member losslessly as a plain mapping.  Consumers decide
+        # Keep the member losslessly as a plain mapping. Consumers decide
         # which catalogue features become TF features at the build layer.
         indexed[key] = dict(raw_record)
 
@@ -186,7 +194,7 @@ def join_edition(edition: loader.Edition, index: MetadataIndex) -> DocumentMetad
         license_url = _string_or_none(doc.get("license_url"))
 
     # M5 exposes a stable ``license_type`` feature name, but the raw source
-    # spelling may be hyphenated or underscored.  Absence remains None: never
+    # spelling may be hyphenated or underscored. Absence remains None: never
     # infer a licence class from prose or a URL.
     license_type = _string_or_none(doc.get("license_type"))
     if license_type is None:
@@ -206,18 +214,31 @@ def census(data: Path = paths.DATA) -> MetadataCensus:
     """Measure the M5 catalogue join over every parseable source edition."""
     index = load_index(data)
     usage: dict[str, int] = {}
+    parseable_documents = 0
     populated_documents = 0
     attached_documents = 0
     missing_documents = 0
     populated_with_ruler = 0
+    source_license_documents = 0
+    source_license_url_documents = 0
+    source_license_type_documents = 0
 
     for edition in loader.iter_editions(data, skip_unreadable=True):
+        parseable_documents += 1
         joined = join_edition(edition, index)
+
         if joined.catalogue_present:
             attached_documents += 1
             usage[joined.key] = usage.get(joined.key, 0) + 1
         else:
             missing_documents += 1
+
+        if joined.license is not None:
+            source_license_documents += 1
+        if joined.license_url is not None:
+            source_license_url_documents += 1
+        if joined.license_type is not None:
+            source_license_type_documents += 1
 
         if edition.populated:
             populated_documents += 1
@@ -226,10 +247,14 @@ def census(data: Path = paths.DATA) -> MetadataCensus:
                 populated_with_ruler += 1
 
     return MetadataCensus(
+        parseable_documents=parseable_documents,
         populated_documents=populated_documents,
         catalogue_entries=len(index.records),
         catalogue_attached_documents=attached_documents,
         missing_catalogue_documents=missing_documents,
         populated_with_ruler=populated_with_ruler,
         multiply_attached_records=sum(count > 1 for count in usage.values()),
+        source_license_documents=source_license_documents,
+        source_license_url_documents=source_license_url_documents,
+        source_license_type_documents=source_license_type_documents,
     )

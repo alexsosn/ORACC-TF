@@ -13,6 +13,8 @@ numbers, and word spans are represented as half-open [slot_start, slot_end).
 
 from __future__ import annotations
 
+from collections import Counter
+
 import pytest
 
 from oracc_tf import loader, paths, words
@@ -107,6 +109,46 @@ def test_census_exposes_word_completeness_gates():
     fields = words.WordCensus.__dataclass_fields__
     assert "incomplete_lemmatised" in fields
     assert "unlemmatised_without_form" in fields
+
+
+@pytest.mark.corpus
+def test_diagnostic_word_exception_shapes():
+    missing_patterns = Counter()
+    missing_examples = {}
+    zero_shapes = Counter()
+    zero_examples = {}
+    lexical_fields = ("cf", "gw", "sense", "norm", "pos", "epos")
+
+    for edition in loader.iter_editions(paths.DATA, skip_unreadable=True):
+        for word in words.iter_words(edition.doc):
+            if word.lemmaknown:
+                missing = tuple(name for name in lexical_fields
+                                if getattr(word, name) is None)
+                if missing:
+                    missing_patterns[missing] += 1
+                    missing_examples.setdefault(
+                        missing,
+                        (edition.key, word.source_id, word.form, word.inst,
+                         {name: getattr(word, name) for name in lexical_fields}),
+                    )
+            if word.sign_count == 0:
+                shape = (
+                    word.form,
+                    word.pos,
+                    word.lemmaknown,
+                    tuple(sorted((word.features or {}).keys())),
+                )
+                zero_shapes[shape] += 1
+                zero_examples.setdefault(
+                    shape,
+                    (edition.key, word.source_id, word.frag, word.inst,
+                     dict(word.features)),
+                )
+
+    raise AssertionError(
+        f"missing_patterns={missing_patterns}; missing_examples={missing_examples}; "
+        f"zero_shapes={zero_shapes}; zero_examples={zero_examples}"
+    )
 
 
 @pytest.mark.corpus

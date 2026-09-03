@@ -96,10 +96,13 @@ def index_catalogue(
 ) -> dict[str, Mapping[str, object]]:
     """Index one parsed ORACC ``catalogue.json`` by qualified document key.
 
-    The catalogue root and each member may independently state ``project``.
-    When present, both must agree with the filesystem subproject.  A mismatch
-    fails closed because silently trusting a bare Q-number is exactly the M5
-    collision hazard.
+    The catalogue root must identify the exact filesystem subproject.  Member
+    records are older/mixed provenance: some valid RIAO records state only the
+    parent project (for example ``project='riao'`` inside ``riao/ria4``).
+    Accept the exact subproject or its parent project, but fail closed on a
+    sibling subproject such as ``rinap/rinap5p1`` inside ``rinap/rinap5``.
+    The qualified key always comes from the catalogue file being indexed, not
+    from the member's less-specific provenance field.
     """
     if source.get("type") != "catalogue":
         raise InvalidCatalogue(
@@ -116,6 +119,9 @@ def index_catalogue(
     if not isinstance(members, Mapping):
         raise InvalidCatalogue(f"{subproject}: catalogue members is not a mapping")
 
+    parent_project = subproject.split("/", 1)[0]
+    allowed_member_projects = {subproject, parent_project}
+
     indexed: dict[str, Mapping[str, object]] = {}
     for text_id, raw_record in members.items():
         if not isinstance(text_id, str) or not isinstance(raw_record, Mapping):
@@ -123,7 +129,7 @@ def index_catalogue(
                 f"{subproject}: invalid catalogue member {text_id!r}"
             )
         member_project = raw_record.get("project")
-        if member_project is not None and member_project != subproject:
+        if member_project is not None and member_project not in allowed_member_projects:
             raise CatalogueProjectMismatch(
                 f"{subproject}:{text_id}: member project is {member_project!r}"
             )

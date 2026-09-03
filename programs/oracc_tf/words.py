@@ -68,20 +68,22 @@ class WordCensus:
     lemmatised: int
     unlemmatised: int
     zero_sign_words: int
-    incomplete_lemmatised: int
+    lemmatised_without_norm: int
+    norm_only_unlemmatised: int
     unlemmatised_without_form: int
     span_errors: int
 
     def report(self) -> str:
         return (
-            f"words                    : {self.words:>8,}\n"
-            f"signs                    : {self.signs:>8,}\n"
-            f"lemmatised               : {self.lemmatised:>8,}\n"
-            f"unlemmatised             : {self.unlemmatised:>8,}\n"
-            f"zero-sign words          : {self.zero_sign_words:>8,}\n"
-            f"incomplete lemmatised    : {self.incomplete_lemmatised:>8,}\n"
-            f"unlemmatised without form: {self.unlemmatised_without_form:>8,}\n"
-            f"span errors              : {self.span_errors:>8,}"
+            f"words                     : {self.words:>8,}\n"
+            f"signs                     : {self.signs:>8,}\n"
+            f"lemmatised                : {self.lemmatised:>8,}\n"
+            f"unlemmatised              : {self.unlemmatised:>8,}\n"
+            f"zero-sign words           : {self.zero_sign_words:>8,}\n"
+            f"lemmatised without norm   : {self.lemmatised_without_norm:>8,}\n"
+            f"norm-only unlemmatised    : {self.norm_only_unlemmatised:>8,}\n"
+            f"unlemmatised without form : {self.unlemmatised_without_form:>8,}\n"
+            f"span errors               : {self.span_errors:>8,}"
         )
 
 
@@ -109,6 +111,11 @@ def from_source(node: Mapping[str, object], *, start_slot: int) -> WordRecord:
     ``start_slot`` is the first 1-based TF-compatible sign ordinal available to
     this word. The returned ``slot_end`` can be passed directly to the next
     word, making overlap/gap bugs explicit at the API boundary.
+
+    ``norm`` is preserved independently from lemma evidence. ORACC contains
+    editorial/placeholder records with a normalization string but no ``cf``,
+    ``gw``, ``sense`` or occurrence ``sig``; treating those as known lemmas
+    would fabricate lexical analysis that the source does not provide.
     """
     if not isinstance(node, Mapping) or node.get("node") != "l":
         raise InvalidWordSource("word source must be an object with node='l'")
@@ -137,9 +144,13 @@ def from_source(node: Mapping[str, object], *, start_slot: int) -> WordRecord:
         )
 
     signs = tuple(gdl.signs(entries, word_id=source_id))
-    lexical_keys = ("cf", "gw", "sense", "norm")
+
+    # ``norm`` is not lemma evidence by itself. The corpus contains norm-only
+    # placeholders (for example form="*", norm="Horned") with no lexical
+    # analysis. Known lemmatisation is therefore evidenced by cf/gw/sense or
+    # the full ORACC occurrence signature.
     has_analysis = (
-        any(features.get(key) is not None for key in lexical_keys)
+        any(features.get(key) is not None for key in ("cf", "gw", "sense"))
         or node.get("sig") is not None
     )
 
@@ -217,7 +228,8 @@ def census(data: Path = paths.DATA) -> WordCensus:
     lemmatised = 0
     unlemmatised = 0
     zero_sign_words = 0
-    incomplete_lemmatised = 0
+    lemmatised_without_norm = 0
+    norm_only_unlemmatised = 0
     unlemmatised_without_form = 0
     span_errors = 0
     next_slot = 1
@@ -229,13 +241,12 @@ def census(data: Path = paths.DATA) -> WordCensus:
             word_count += 1
             if word.lemmaknown:
                 lemmatised += 1
-                if any(
-                    value is None
-                    for value in (word.cf, word.gw, word.sense, word.norm, word.pos, word.epos)
-                ):
-                    incomplete_lemmatised += 1
+                if word.norm is None:
+                    lemmatised_without_norm += 1
             else:
                 unlemmatised += 1
+                if word.norm is not None:
+                    norm_only_unlemmatised += 1
                 if word.form is None:
                     unlemmatised_without_form += 1
             if word.sign_count == 0:
@@ -248,7 +259,8 @@ def census(data: Path = paths.DATA) -> WordCensus:
         lemmatised=lemmatised,
         unlemmatised=unlemmatised,
         zero_sign_words=zero_sign_words,
-        incomplete_lemmatised=incomplete_lemmatised,
+        lemmatised_without_norm=lemmatised_without_norm,
+        norm_only_unlemmatised=norm_only_unlemmatised,
         unlemmatised_without_form=unlemmatised_without_form,
         span_errors=span_errors,
     )

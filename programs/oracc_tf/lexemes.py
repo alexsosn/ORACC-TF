@@ -103,6 +103,7 @@ class DocumentLexemeIndex:
 @dataclass(frozen=True)
 class LexemeCensus:
     words: int
+    sig_records: int
     lexemes: int
     cross_language_triples: int
     max_inst_slots: int
@@ -111,6 +112,7 @@ class LexemeCensus:
     def report(self) -> str:
         return "\n".join((
             f"words                   : {self.words:>8,}",
+            f"sig records             : {self.sig_records:>8,}",
             f"lexemes                 : {self.lexemes:>8,}",
             f"cross-language triples  : {self.cross_language_triples:>8,}",
             f"max inst slots          : {self.max_inst_slots:>8,}",
@@ -354,16 +356,18 @@ def index_document(doc: Mapping[str, object]) -> DocumentLexemeIndex:
 
 
 def census(data: Path = paths.DATA) -> LexemeCensus:
-    """Measure joined-corpus lexical identity and compound arities."""
+    """Measure joined-corpus lexical identity, coverage and compound arities."""
     all_lexemes: set[LexemeKey] = set()
     triple_langs: dict[tuple[str, str, str], set[str]] = defaultdict(set)
     word_count = 0
+    sig_records = 0
     max_inst_slots = 0
     max_word_lex_degree = 0
 
     for edition in loader.iter_editions(data, skip_unreadable=True):
         index = index_document(edition.doc)
         word_count += index.word_count
+        sig_records += len(index.word_sigs)
         all_lexemes.update(index.lexemes)
         for key in index.lexemes:
             triple_langs[(key.cf, key.gw, key.pos)].add(key.lang)
@@ -377,6 +381,7 @@ def census(data: Path = paths.DATA) -> LexemeCensus:
 
     return LexemeCensus(
         words=word_count,
+        sig_records=sig_records,
         lexemes=len(all_lexemes),
         cross_language_triples=sum(len(langs) > 1 for langs in triple_langs.values()),
         max_inst_slots=max_inst_slots,

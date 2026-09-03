@@ -728,7 +728,16 @@ def _tf_payload(graph: CorpusGraph):
             "dataset": "assyrian-royal-inscriptions",
             "sourceFormat": "ORACC corpusjson",
             "compiler": "ORACC-TF",
-        }
+        },
+        # ``otext`` is a TF configuration feature, not node data. Fabric.load
+        # computes ``__characters__`` from it even when callers only request
+        # warp features, so an exported dataset must materialise the config
+        # file. Section naming stays deliberately unset in M6; section-path
+        # validity is tested against the source-qualified graph.
+        "otext": {
+            "sectionTypes": "",
+            "sectionFeatures": "",
+        },
     }
     for feature in node_features:
         meta_data[feature] = {

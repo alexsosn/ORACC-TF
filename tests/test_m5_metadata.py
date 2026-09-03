@@ -112,11 +112,17 @@ def test_catalogue_member_project_mismatch_fails_closed():
 def test_whole_corpus_catalogue_join_meets_m5_exit_criteria():
     result = metadata.census(paths.DATA)
 
+    assert result.parseable_documents == 2078
     assert result.populated_documents == 1845
     assert result.catalogue_entries == 2098
+    assert result.catalogue_attached_documents == 2075
+    assert result.missing_catalogue_documents == 3
+    assert result.populated_with_ruler == 1844
     assert result.multiply_attached_records == 0, result.report()
-    assert result.populated_with_ruler / result.populated_documents >= 0.96, result.report()
 
-    # Diagnostic hardening: force the measured report into CI once, then pin
-    # the exact values in the next commit rather than retaining only a ratio.
-    assert result.catalogue_attached_documents == 0, result.report()
+    # Measure source licence fields independently of the catalogue join.  The
+    # converter preserves a type token when source data actually provides one;
+    # it must not manufacture one from CC0 prose or a URL.
+    assert result.source_license_documents == 2078, result.report()
+    assert result.source_license_url_documents == 2078, result.report()
+    assert result.source_license_type_documents == 0, result.report()

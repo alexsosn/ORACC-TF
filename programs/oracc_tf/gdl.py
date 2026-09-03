@@ -6,6 +6,11 @@ signs and compounds carry their sign data on a parent that also has children.
 Those parents are slots; their children describe rendering/qualification and
 must not become extra slots.
 
+A qualified grapheme whose ``q`` wrapper has no own ``utf8`` is the important
+exception to the simple parent-slot rule: ORACC encodes it as a sign value
+followed by a sign name. The value child is qualification metadata and the
+sign-name child supplies the single textual position.
+
 Every object reached by :func:`classify_tree` receives one of four explicit
 dispositions. Unknown leaves raise :class:`UnknownGDLShape`, making upstream
 schema drift a build failure rather than silent data loss.
@@ -95,7 +100,7 @@ def _children(
 
 def _normal_disposition(obj: Mapping[str, object], src_path: str) -> Disposition:
     # A sign-bearing parent wins over its children. This is the crucial M1
-    # rule for n/q/c composite signs.
+    # rule for n/q/c composite signs that carry their own Unicode.
     if obj.get("utf8"):
         return Disposition.SLOT
 
@@ -108,8 +113,8 @@ def _normal_disposition(obj: Mapping[str, object], src_path: str) -> Disposition
         return Disposition.SLOT
 
     # A child-bearing object without its own Unicode is a structural wrapper:
-    # logo, determinative, alternation, ligature, bare group, or the rare
-    # no-utf8 q wrapper. Its children are classified normally.
+    # logo, determinative, alternation, ligature, bare group, or a no-utf8 q
+    # wrapper. The q case gets child-specific suppression in classify_tree().
     if any(key in obj for key in CHILD_KEYS):
         list(_children(obj, src_path))
         return Disposition.STRUCTURAL
@@ -174,9 +179,31 @@ def classify_tree(
         # Descendants of a sign-bearing parent are internal descriptions of
         # that sign, not additional textual positions.
         suppress_children = suppressed or disposition == Disposition.SLOT
+
+        # ORACC q is one qualified grapheme: value + sign name. If the wrapper
+        # has no own Unicode, the value child must not become a second slot;
+        # the sign-name child is classified normally and supplies the position.
+        no_utf8_q = (
+            not suppressed
+            and disposition == Disposition.STRUCTURAL
+            and "q" in obj
+            and not obj.get("utf8")
+            and "qualified" in obj
+        )
+        if no_utf8_q:
+            qualified = obj.get("qualified")
+            if not isinstance(qualified, list) or len(qualified) != 2:
+                raise UnknownGDLShape(
+                    f"{src_path}: no-utf8 qualified grapheme must contain "
+                    "exactly value and sign-name children"
+                )
+
         for key, index, child in _children(obj, src_path):
             child_path = f"{src_path}/{key}[{index}]"
-            yield from walk(child, child_path, suppress_children)
+            child_suppressed = suppress_children
+            if no_utf8_q and key == "qualified" and index == 0:
+                child_suppressed = True
+            yield from walk(child, child_path, child_suppressed)
 
     for index, obj in enumerate(entries):
         if not isinstance(obj, dict):

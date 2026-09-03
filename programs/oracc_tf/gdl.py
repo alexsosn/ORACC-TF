@@ -124,16 +124,25 @@ def _normal_disposition(obj: Mapping[str, object], src_path: str) -> Disposition
     raise UnknownGDLShape(f"{src_path}: unknown GDL shape {dict(obj)!r}")
 
 
-def _suppressed_disposition(obj: Mapping[str, object]) -> Disposition:
-    """Disposition for an object nested inside a composite sign slot.
+def _suppressed_disposition(
+    obj: Mapping[str, object], src_path: str
+) -> Disposition:
+    """Classify a descendant internal to a composite sign slot.
 
-    Once a parent with its own utf8 is the sign, descendants describe that
-    sign rather than occupying additional textual positions. A rendering
-    reference remains distinguishable; every other descendant is a modifier.
+    Suppression changes the disposition of known sign-like descendants from
+    slot to modifier, but it must not turn arbitrary schema drift into a valid
+    modifier. Unknown leaves therefore fail here just as they do at the normal
+    tree level.
     """
+    if any(key in obj for key in ("v", "s", "x")):
+        return Disposition.MODIFIER
+    if any(key in obj for key in CHILD_KEYS):
+        return Disposition.MODIFIER
     if "r" in obj:
         return Disposition.RENDERING
-    return Disposition.MODIFIER
+    if "o" in obj:
+        return Disposition.MODIFIER
+    raise UnknownGDLShape(f"{src_path}: unknown nested GDL shape {dict(obj)!r}")
 
 
 def classify_tree(
@@ -154,7 +163,7 @@ def classify_tree(
             )
 
         if suppressed:
-            disposition = _suppressed_disposition(obj)
+            disposition = _suppressed_disposition(obj, src_path)
         else:
             disposition = _normal_disposition(obj, src_path)
 

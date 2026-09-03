@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-08-29",
+  "updated": "2026-09-03",
   "documents": [
     {
       "id": "G-001",
@@ -122,8 +122,12 @@
       "blocked_by": [
         "P-001.M0"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m1_gdl.py; CI run 33772782940: 14 fast + 5 corpus tests passed",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "GDL census: slot=792651, structural=178869, modifier=10, rendering=6584, unknown=0; numeral, qualified-sign, compound, overloaded-o and src_path hazards pinned by content tests"
+      }
     },
     {
       "id": "P-001.M2",

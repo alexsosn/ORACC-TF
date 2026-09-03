@@ -1,8 +1,8 @@
 """P-001 M1 - semantic GDL classification.
 
-These tests are deliberately content-based.  The old leaf rule happened to
-produce almost the right total while replacing 6,588 real composite signs with
-rendering/operator children.  M1 therefore pins the identity and disposition
+These tests are deliberately content-based. The old leaf rule happened to
+produce almost the right total while replacing real composite signs with
+rendering/operator children. M1 therefore pins the identity and disposition
 of the hazardous objects, not merely a sign count.
 """
 
@@ -89,10 +89,29 @@ def test_compound_parent_is_slot_and_operator_is_never_a_slot():
     assert all("o" not in slot.value for slot in slots)
 
 
-def test_plain_ellipsis_is_a_slot_even_without_utf8():
-    slots = list(gdl.signs([{"x": "ellipsis"}], word_id="Q.l1"))
-    assert len(slots) == 1
-    assert slots[0].value == {"x": "ellipsis"}
+def test_ellipsis_with_o_markup_metadata_remains_a_slot():
+    # Real corpus shape: Q005621.l00736.  `o` here is bracket/original markup,
+    # not a standalone compound operator node.
+    source = {
+        "x": "ellipsis",
+        "id": "Q005621.68.7.0",
+        "breakStart": "1",
+        "break": "missing",
+        "o": "[",
+    }
+    classified = list(gdl.classify_tree([source], word_id="Q005621.l00736"))
+    assert len(classified) == 1
+    assert classified[0].disposition == gdl.Disposition.SLOT
+    assert classified[0].value == source
+
+
+def test_standalone_operator_is_modifier_not_slot():
+    classified = list(gdl.classify_tree(
+        [{"o": "containing"}], word_id="Q.synthetic"
+    ))
+    assert len(classified) == 1
+    assert classified[0].disposition == gdl.Disposition.MODIFIER
+    assert list(gdl.signs([{"o": "containing"}], word_id="Q.synthetic")) == []
 
 
 def test_unknown_leaf_shape_fails_loudly_with_source_path():
@@ -152,38 +171,3 @@ def test_four_way_gdl_census_matches_measured_ground_truth():
     assert census.rendering == 6584
     assert census.total == 978114
     assert census.unknown == 0
-
-
-@pytest.mark.corpus
-def test_diagnostic_modifier_shapes():
-    """Temporary measurement: localise the M1 corpus-census mismatch."""
-    shapes = Counter()
-    examples = {}
-    for edition in loader.iter_editions(paths.DATA, skip_unreadable=True):
-        stack = [edition.doc]
-        while stack:
-            node = stack.pop()
-            if node.get("node") == "l":
-                word_id = node.get("id")
-                entries = (node.get("f") or {}).get("gdl") or []
-                for item in gdl.classify_tree(entries, word_id=word_id):
-                    if item.disposition != gdl.Disposition.MODIFIER:
-                        continue
-                    marker = next((k for k in (
-                        "v", "s", "x", "n", "q", "c", "o", "r", "m", "a", "f"
-                    ) if k in item.value), "other")
-                    if "/mods[" in item.src_path:
-                        relation = "mods"
-                    elif "/qualified[" in item.src_path:
-                        relation = "qualified"
-                    elif "/seq[" in item.src_path:
-                        relation = "seq"
-                    elif "/group[" in item.src_path:
-                        relation = "group"
-                    else:
-                        relation = "root"
-                    key = (relation, marker)
-                    shapes[key] += 1
-                    examples.setdefault(key, (item.src_path, dict(item.value)))
-            stack.extend(node.get("cdl") or [])
-    raise AssertionError(f"modifier shapes={shapes}; examples={examples}")

@@ -116,3 +116,7 @@ def test_whole_corpus_catalogue_join_meets_m5_exit_criteria():
     assert result.catalogue_entries == 2098
     assert result.multiply_attached_records == 0, result.report()
     assert result.populated_with_ruler / result.populated_documents >= 0.96, result.report()
+
+    # Diagnostic hardening: force the measured report into CI once, then pin
+    # the exact values in the next commit rather than retaining only a ratio.
+    assert result.catalogue_attached_documents == 0, result.report()

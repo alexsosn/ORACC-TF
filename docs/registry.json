@@ -140,9 +140,9 @@
       ],
       "status": "done",
       "evidence": {
-        "tests": "tests/test_m2_words.py; CI run 33775293131: 19 fast + 6 corpus tests passed",
+        "tests": "tests/test_m2_words.py; final CI run 33778024418: 23 fast + 6 corpus tests passed",
         "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
-        "result": "word count=320975 equals direct l-node count; sign count=792651; span_errors=0; lemmatised and unlemmatised word semantics pinned by source fixtures"
+        "result": "word count=320975 equals direct l-node count; sign count=792651; span_errors=0; lemmatised=289205, unlemmatised=31770, zero-sign words=295, lemmatised without norm=878, norm-only unlemmatised=230, unlemmatised without form=0"
       }
     },
     {

@@ -6,12 +6,12 @@ status: draft
 priority: P0
 depends_on: [R-001]
 blocks: [P-002, P-003]
-updated: 2026-08-29
+updated: 2026-09-03
 ---
 
 # TDD implementation plan: a joined RIAO + RINAP Text-Fabric module
 
-**Status:** plan, revision 3 (two rounds of independent review). Not yet implemented.
+**Status:** implementation in progress, revision 3 (two rounds of independent review).
 **Target dataset:** `assyrian-royal-inscriptions` — RIAO parts 1–5 and RINAP
 1–5 (+5p1) as one continuous TF corpus.
 
@@ -136,11 +136,16 @@ signs with Unicode, ids and sexagesimal readings. Passing a count-based
 regression test would have proved nothing. This is the reviewer's central
 point and it stands.
 
-**Open decision to settle before M6 pins anything:** whether `x` (13,777
-unreadable stretches) is a sign slot. It occupies textual position, so
-dropping it breaks line reconstruction; but it is a breakage marker, not a
-sign. Recommendation: emit it as a slot with `type=ellipsis` so positions stay
-intact, and report Unicode coverage both ways (98.3 % / 100.0 %).
+**M1 implementation note:** the JSON key `o` is overloaded in `corpusjson`.
+A real sign or `x` ellipsis may carry `o` as bracket/original-form markup,
+while a standalone `{"o":"containing"}` object is a compound operator.
+Classification therefore establishes sign identity (`utf8`, `v`, `s`, `x`)
+before interpreting standalone `r`/`o` leaves as non-slots.
+
+**Decision (M1):** `x` unreadable stretches are slots. They occupy textual
+position, so dropping them breaks line reconstruction. Emit them with
+`type=ellipsis`; Unicode coverage remains reportable both including and
+excluding these placeholders.
 
 ### 2.4 `d` nodes are flat markers, not containers
 
@@ -376,7 +381,7 @@ Slot type is **sign**, matching `Nino-cunei/oldbabylonian` so queries port.
 | `phrase` | `c type=phrase` (also a chunk) | 4,499 |
 | `word` | `l` node | 320,975 |
 | `lex` | distinct `(lang, cf, gw, pos)` | 8,025 |
-| `sign` **(slot)** | semantically classified GDL object | 792,651 *(provisional, §2.3)* |
+| `sign` **(slot)** | semantically classified GDL object | 792,651 *(pinned by M1, §2.3)* |
 | `translation_unit` | TEI `div3 type="tr"`, spanning `sref`→`eref` slots | ~9,500 |
 | `translation_note` | TEI note attached to a unit | tbd |
 
@@ -480,7 +485,7 @@ attached to more than one document.
 - documents == 2,078, populated == 1,845, stubs == 233, composite keys unique
 - every sign belongs to exactly one word; every word to exactly one line
 - every **populated** document has a valid section path
-- sign count and Unicode coverage pinned **only after M1 lands**, then frozen
+- sign count is pinned by M1; freeze Unicode coverage here
 - `otype`/`oslots` load cleanly in Text-Fabric
 
 ### M7 — Round-trip and source preservation
@@ -555,10 +560,10 @@ does not have.
 
 ## 8. Provisional figures
 
-Do **not** freeze these until M1 lands: sign slot count (792,651), Unicode
-coverage (98.3 % / 100.0 %), lex node count (8,025), chunk count (13,644).
-Firm now: 2,081 files, 2,078 parseable, 1,845 populated, 233 stubs, 320,975
-words, 56,226 lines, 140 Q collisions of which 48 differ in content.
+M1 pins the sign slot count in §2.3. Unicode coverage, lex node count and chunk
+count remain provisional until their validating milestones. Firm now: 2,081
+files, 2,078 parseable, 1,845 populated, 233 stubs, 320,975 words, 56,226 lines,
+140 Q collisions of which 48 differ in content.
 
 ---
 

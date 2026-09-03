@@ -171,4 +171,7 @@ def test_whole_corpus_line_and_word_membership_invariants():
     assert result.words_assigned_once == result.words
     assert result.unassigned_words == 0
     assert result.multiply_assigned_words == 0
-    assert sum(result.anomalies.values()) >= 0
+    # Diagnostic hardening: if the real corpus needs recovery, fail with the
+    # complete measured profile so it can be pinned rather than guessed.
+    assert result.synthetic_lines == 0, result.report()
+    assert result.anomalies == {}, result.report()

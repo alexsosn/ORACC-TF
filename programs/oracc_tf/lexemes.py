@@ -4,8 +4,8 @@ ORACC's word layer carries two related but deliberately distinct encodings:
 
 * ``inst`` describes occurrence slots.  Compound orthographic forms can repeat
   the same slot many times, so its arity is not a word→lex degree.  Some real
-  occurrences are bare tokens rather than full bracketed analyses; those are
-  retained as opaque slots instead of being discarded or reinterpreted.
+  occurrences are bare tokens or partial bracketed analyses; those are retained
+  without inventing missing lexical fields.
 * ``sig`` describes canonical lexical analyses and includes project, language,
   written form, sense, epos and normalisation.  Only ``(lang, cf, gw, pos)``
   belongs to lexeme identity; the rest remains occurrence provenance.
@@ -55,7 +55,8 @@ class InstSlot:
 
     ``opaque`` marks source tokens that do not use ORACC's bracketed lexical
     analysis syntax.  ``raw`` remains authoritative in both parsed and opaque
-    cases; optional parsed fields are never fabricated for opaque tokens.
+    cases; optional parsed fields are never fabricated when source syntax does
+    not provide them.
     """
 
     raw: str
@@ -199,8 +200,8 @@ def parse_inst(inst: str | None) -> tuple[InstSlot, ...]:
 
     Bare tokens such as the real corpus value ``n`` are occurrence data but do
     not expose enough structure for lexical parsing.  They remain one opaque
-    slot so arity and source text are preserved exactly without inventing
-    lexical fields.
+    slot.  Bracketed values such as ``ūlid[produce]`` are parsed as far as the
+    source permits and keep ``pos=None`` rather than fabricating a category.
     """
     if not inst:
         return ()
@@ -227,11 +228,13 @@ def parse_inst(inst: str | None) -> tuple[InstSlot, ...]:
 
         form, gw, sense, suffix = _analysis_parts(body, source="inst")
         if "$" in suffix:
-            pos, norm = suffix.split("$", 1)
+            raw_pos, norm = suffix.split("$", 1)
+            pos = raw_pos or None
         else:
-            pos, norm = suffix, None
-        if not form or not pos:
-            raise InvalidInst(f"inst slot lacks form or pos: {raw!r}")
+            pos = suffix or None
+            norm = None
+        if not form:
+            raise InvalidInst(f"inst slot lacks form: {raw!r}")
         slots.append(InstSlot(
             raw=raw,
             form=form,

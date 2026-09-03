@@ -3,7 +3,9 @@
 ORACC's word layer carries two related but deliberately distinct encodings:
 
 * ``inst`` describes occurrence slots.  Compound orthographic forms can repeat
-  the same slot many times, so its arity is not a word→lex degree.
+  the same slot many times, so its arity is not a word→lex degree.  Some real
+  occurrences are bare tokens rather than full bracketed analyses; those are
+  retained as opaque slots instead of being discarded or reinterpreted.
 * ``sig`` describes canonical lexical analyses and includes project, language,
   written form, sense, epos and normalisation.  Only ``(lang, cf, gw, pos)``
   belongs to lexeme identity; the rest remains occurrence provenance.
@@ -49,15 +51,21 @@ class LexemeKey:
 
 @dataclass(frozen=True)
 class InstSlot:
-    """One top-level ``&``-separated occurrence slot from ``inst``."""
+    """One top-level ``&``-separated occurrence slot from ``inst``.
+
+    ``opaque`` marks source tokens that do not use ORACC's bracketed lexical
+    analysis syntax.  ``raw`` remains authoritative in both parsed and opaque
+    cases; optional parsed fields are never fabricated for opaque tokens.
+    """
 
     raw: str
-    form: str
-    gw: str
+    form: str | None
+    gw: str | None
     sense: str | None
-    pos: str
+    pos: str | None
     norm: str | None
     coform: bool = False
+    opaque: bool = False
 
 
 @dataclass(frozen=True)
@@ -187,7 +195,13 @@ def _analysis_parts(text: str, *, source: str) -> tuple[str, str, str | None, st
 
 
 def parse_inst(inst: str | None) -> tuple[InstSlot, ...]:
-    """Parse top-level ORACC ``inst`` slots without collapsing repetition."""
+    """Parse top-level ORACC ``inst`` slots without collapsing repetition.
+
+    Bare tokens such as the real corpus value ``n`` are occurrence data but do
+    not expose enough structure for lexical parsing.  They remain one opaque
+    slot so arity and source text are preserved exactly without inventing
+    lexical fields.
+    """
     if not inst:
         return ()
 
@@ -197,6 +211,20 @@ def parse_inst(inst: str | None) -> tuple[InstSlot, ...]:
             raise InvalidInst(f"empty inst slot in {inst!r}")
         coform = raw.startswith("+")
         body = raw[1:] if coform else raw
+
+        if "[" not in body:
+            slots.append(InstSlot(
+                raw=raw,
+                form=None,
+                gw=None,
+                sense=None,
+                pos=None,
+                norm=None,
+                coform=coform,
+                opaque=True,
+            ))
+            continue
+
         form, gw, sense, suffix = _analysis_parts(body, source="inst")
         if "$" in suffix:
             pos, norm = suffix.split("$", 1)
@@ -212,6 +240,7 @@ def parse_inst(inst: str | None) -> tuple[InstSlot, ...]:
             pos=pos,
             norm=norm,
             coform=coform,
+            opaque=False,
         ))
     return tuple(slots)
 

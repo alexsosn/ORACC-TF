@@ -99,6 +99,17 @@ def test_inst_parser_preserves_real_empty_gloss_instead_of_rejecting_it():
     assert (slot.form, slot.gw, slot.sense, slot.pos, slot.norm) == (
         "Zarpanitu", "", None, "DN", "Zer-banitum"
     )
+    assert slot.opaque is False
+
+
+def test_inst_parser_preserves_real_bare_token_as_opaque_slot():
+    slot = lexemes.parse_inst("n")[0]
+
+    assert slot.raw == "n"
+    assert slot.opaque is True
+    assert (slot.form, slot.gw, slot.sense, slot.pos, slot.norm) == (
+        None, None, None, None, None
+    )
 
 
 def test_index_keeps_every_source_word_even_when_it_has_no_lexeme():

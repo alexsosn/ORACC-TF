@@ -93,6 +93,14 @@ def test_inst_parser_preserves_optional_norm_sense_and_coform_marker():
     )
 
 
+def test_inst_parser_preserves_real_empty_gloss_instead_of_rejecting_it():
+    slot = lexemes.parse_inst("Zarpanitu[]DN$Zer-banitum")[0]
+
+    assert (slot.form, slot.gw, slot.sense, slot.pos, slot.norm) == (
+        "Zarpanitu", "", None, "DN", "Zer-banitum"
+    )
+
+
 def test_index_keeps_every_source_word_even_when_it_has_no_lexeme():
     doc = {
         "type": "cdl",

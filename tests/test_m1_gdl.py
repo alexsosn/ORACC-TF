@@ -119,6 +119,19 @@ def test_unknown_leaf_shape_fails_loudly_with_source_path():
         list(gdl.classify_tree([{"mystery": "shape"}], word_id="Q.l1"))
 
 
+def test_unknown_nested_shape_also_fails_inside_composite_slot():
+    tree = [{
+        "q": "synthetic",
+        "utf8": "X",
+        "qualified": [{"mystery": "shape"}],
+    }]
+    with pytest.raises(
+        gdl.UnknownGDLShape,
+        match=r"Q\.l2/gdl\[0\]/qualified\[0\]",
+    ):
+        list(gdl.classify_tree(tree, word_id="Q.l2"))
+
+
 def test_q005620_numeral_keeps_parent_content_and_src_path_resolves():
     edition = loader.load_edition(src(NUMERAL))
     target = None

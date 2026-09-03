@@ -186,8 +186,12 @@
       "blocked_by": [
         "P-001.M3"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m5_metadata.py; initial RED 33798646079; source-provenance RED 33798976847; first whole-corpus GREEN 33799461875; diagnostic RED 33799927211; licence-census RED 33800403630; final GREEN 33800980390: 42 fast + 9 corpus tests passed",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "qualified subproject:Q join; catalogue entries=2098; parseable editions=2078, attached=2075, missing=3, multiply attached=0; populated=1845, with ruler=1844 (99.95%); Q003840 remains distinct between rinap5 and rinap5p1; source licence fields: license=2078, license-url=2078, license_type=0, so no licence type is fabricated; parent-project member provenance such as project=riao inside riao/ria4 is accepted without changing document identity"
+      }
     },
     {
       "id": "P-001.M6",

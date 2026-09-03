@@ -16,6 +16,8 @@ separately from the pinned 792,651 semantic source signs.
 
 from __future__ import annotations
 
+from collections import Counter
+
 import pytest
 
 from oracc_tf import build, loader, paths
@@ -109,7 +111,20 @@ def test_whole_corpus_integrated_invariants_are_pinned():
     assert result.anchor_owner_errors == 0, result.report()
     assert result.word_line_errors == 0, result.report()
     assert result.populated_section_path_errors == 0, result.report()
-    assert result.non_unicode_non_x_signs == 0, result.report()
+    if result.non_unicode_non_x_signs:
+        graph = build.build_editions(
+            loader.iter_editions(paths.DATA, skip_unreadable=True)
+        )
+        offenders = [
+            (slot, sign.src_path, dict(sign.value))
+            for slot, sign in graph.signs.items()
+            if not sign.value.get("utf8") and "x" not in sign.value
+        ]
+        anchor_reasons = Counter(graph.anchor_reason.values())
+        pytest.fail(
+            "non-Unicode semantic source signs need diagnosis: "
+            f"{offenders!r}; anchor reasons={dict(sorted(anchor_reasons.items()))!r}"
+        )
     assert result.unicode_signs + result.non_unicode_source_signs == result.source_signs
 
 

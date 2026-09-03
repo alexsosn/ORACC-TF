@@ -28,6 +28,8 @@ def source_word(doc: dict, word_id: str) -> dict:
 
 
 def test_signature_identity_includes_language_but_not_project():
+    assert tuple(lexemes.LexemeKey.__dataclass_fields__) == ("lang", "cf", "gw", "pos")
+
     rinap = lexemes.parse_sig(
         "@rinap/rinap4%akk:X=šarru[king//king]N'N$šarru"
     )[0]
@@ -145,6 +147,7 @@ def test_whole_corpus_lexeme_identity_and_compound_arity_are_pinned():
     result = lexemes.census(paths.DATA)
 
     assert result.words == 320975
+    assert result.sig_records == result.words
     assert result.lexemes == 8025
     assert result.cross_language_triples == 29
     assert result.max_inst_slots == 14

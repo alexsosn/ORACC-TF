@@ -171,7 +171,12 @@ def test_whole_corpus_line_and_word_membership_invariants():
     assert result.words_assigned_once == result.words
     assert result.unassigned_words == 0
     assert result.multiply_assigned_words == 0
-    # Diagnostic hardening: if the real corpus needs recovery, fail with the
-    # complete measured profile so it can be pinned rather than guessed.
     assert result.synthetic_lines == 0, result.report()
-    assert result.anomalies == {}, result.report()
+    # Measured by the diagnostic RED run 33780195914. These are source-state
+    # anomalies, not lost text: all 320,975 words still map to exactly one real
+    # line, while 14 line-start markers occur before any surface marker and
+    # therefore require an explicitly synthetic face.
+    assert result.anomalies == {
+        "line_before_surface": 14,
+        "synthetic_face": 14,
+    }, result.report()

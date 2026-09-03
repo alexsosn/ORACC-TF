@@ -103,6 +103,12 @@ def test_from_source_rejects_non_word_nodes():
         words.from_source({"node": "d", "type": "line-start"}, start_slot=1)
 
 
+def test_census_exposes_word_completeness_gates():
+    fields = words.WordCensus.__dataclass_fields__
+    assert "incomplete_lemmatised" in fields
+    assert "unlemmatised_without_form" in fields
+
+
 @pytest.mark.corpus
 def test_whole_corpus_word_count_matches_direct_l_node_count_exactly():
     result = words.census(paths.DATA)

@@ -122,8 +122,16 @@ def test_whole_corpus_sign_roundtrip_is_fully_accounted_for():
     census = roundtrip.census(paths.DATA)
 
     assert census.words == 320975
+    assert census.exact == 250038
     assert census.zero_sign_words == 295
     assert census.exact + sum(census.exceptions.values()) == census.words
-    # Diagnostic RED: replace this only with the exact measured exception
-    # profile. A broad >= / non-empty assertion would hide future drift.
-    assert census.exceptions == {}, census.report()
+    assert census.exceptions == {
+        "continuation_context": 40,
+        "fragment_context": 5532,
+        "slot_markup": 2298,
+        "source_orthography": 426,
+        "structural_context": 48568,
+        "trailing_delimiter": 10,
+        "unreadable_sign": 13768,
+        "zero_sign": 295,
+    }, census.report()

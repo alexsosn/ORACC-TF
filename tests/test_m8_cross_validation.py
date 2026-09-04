@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from oracc_tf import corpus, loader, metadata
+from oracc_tf import TF_VERSION, corpus, loader, metadata
 
 
 def _edition() -> loader.Edition:
@@ -93,3 +93,7 @@ def test_shared_feature_metadata_are_string_domains(tmp_path):
 
     for feature in ("readingu", "lnno", "period", "genre"):
         assert api.Fs(feature).meta["valueType"] == "str"
+
+
+def test_additive_compatibility_features_bump_tf_schema_version():
+    assert TF_VERSION == "0.2.0"

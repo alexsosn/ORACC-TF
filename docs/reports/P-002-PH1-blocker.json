@@ -1,0 +1,24 @@
+{
+  "ticket": "P-002.PH1",
+  "status": "blocked",
+  "date": "2026-09-05",
+  "reason": "The live 11-archive provenance backfill cannot be evaluated from a clean GitHub Actions runner without weakening transport verification.",
+  "evidence": {
+    "gate1_red_run": 33926021957,
+    "gate1_green_run": 33926315168,
+    "gate2_red_run": 33926953761,
+    "live_backfill_run": 33927424038,
+    "host_probe_run": 33927656438,
+    "legacy_host_probe_run": 33927956928
+  },
+  "observations": [
+    "http://oracc.museum.upenn.edu/json/riao-ria1.zip redirects to HTTPS and then fails certificate verification with unable to get local issuer certificate.",
+    "https://build.oracc.org/json/riao-ria1.zip fails certificate verification with unable to get local issuer certificate.",
+    "https://oracc.museum.upenn.edu/json/riao-ria1.zip fails certificate verification with unable to get local issuer certificate.",
+    "https://oracc.org/json/riao-ria1.zip timed out from the runner.",
+    "http://oracc.iaas.upenn.edu/json/riao-ria1.zip timed out from the runner without redirects.",
+    "https://oracc.iaas.upenn.edu/json/riao-ria1.zip timed out from the runner with normal TLS verification."
+  ],
+  "safety_decision": "Do not disable certificate verification and do not fabricate archive SHA-256 values or a lock. Keep the backfill fail-closed until an authenticated/reachable ORACC archive endpoint or equivalent upstream evidence is available. The partial network implementation remains unmerged in draft PR #10.",
+  "next_action": "Resume P-002.PH1 when the clean runner can obtain the active archive bytes under an acceptable trust policy; then repeat the live backfill and clean-checkout reproducibility gates."
+}

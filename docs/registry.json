@@ -257,8 +257,12 @@
       "spec": "§Phase 0",
       "priority": "P0",
       "blocked_by": [],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_p002_ph0_release_model.py; initial RED run 33922349033; implementation GREEN run 33922786186",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "release identity uses dataset + SemVer tf_version + max ORACC UTC date + full SHA-256 of canonical contributing archive-name/SHA-256 mapping; archive ordering is identity-neutral; equal max dates with different bytes produce different tags; SemVer prerelease precedence follows the spec and ignores build metadata; datasets.toml tracks exactly 11 RIAO/RINAP archives plus riao-teiCorpus"
+      }
     },
     {
       "id": "P-002.PH1",

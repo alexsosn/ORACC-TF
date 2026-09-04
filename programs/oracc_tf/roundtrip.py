@@ -163,6 +163,26 @@ def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
             reason="continuation_context",
         )
 
+    # A terminal delimiter belongs to the source grapheme stream but may be
+    # excluded from the lemmatiser's ``form``. Keep that source distinction
+    # explicit instead of treating it as a spelling failure.
+    if candidate.rstrip("-.:") == word.form:
+        return WordRoundTrip(
+            candidate=candidate,
+            exact=False,
+            reason="trailing_delimiter",
+        )
+
+    # ``frag`` is ORACC's source-facing transliteration fragment. When the flat
+    # sign stream reproduces it exactly but the lemmatised ``form`` differs,
+    # the source itself explains the non-round-trip.
+    if word.frag is not None and candidate == word.frag:
+        return WordRoundTrip(
+            candidate=candidate,
+            exact=False,
+            reason="fragment_context",
+        )
+
     dispositions = {
         item.disposition
         for item in gdl.classify_tree(_source_entries(word), word_id=word.source_id)

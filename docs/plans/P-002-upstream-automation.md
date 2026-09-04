@@ -6,7 +6,7 @@ status: draft
 priority: P0
 depends_on: [R-002, P-001]
 blocks: [P-003]
-updated: 2026-08-29
+updated: 2026-09-05
 ---
 
 # Plan: automate ORACC upstream updates through ORACC-TF publication
@@ -48,21 +48,29 @@ failure, missing TEI export, unparseable archive — blocks. It does not pass.
 
 # Phase 0 — version and publication model
 
-## 0.1 Three identities
+## 0.1 Four identities
 
 ```
 oracc_state    max UTC-timestamp across contributing archives   e.g. 2026-08-07
-tf_version     ORACC-TF converter/schema version                e.g. 1.2.0
-dataset        the TF dataset name                              assyrian-royal-inscriptions
+source_state   SHA-256 of canonical archive-name→SHA-256 set     content identity
+tf_version     ORACC-TF converter/schema version                 e.g. 1.2.0
+dataset        the TF dataset name                               assyrian-royal-inscriptions
 ```
 
-Release tag: `assyrian-royal-inscriptions/v1.2.0+oracc.2026-08-07`.
+Release tag:
+`assyrian-royal-inscriptions/v1.2.0+oracc.2026-08-07.<source_state>`.
 
-`oracc_state` is build metadata, not a precedence field — two archives can
-carry the same date with different content. Precedence is `tf_version`.
+`oracc_state` is human-readable build metadata, not content identity: two
+archives can carry the same date with different bytes. `source_state` is the
+SHA-256 of the complete contributing archive-name/SHA-256 mapping in canonical
+archive-name order and is included in full in the tag. SemVer precedence is
+therefore determined by `tf_version`; the ORACC date and source digest remain
+build metadata.
 
-**Acceptance:** tags sort correctly under SemVer; two different archive sets
-never produce the same tag without differing `tf_version`.
+**Acceptance:** the version component of every tag obeys SemVer precedence;
+two different archive sets cannot produce the same tag merely because their
+maximum `UTC-timestamp` is equal; archive ordering does not change
+`source_state`.
 
 ## 0.2 Datasets and their inputs
 
@@ -74,13 +82,15 @@ archives = ["riao-ria1","riao-ria2","riao-ria3","riao-ria4","riao-ria5",
             "rinap-rinap1","rinap-rinap2","rinap-rinap3","rinap-rinap4",
             "rinap-rinap5","rinap-rinap5p1"]
 tei = ["riao-teiCorpus"]
-
-[etcsri]
-archives = ["etcsri"]
 ```
 
-**Acceptance:** every tracked archive belongs to ≥1 dataset; the daily sweep
-polls only tracked archives (11, not 208).
+Only datasets that ORACC-TF can currently build and publish belong in this
+active mapping. `etcsri` remains the real upstream-change integration fixture
+for Phase 9, but is not part of the daily tracked set until an `etcsri` TF
+dataset is registered.
+
+**Acceptance:** every tracked archive belongs to ≥1 active dataset; the daily
+sweep polls only the 11 RIAO/RINAP archives, not all 208 upstream archives.
 
 ---
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 import unicodedata
 
 import pytest
@@ -13,10 +13,9 @@ from oracc_tf import loader, paths, roundtrip, words
 @pytest.mark.corpus
 def test_residual_slot_spelling_shapes_are_exposed_before_pinning():
     relations: Counter[str] = Counter()
-    continuation_profiles: Counter[tuple[str, ...]] = Counter()
-    feature_flags: Counter[str] = Counter()
-
-    continuation_keys = {"headform", "tailform", "contrefs", "cont", "continuation"}
+    other_feature_profiles: Counter[tuple[str, ...]] = Counter()
+    other_sign_key_profiles: Counter[tuple[str, ...]] = Counter()
+    samples: dict[str, list[dict[str, object]]] = defaultdict(list)
 
     for edition in loader.iter_editions(paths.DATA, skip_unreadable=True):
         for word in words.iter_words(edition.doc):
@@ -26,11 +25,6 @@ def test_residual_slot_spelling_shapes_are_exposed_before_pinning():
 
             form = word.form or ""
             candidate = result.candidate or ""
-            continuation_profiles[tuple(sorted(continuation_keys & set(word.features)))] += 1
-            for key in continuation_keys:
-                if key in word.features:
-                    feature_flags[key] += 1
-
             if candidate == form:
                 relation = "equal"
             elif candidate.rstrip("-.:") == form:
@@ -51,11 +45,25 @@ def test_residual_slot_spelling_shapes_are_exposed_before_pinning():
                 relation = "other"
             relations[relation] += 1
 
+            if relation == "other":
+                other_feature_profiles[tuple(sorted(word.features))] += 1
+                for sign in word.signs:
+                    other_sign_key_profiles[tuple(sorted(sign.value))] += 1
+
+            if len(samples[relation]) < 8:
+                samples[relation].append({
+                    "document": edition.key,
+                    "word": word.source_id,
+                    "form": word.form,
+                    "frag": word.frag,
+                    "candidate": result.candidate,
+                    "feature_keys": sorted(word.features),
+                    "signs": [dict(sign.value) for sign in word.signs],
+                })
+
     assert not relations, {
         "relations": dict(relations.most_common()),
-        "continuation_profiles": {
-            "+".join(profile) if profile else "none": count
-            for profile, count in continuation_profiles.most_common()
-        },
-        "feature_flags": dict(feature_flags.most_common()),
+        "other_feature_profiles": dict(other_feature_profiles.most_common(8)),
+        "other_sign_key_profiles": dict(other_sign_key_profiles.most_common(12)),
+        "samples": dict(samples),
     }

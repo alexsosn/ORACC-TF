@@ -62,6 +62,51 @@ def _edition(subproject: str, text_id: str, *, signless: bool = False) -> loader
     )
 
 
+def _mixed_span_edition(subproject: str, text_id: str) -> loader.Edition:
+    """One zero-span line followed by a slotted line on the same face."""
+    doc = {
+        "type": "cdl",
+        "textid": text_id,
+        "cdl": [{
+            "node": "c",
+            "type": "text",
+            "id": f"{text_id}.U0",
+            "cdl": [
+                {"node": "d", "type": "surface", "ref": "", "label": ""},
+                {
+                    "node": "d",
+                    "type": "line-start",
+                    "ref": f"{text_id}.1",
+                    "label": "1",
+                },
+                {
+                    "node": "l",
+                    "id": f"{text_id}.l0",
+                    "f": {"form": "*", "gdl": []},
+                },
+                {
+                    "node": "d",
+                    "type": "line-start",
+                    "ref": f"{text_id}.2",
+                    "label": "2",
+                },
+                {
+                    "node": "l",
+                    "id": f"{text_id}.l1",
+                    "f": {"form": "a", "gdl": [{"v": "a", "utf8": "𒀀"}]},
+                },
+            ],
+        }],
+    }
+    return loader.Edition(
+        subproject=subproject,
+        text_id=text_id,
+        path=Path(f"/{subproject}/corpusjson/{text_id}.json"),
+        doc=doc,
+        word_count=2,
+    )
+
+
 def test_slotless_source_word_survives_losslessly_without_fabricated_slot(tmp_path):
     edition = _edition("test/unit", "QTEST", signless=True)
     report = corpus.build_tf(
@@ -110,6 +155,46 @@ def test_slotless_source_word_survives_losslessly_without_fabricated_slot(tmp_pa
     assert len(relation_edges) == 1
     assert len(relation_edges[0]["targets"]) == 1
     assert relation_edges[0]["targets"][0].endswith(":QTEST.1")
+
+
+def test_zero_span_relation_chain_crosses_sidecar_and_tf_losslessly(tmp_path):
+    edition = _mixed_span_edition("test/unit", "QCHAIN")
+    report = corpus.build_tf(
+        tmp_path,
+        editions=(edition,),
+        metadata_index=metadata.MetadataIndex.empty(),
+    )
+
+    assert report.signs == 1
+    assert report.zero_span_counts["word"] == 1
+    assert report.zero_span_counts["line"] == 1
+    assert report.tf_node_counts["face"] == 1
+
+    zero_span = corpus.load_zero_span(tmp_path)
+    side_nodes = {node["key"]: node for node in zero_span["nodes"]}
+    word_key = "word:test/unit:QCHAIN:QCHAIN.l0"
+    line_key = "line:test/unit:QCHAIN:QCHAIN.1"
+    face_key = "face:test/unit:QCHAIN:QCHAIN.face.1"
+
+    assert side_nodes[word_key]["features"]["gdl_json"] == "[]"
+    assert side_nodes[line_key]["features"]["source_id"] == "QCHAIN.1"
+
+    side_edges = {
+        (edge["feature"], edge["source"]): tuple(edge["targets"])
+        for edge in zero_span["edges"]
+    }
+    assert side_edges[("word_line", word_key)] == (line_key,)
+    assert side_edges[("line_face", line_key)] == (face_key,)
+
+    # The sidecar target key is reproducibly resolvable back to the slotted TF
+    # face using the same qualified document identity + source id.
+    api = corpus.load_tf(tmp_path)
+    tf_faces = [
+        node for node in api.F.otype.s("face")
+        if api.F.document_key.v(node) == "test/unit:QCHAIN"
+        and api.F.source_id.v(node) == "QCHAIN.face.1"
+    ]
+    assert len(tf_faces) == 1
 
 
 def test_zero_span_sidecar_is_byte_deterministic(tmp_path):

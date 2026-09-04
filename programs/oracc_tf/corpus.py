@@ -1,25 +1,24 @@
 """Integrated RIAO+RINAP Text-Fabric build and M6 invariant report.
 
 M0--M5 deliberately keep source interpretation in small independently tested
-modules.  M6 is the first place where those views are joined into an actual
-Text-Fabric graph.  ``sign`` is the TF slot type.  Source words with no
-semantic sign slots are preserved as ordinary (empty-oslots) ``word`` nodes;
-they are never repaired by inventing a sign.  Explicit relation edges keep
-such words connected to their source line/face/document path.
+modules. M6 is the first place where those views are joined into an actual
+Text-Fabric graph. ``sign`` is the TF slot type. Source words with no semantic
+sign slots are preserved as ordinary (empty-oslots) ``word`` nodes; they are
+never repaired by inventing a sign. Explicit relation edges keep such words
+connected to their source line/face/document path.
 """
 
 from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from tf.fabric import Fabric
 
-from . import TF_VERSION, gdl, lexemes, loader, metadata, paths, sections, words
+from . import TF_VERSION, lexemes, loader, metadata, paths, sections, words
 
 
 class CorpusBuildError(RuntimeError):
@@ -69,7 +68,18 @@ class CorpusBuildReport:
 
 
 class _Graph:
-    """Provisional TF graph whose non-slot ids are shifted after slot count is known."""
+    """Provisional graph remapped to Text-Fabric node intervals at save time."""
+
+    TYPE_ORDER = (
+        "document",
+        "face",
+        "column",
+        "line",
+        "chunk",
+        "phrase",
+        "word",
+        "lex",
+    )
 
     def __init__(self) -> None:
         self.next_non_slot = 1
@@ -112,14 +122,37 @@ class _Graph:
     def add_oslots(self, node: int, slots: Iterable[int]) -> None:
         self.non_slot_oslots[node].update(slots)
 
+    def _node_remap(self, max_slot: int) -> dict[int, int]:
+        """Put every non-slot otype in one contiguous TF node interval.
+
+        Text-Fabric's special ``otype`` representation stores one interval per
+        type. Source-order provisional ids therefore cannot be written directly
+        when documents interleave document/face/line/word nodes.
+        """
+        groups: dict[str, list[int]] = defaultdict(list)
+        for node, otype in self.non_slot_otype.items():
+            groups[otype].append(node)
+
+        ordered_types = [otype for otype in self.TYPE_ORDER if otype in groups]
+        ordered_types.extend(sorted(set(groups) - set(ordered_types)))
+
+        remap: dict[int, int] = {}
+        actual = max_slot + 1
+        for otype in ordered_types:
+            for provisional in groups[otype]:
+                remap[provisional] = actual
+                actual += 1
+        return remap
+
     def materialise(self, max_slot: int) -> tuple[
         dict[str, dict[int, str | int]],
         dict[str, dict[int, set[int]]],
         dict[str, dict[str, object]],
     ]:
-        shift = max_slot
+        remap = self._node_remap(max_slot)
+
         otype: dict[int, str] = {slot: "sign" for slot in range(1, max_slot + 1)}
-        otype.update({shift + node: typ for node, typ in self.non_slot_otype.items()})
+        otype.update({remap[node]: typ for node, typ in self.non_slot_otype.items()})
 
         node_features: dict[str, dict[int, str | int]] = {"otype": otype}
         all_names = set(self.slot_features) | set(self.node_features)
@@ -127,20 +160,20 @@ class _Graph:
             data: dict[int, str | int] = {}
             data.update(self.slot_features.get(name, {}))
             data.update({
-                shift + node: value
+                remap[node]: value
                 for node, value in self.node_features.get(name, {}).items()
             })
             node_features[name] = data
 
         edge_features: dict[str, dict[int, set[int]]] = {
             "oslots": {
-                shift + node: set(slots)
+                remap[node]: set(slots)
                 for node, slots in self.non_slot_oslots.items()
             }
         }
         for name, data in self.edges.items():
             edge_features[name] = {
-                shift + source: {shift + target for target in targets}
+                remap[source]: {remap[target] for target in targets}
                 for source, targets in data.items()
             }
 
@@ -176,13 +209,13 @@ def _source_gdl(word: words.WordRecord) -> str:
     return _json(word.features.get("gdl") or [])
 
 
-def _catalogue_feature_value(value: object) -> str | int | None:
+def _catalogue_feature_value(value: object) -> str | None:
     if value is None:
         return None
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, (str, int)):
+    if isinstance(value, str):
         return value
+    if isinstance(value, (int, float, bool)):
+        return str(value)
     return _json(value)
 
 
@@ -233,12 +266,7 @@ def build_tf(
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
 ) -> CorpusBuildReport:
-    """Build one joined Text-Fabric dataset from already selected editions.
-
-    The function owns global slot numbering.  All source-derived non-slot nodes
-    may have empty ``oslots``; in particular this is required for the 295 real
-    signless words measured by M2 and for the 233 valid stub documents.
-    """
+    """Build one joined Text-Fabric dataset from already selected editions."""
     graph = _Graph()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -255,7 +283,6 @@ def build_tf(
     section_path_errors = 0
     key_counts: Counter[str] = Counter()
     sign_word_memberships: Counter[int] = Counter()
-
     lex_nodes: dict[lexemes.LexemeKey, int] = {}
 
     for edition in editions:
@@ -270,7 +297,8 @@ def build_tf(
         source_words = list(words.iter_words(edition.doc, start_slot=next_slot))
         if len(source_words) != edition.word_count:
             raise CorpusBuildError(
-                f"{edition.key}: loader says {edition.word_count} words but M2 yielded {len(source_words)}"
+                f"{edition.key}: loader says {edition.word_count} words "
+                f"but M2 yielded {len(source_words)}"
             )
 
         by_word = {word.source_id: word for word in source_words}
@@ -322,6 +350,7 @@ def build_tf(
         face_nodes: dict[str, int] = {}
         column_nodes: dict[str, int] = {}
         line_nodes: dict[str, int] = {}
+        line_sources = {line.source_id: line for line in section_view.lines}
 
         for face in section_view.faces:
             if face.source_id in face_nodes:
@@ -334,13 +363,16 @@ def build_tf(
 
         for column in section_view.columns:
             if column.source_id in column_nodes:
-                raise CorpusBuildError(f"{edition.key}: duplicate column id {column.source_id!r}")
+                raise CorpusBuildError(
+                    f"{edition.key}: duplicate column id {column.source_id!r}"
+                )
             node = graph.node("column")
             column_nodes[column.source_id] = node
             _add_section_features(graph, node, column, document_key=edition.key)
             graph.feature(node, column_id=column.source_id)
             if column.face_id is None or column.face_id not in face_nodes:
-                section_path_errors += 1
+                if edition.populated:
+                    section_path_errors += 1
             else:
                 graph.edge("column_face", node, face_nodes[column.face_id])
 
@@ -359,13 +391,15 @@ def build_tf(
             graph.feature(node, line=line.source_id)
 
             if line.face_id is None or line.face_id not in face_nodes:
-                section_path_errors += 1
+                if edition.populated:
+                    section_path_errors += 1
             else:
                 graph.add_oslots(face_nodes[line.face_id], slots)
                 graph.edge("line_face", node, face_nodes[line.face_id])
             if line.column_id is not None:
                 if line.column_id not in column_nodes:
-                    section_path_errors += 1
+                    if edition.populated:
+                        section_path_errors += 1
                 else:
                     graph.add_oslots(column_nodes[line.column_id], slots)
                     graph.edge("line_column", node, column_nodes[line.column_id])
@@ -389,8 +423,7 @@ def build_tf(
             _add_section_features(graph, node, phrase, document_key=edition.key)
 
         section_words = section_view.word_to_line
-        if set(section_words) != set(by_word):
-            word_line_errors += len(set(section_words) ^ set(by_word))
+        word_line_errors += len(set(section_words) ^ set(by_word))
 
         for word in source_words:
             word_count += 1
@@ -417,18 +450,13 @@ def build_tf(
             )
 
             line_id = section_words.get(word.source_id)
-            if line_id is None or line_id not in line_nodes:
-                word_line_errors += 1
-                section_path_errors += int(edition.populated)
-            else:
-                line_node = line_nodes[line_id]
-                graph.edge("word_line", word_node, line_node)
-                line_source = next(
-                    (line for line in section_view.lines if line.source_id == line_id),
-                    None,
-                )
-                if line_source is None or line_source.face_id not in face_nodes:
-                    section_path_errors += int(edition.populated)
+            if line_id is not None and line_id in line_nodes:
+                graph.edge("word_line", word_node, line_nodes[line_id])
+                line_source = line_sources[line_id]
+                if line_source.face_id not in face_nodes and edition.populated:
+                    section_path_errors += 1
+            elif edition.populated:
+                section_path_errors += 1
 
             for key in lexemes.keys_for_word(word):
                 lex_node = lex_nodes.get(key)
@@ -448,9 +476,11 @@ def build_tf(
 
     max_slot = next_slot - 1
     collision_count = sum(count - 1 for count in key_counts.values() if count > 1)
-    membership_errors = sum(
-        count != 1 for slot, count in sign_word_memberships.items()
-    ) + (max_slot - len(sign_word_memberships))
+    membership_errors = (
+        sum(count != 1 for count in sign_word_memberships.values())
+        + max_slot
+        - len(sign_word_memberships)
+    )
 
     if collision_count:
         raise CorpusBuildError(
@@ -500,7 +530,7 @@ def build_full_tf(
 def load_tf(out_dir: Path | str):
     """Load a generated dataset with the real Text-Fabric API."""
     tf = Fabric(locations=str(Path(out_dir)), silent="deep")
-    api = tf.loadAll(silent="deep")
-    if api is None:
+    good = tf.loadAll(silent="deep")
+    if not good or tf.api is None:
         raise CorpusBuildError(f"Text-Fabric could not load generated graph in {out_dir}")
-    return api
+    return tf.api

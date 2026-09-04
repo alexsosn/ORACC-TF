@@ -273,8 +273,12 @@
       "blocked_by": [
         "P-002.PH0"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "blocked",
+      "evidence": {
+        "tests": "tests/test_p002_ph1_upstream_lock.py; Gate 1 RED 33926021957 / GREEN 33926315168; Gate 2 RED 33926953761",
+        "command": "python scripts/backfill_upstream_lock.py --output-dir backfill-output",
+        "result": "Live clean-runner backfill is blocked without weakening transport trust: run 33927424038 follows museum HTTP to HTTPS then fails CA verification; run 33927656438 confirms build.oracc.org and museum HTTPS fail CA verification while oracc.org times out; run 33927956928 confirms legacy oracc.iaas.upenn.edu times out over both HTTP and HTTPS. No TLS verification was disabled and no archive hashes or lock were fabricated. See docs/reports/P-002-PH1-blocker.json."
+      }
     },
     {
       "id": "P-002.PH2",

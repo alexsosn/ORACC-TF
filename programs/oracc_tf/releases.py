@@ -19,6 +19,7 @@ import tomllib
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+_INPUT_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*$")
 _TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$")
 _SEMVER_RE = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
@@ -138,7 +139,7 @@ def _oracc_state(values: Iterable[ArchiveVersion]) -> str:
 
 def _version_with_oracc_metadata(tf_version: str, oracc_state: str, digest: str) -> str:
     parsed = _parse_semver(tf_version)
-    metadata = [*parsed.build, "oracc", oracc_state, digest[:12]]
+    metadata = [*parsed.build, "oracc", oracc_state, digest]
     core = f"{parsed.major}.{parsed.minor}.{parsed.patch}"
     if parsed.prerelease:
         core += "-" + ".".join(parsed.prerelease)
@@ -178,13 +179,19 @@ class ReleaseIdentity:
         )
 
 
-def _string_tuple(value: object, *, field: str, dataset: str) -> tuple[str, ...]:
+def _string_tuple(
+    value: object,
+    *,
+    field: str,
+    dataset: str,
+    pattern: re.Pattern[str],
+) -> tuple[str, ...]:
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         raise ReleaseModelError(f"{dataset}.{field} must be a list of strings")
     result = tuple(value)
     if len(set(result)) != len(result):
         raise ReleaseModelError(f"{dataset}.{field} contains duplicate entries")
-    if any(not _NAME_RE.fullmatch(item) for item in result):
+    if any(not pattern.fullmatch(item) for item in result):
         raise ReleaseModelError(f"{dataset}.{field} contains an invalid input name")
     return result
 
@@ -209,10 +216,14 @@ def load_datasets(path: Path) -> dict[str, DatasetInputs]:
             raise ReleaseModelError(
                 f"dataset {dataset!r} has unknown fields: {', '.join(sorted(unknown))}"
             )
-        archives = _string_tuple(value.get("archives"), field="archives", dataset=dataset)
+        archives = _string_tuple(
+            value.get("archives"), field="archives", dataset=dataset, pattern=_NAME_RE
+        )
         if not archives:
             raise ReleaseModelError(f"dataset {dataset!r} must declare at least one archive")
-        tei = _string_tuple(value.get("tei", []), field="tei", dataset=dataset)
+        tei = _string_tuple(
+            value.get("tei", []), field="tei", dataset=dataset, pattern=_INPUT_NAME_RE
+        )
         result[dataset] = DatasetInputs(archives=archives, tei=tei)
     return result
 

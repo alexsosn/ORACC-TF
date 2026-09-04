@@ -235,8 +235,12 @@
       "blocked_by": [
         "P-001.M6"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m8_cross_validation.py; compatibility RED run 33928141176; schema-version RED run 33928565741; GREEN run 33928777533",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "Pinned Nino-cunei/oldbabylonian tf/1.0.6 domains: readingu=sign-level cuneiform Unicode string, lnno=line-level ATF line label string, period/genre=document metadata strings. ORACC-TF exposes additive aliases readingu=utf8 and lnno=line.label while retaining existing source-facing features; period/genre remain catalogue strings; TF schema version bumped 0.1.0→0.2.0; fast and whole-corpus invariants green."
+      }
     },
     {
       "id": "P-001.M9",

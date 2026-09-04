@@ -18,6 +18,19 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -e .
+      - name: Probe official ORACC hosts with normal TLS verification
+        run: |
+          set +e
+          for url in \
+            https://build.oracc.org/json/riao-ria1.zip \
+            https://oracc.org/json/riao-ria1.zip \
+            https://oracc.museum.upenn.edu/json/riao-ria1.zip
+          do
+            echo "=== $url ==="
+            curl --fail --silent --show-error --location --head --max-time 30 "$url"
+            echo "status=$?"
+          done
+          set -e
       - name: Generate lock and snapshot diff
         run: |
           if [ -f upstream.lock.json ]; then

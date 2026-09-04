@@ -1,0 +1,10 @@
+[source]
+index = "http://oracc.museum.upenn.edu/json/"
+projects = "http://oracc.museum.upenn.edu/projects.json"
+user_agent = "ORACC-TF/1.0 (+https://github.com/alexsosn/ORACC-TF)"
+
+[policy]
+poll_cron = "daily"
+inventory_cron = "weekly"
+auto_publish = true
+max_parallel_fetch = 1

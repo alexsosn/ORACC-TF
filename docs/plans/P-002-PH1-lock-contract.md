@@ -1,3 +1,14 @@
+---
+id: P-002-PH1
+title: Upstream configuration and lock execution plan
+type: plan
+status: draft
+priority: P0
+depends_on: [R-002-PH1, P-002]
+blocks: []
+updated: 2026-09-05
+---
+
 # P-002 Phase 1 execution plan — upstream configuration and lock
 
 Date: 2026-09-05

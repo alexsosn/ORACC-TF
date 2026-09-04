@@ -14,22 +14,23 @@ Acceptance criteria from P-001 §5 M6:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
-from oracc_tf import corpus, loader, metadata, paths
+from oracc_tf import corpus, loader, metadata, paths, words
 
 
 def _edition(subproject: str, text_id: str, *, signless: bool = False) -> loader.Edition:
-    words = []
+    source_words = []
     if signless:
-        words.append({
+        source_words.append({
             "node": "l",
             "id": f"{text_id}.l0",
             "f": {"form": "*", "gdl": []},
         })
-    words.append({
+    source_words.append({
         "node": "l",
         "id": f"{text_id}.l1",
         "f": {"form": "a", "gdl": [{"v": "a", "utf8": "𒀀"}]},
@@ -49,7 +50,7 @@ def _edition(subproject: str, text_id: str, *, signless: bool = False) -> loader
                     "ref": f"{text_id}.1",
                     "label": "1",
                 },
-                *words,
+                *source_words,
             ],
         }],
     }
@@ -58,7 +59,7 @@ def _edition(subproject: str, text_id: str, *, signless: bool = False) -> loader
         text_id=text_id,
         path=Path(f"/{subproject}/corpusjson/{text_id}.json"),
         doc=doc,
-        word_count=len(words),
+        word_count=len(source_words),
     )
 
 
@@ -104,6 +105,17 @@ def _mixed_span_edition(subproject: str, text_id: str) -> loader.Edition:
         path=Path(f"/{subproject}/corpusjson/{text_id}.json"),
         doc=doc,
         word_count=2,
+    )
+
+
+def _canonical_source_gdl(features: object) -> str | None:
+    if not isinstance(features, dict) or "gdl" not in features:
+        return None
+    return json.dumps(
+        features["gdl"],
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
     )
 
 
@@ -155,6 +167,34 @@ def test_slotless_source_word_survives_losslessly_without_fabricated_slot(tmp_pa
     assert len(relation_edges) == 1
     assert len(relation_edges[0]["targets"]) == 1
     assert relation_edges[0]["targets"][0].endswith(":QTEST.1")
+
+
+def test_persisted_gdl_distinguishes_absent_empty_and_null(tmp_path):
+    absent = _edition("test/unit", "QABSENT", signless=True)
+    empty = _edition("test/unit", "QEMPTY", signless=True)
+    null = _edition("test/unit", "QNULL", signless=True)
+
+    absent_word = absent.doc["cdl"][0]["cdl"][2]
+    null_word = null.doc["cdl"][0]["cdl"][2]
+    del absent_word["f"]["gdl"]
+    null_word["f"]["gdl"] = None
+
+    corpus.build_tf(
+        tmp_path,
+        editions=(absent, empty, null),
+        metadata_index=metadata.MetadataIndex.empty(),
+    )
+
+    zero_span = corpus.load_zero_span(tmp_path)
+    by_document = {
+        node["features"]["document_key"]: node["features"]
+        for node in zero_span["nodes"]
+        if node["otype"] == "word"
+    }
+
+    assert "gdl_json" not in by_document["test/unit:QABSENT"]
+    assert by_document["test/unit:QEMPTY"]["gdl_json"] == "[]"
+    assert by_document["test/unit:QNULL"]["gdl_json"] == "null"
 
 
 def test_zero_span_relation_chain_crosses_sidecar_and_tf_losslessly(tmp_path):
@@ -302,3 +342,27 @@ def test_joined_corpus_invariants_and_tf_warp_load(tmp_path):
         "rinap/rinap2:Q006646",
         "rinap/rinap4:Q003344",
     ]
+
+    # M7 source-preservation contract: the persisted word domain is the union
+    # of TF warp words and sidecar words, and every stored GDL serialisation
+    # must match the source representation exactly. Bare source ids are not
+    # sufficient because rinap5/rinap5p1 reuse Q-numbers.
+    stored_gdl: dict[tuple[str, str], str | None] = {
+        (api.F.document_key.v(node), api.F.source_id.v(node)): api.F.gdl_json.v(node)
+        for node in api.F.otype.s("word")
+    }
+    stored_gdl.update({
+        (node["features"]["document_key"], node["features"]["source_id"]):
+            node["features"].get("gdl_json")
+        for node in zero_span["nodes"]
+        if node["otype"] == "word"
+    })
+    assert len(stored_gdl) == report.words
+
+    checked = 0
+    for edition in loader.iter_editions(paths.DATA, skip_unreadable=True):
+        for word in words.iter_words(edition.doc):
+            expected = _canonical_source_gdl(dict(word.features))
+            assert stored_gdl[(edition.key, word.source_id)] == expected
+            checked += 1
+    assert checked == report.words

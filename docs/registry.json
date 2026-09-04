@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-09-04",
+  "updated": "2026-09-05",
   "documents": [
     {
       "id": "G-001",
@@ -219,8 +219,12 @@
       "blocked_by": [
         "P-001.M6"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m7_roundtrip.py + tests/test_m7_exception_reasons.py + M7 persistence assertions in tests/test_m6_corpus.py; RED runs 33914784127, 33915526570, 33916081482, 33919212600, 33919784104",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "320975/320975 source words accounted across TF + sidecar; exact sign-derived forms=250038; explicit exceptions=70937: structural_context=48568, unreadable_sign=13768, fragment_context=5532, slot_markup=2298, source_orthography=426, continuation_context=40, trailing_delimiter=10, zero_sign=295; unexplained slot_spelling=0. Persisted GDL is compared exactly for every source word and preserves absent vs [] vs null. The 426 source_orthography cases are exhaustively ḫ→h only (394 one replacement, 32 two replacements)."
+      }
     },
     {
       "id": "P-001.M8",

@@ -359,8 +359,10 @@ def _json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
 
-def _source_gdl(word: words.WordRecord) -> str:
-    return _json(word.features.get("gdl") or [])
+def _source_gdl(word: words.WordRecord) -> str | None:
+    if "gdl" not in word.features:
+        return None
+    return _json(word.features["gdl"])
 
 
 def _catalogue_feature_value(value: object) -> str | None:

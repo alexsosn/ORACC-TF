@@ -96,6 +96,37 @@ sweep polls only the 11 RIAO/RINAP archives, not all 208 upstream archives.
 
 # Phase 1 — upstream configuration and lock
 
+## 1.0 Research → plan → implement → test gates
+
+Before Phase 1 implementation, re-check R-002 §§2–6 against the Phase 0 active
+mapping. The lock is generated data; its serialization is canonical UTF-8 JSON
+with sorted archive keys and one trailing newline. Volatile fetch time is not
+part of the byte-stable lock. The tracked archive set is derived from
+`datasets.toml`, never duplicated in policy. `text_ids_sha256` hashes sorted
+text-id/content-SHA pairs, so later rename/move analysis can distinguish
+identity from content change. Optional HTTP validators may be null; content
+identity, licence, extraction paths and ORACC timestamp may not be invented or
+silently omitted.
+
+Execution gates:
+
+1. **Fixture RED/GREEN:** first pin `upstream.toml`, deterministic lock
+   serialization, text-id hashing and fail-closed validation with tests; only
+   then add the production config/model. No network code belongs in this gate.
+2. **Live provenance backfill:** serially fetch the eleven active archives from
+   canonical `/json/<archive>.zip`, validate ZIP structure, derive lock fields,
+   and compare fresh extraction with committed `data/` without modifying it.
+3. **Clean-checkout reproducibility:** regenerate from recorded URLs and require
+   byte-identical lock serialization; extraction drift must be fully enumerated
+   in a deterministic report.
+4. **Finalization:** update registry evidence only after all acceptance criteria
+   are evaluated; exact-head CI and iterative independent skeptical review are
+   mandatory before merge.
+
+If ORACC cannot be reached, a source archive cannot be parsed, or licence
+provenance cannot be established, Phase 1 stops rather than fabricating lock
+values.
+
 ## 1.1 `upstream.toml` (hand-edited policy)
 
 ```toml

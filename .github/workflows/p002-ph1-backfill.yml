@@ -18,18 +18,21 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -e .
-      - name: Probe official ORACC hosts with normal TLS verification
+      - name: Probe official ORACC hosts with normal trust policy
         run: |
           set +e
-          for url in \
-            https://build.oracc.org/json/riao-ria1.zip \
-            https://oracc.org/json/riao-ria1.zip \
-            https://oracc.museum.upenn.edu/json/riao-ria1.zip
-          do
-            echo "=== $url ==="
-            curl --fail --silent --show-error --location --head --max-time 30 "$url"
-            echo "status=$?"
-          done
+          echo '=== legacy iaas HTTP, no redirects ==='
+          curl --fail --silent --show-error --head --max-time 30 --max-redirs 0 \
+            http://oracc.iaas.upenn.edu/json/riao-ria1.zip
+          echo "iaas_http_status=$?"
+          echo '=== legacy iaas HTTPS, normal TLS verification ==='
+          curl --fail --silent --show-error --head --max-time 30 --max-redirs 0 \
+            https://oracc.iaas.upenn.edu/json/riao-ria1.zip
+          echo "iaas_https_status=$?"
+          echo '=== current build HTTPS, normal TLS verification ==='
+          curl --fail --silent --show-error --head --max-time 30 --max-redirs 0 \
+            https://build.oracc.org/json/riao-ria1.zip
+          echo "build_https_status=$?"
           set -e
       - name: Generate lock and snapshot diff
         run: |

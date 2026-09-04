@@ -115,6 +115,17 @@ def _has_slot_markup(word: words.WordRecord) -> bool:
     )
 
 
+def _has_continuation_context(word: words.WordRecord) -> bool:
+    """Whether ORACC explicitly says this local word fragment continues elsewhere."""
+    contrefs = word.features.get("contrefs")
+    if not isinstance(contrefs, str) or not contrefs.strip():
+        return False
+    return any(
+        isinstance(word.features.get(name), str)
+        for name in ("headform", "tailform")
+    )
+
+
 def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
     """Attempt a form round-trip using only M1 semantic sign-slot payload."""
     if word.form is None:
@@ -141,6 +152,16 @@ def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
     candidate = "".join(pieces)
     if candidate == word.form:
         return WordRoundTrip(candidate=candidate, exact=True, reason=None)
+
+    # A continued ORACC word stores the complete lexical ``form`` on a local
+    # fragment whose GDL/signs encode only the head or tail.  The mismatch is
+    # therefore source-declared, not a failure of sign spelling reconstruction.
+    if _has_continuation_context(word):
+        return WordRoundTrip(
+            candidate=candidate,
+            exact=False,
+            reason="continuation_context",
+        )
 
     dispositions = {
         item.disposition

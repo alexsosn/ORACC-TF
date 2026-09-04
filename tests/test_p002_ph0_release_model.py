@@ -18,6 +18,10 @@ def _archive(name: str, sha256: str, timestamp: str = "2026-08-07T12:00:00") -> 
     return releases.ArchiveVersion(name=name, sha256=sha256, oracc_utc_timestamp=timestamp)
 
 
+def _tag_version(identity: releases.ReleaseIdentity) -> str:
+    return identity.tag.split("/v", 1)[1]
+
+
 def test_source_digest_is_order_independent_but_content_sensitive():
     first = [_archive("riao-ria1", SHA_A), _archive("rinap-rinap1", SHA_B)]
     reordered = list(reversed(first))
@@ -47,7 +51,7 @@ def test_same_max_timestamp_with_different_archive_bytes_cannot_collide():
     assert changed.tag.endswith(changed.source_digest)
 
 
-def test_semver_precedence_depends_on_converter_version_not_source_metadata():
+def test_generated_tag_versions_preserve_converter_semver_precedence():
     state = [_archive("riao-ria1", SHA_A)]
     v120 = releases.ReleaseIdentity.from_archives("assyrian-royal-inscriptions", "1.2.0", state)
     v121 = releases.ReleaseIdentity.from_archives("assyrian-royal-inscriptions", "1.2.1", state)
@@ -56,9 +60,20 @@ def test_semver_precedence_depends_on_converter_version_not_source_metadata():
         "1.2.0",
         [_archive("riao-ria1", SHA_B, "2026-09-01T00:00:00")],
     )
+    existing_build = releases.ReleaseIdentity.from_archives(
+        "assyrian-royal-inscriptions", "1.2.0+converter.7", state
+    )
 
-    assert releases.semver_precedence_key(v120.tf_version) < releases.semver_precedence_key(v121.tf_version)
-    assert releases.semver_precedence_key(v120.tf_version) == releases.semver_precedence_key(other_source.tf_version)
+    tag_v120 = _tag_version(v120)
+    tag_v121 = _tag_version(v121)
+    tag_other_source = _tag_version(other_source)
+    tag_existing_build = _tag_version(existing_build)
+
+    assert releases.semver_precedence_key(tag_v120) < releases.semver_precedence_key(tag_v121)
+    assert releases.semver_precedence_key(tag_v120) == releases.semver_precedence_key(tag_other_source)
+    assert releases.semver_precedence_key(tag_existing_build) == releases.semver_precedence_key("1.2.0")
+    assert tag_existing_build.startswith("1.2.0+converter.7.oracc.2026-08-07.")
+    assert tag_existing_build.endswith(existing_build.source_digest)
 
 
 def test_semver_prerelease_order_matches_the_spec_example():

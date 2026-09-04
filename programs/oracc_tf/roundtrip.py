@@ -183,17 +183,6 @@ def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
             reason="fragment_context",
         )
 
-    # RIAO/RINAP contain a small, closed source-internal orthography class in
-    # which GDL uses ḫ while the lemmatiser's written ``form`` uses h.  The
-    # corpus census establishes that this exact replacement explains every
-    # otherwise-residual mismatch; no unrelated edit is accepted here.
-    if "ḫ" in candidate and candidate.replace("ḫ", "h") == word.form:
-        return WordRoundTrip(
-            candidate=candidate,
-            exact=False,
-            reason="source_orthography",
-        )
-
     dispositions = {
         item.disposition
         for item in gdl.classify_tree(_source_entries(word), word_id=word.source_id)
@@ -206,6 +195,12 @@ def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
         reason = "modifier_context"
     elif gdl.Disposition.RENDERING in dispositions:
         reason = "rendering_context"
+    # RIAO/RINAP contain a small, closed source-internal orthography class in
+    # otherwise plain sign spellings: GDL uses ḫ while the lemmatiser's written
+    # ``form`` uses h. Apply this only after structural/markup explanations so
+    # it does not steal their primary exception reason.
+    elif "ḫ" in candidate and candidate.replace("ḫ", "h") == word.form:
+        reason = "source_orthography"
     else:
         reason = "slot_spelling"
     return WordRoundTrip(candidate=candidate, exact=False, reason=reason)

@@ -51,6 +51,28 @@ def test_structural_context_failure_is_explicit_not_silently_accepted():
     assert result.reason == "structural_context"
 
 
+def test_continued_word_reports_source_continuation_context():
+    word = words.from_source({
+        "node": "l",
+        "id": "QTEST.l3",
+        "f": {
+            "form": "ba-ab-a-u₂-ši₂-im",
+            "headform": "ba-ab",
+            "contrefs": "QTEST.1.1 QTEST.2.1",
+            "gdl": [
+                {"v": "ba", "utf8": "𒁀", "delim": "-"},
+                {"v": "ab", "utf8": "𒀊", "delim": "-"},
+            ],
+        },
+    }, start_slot=1)
+
+    result = roundtrip.evaluate_word(word)
+
+    assert result.candidate == "ba-ab-"
+    assert not result.exact
+    assert result.reason == "continuation_context"
+
+
 def test_canonical_gdl_storage_distinguishes_absent_empty_and_null():
     assert roundtrip.source_gdl_json({}) is None
     assert roundtrip.source_gdl_json({"gdl": []}) == "[]"

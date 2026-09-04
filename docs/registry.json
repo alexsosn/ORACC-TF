@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-09-03",
+  "updated": "2026-09-04",
   "documents": [
     {
       "id": "G-001",
@@ -203,8 +203,12 @@
         "P-001.M4",
         "P-001.M5"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m6_corpus.py; initial RED 33842490363; zero-span contract RED 33845846836; Unicode/sidecar census RED 33846146102; populated-zero-sign diagnostic RED 33846629836; implementation GREEN 33847037449; independent review PR #7 review 5110207348 required sidecar-chain regression + normative docs hardening",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus",
+        "result": "source documents=2078, populated=1845, stubs=233, words=320975, signs=792651, lines=56226, lexemes=8025; membership and populated section-path errors=0; Unicode=778873/792651 (98.2618%); TF warp counts: document=1842, face=2036, column=723, line=56084, chunk=13388, phrase=4499, word=320680, lex=8023, sign=792651; deterministic zero-span sidecar=1242 nodes: document=236, face=276, column=35, line=142, chunk=256, word=295, lex=2; populated zero-sign documents are rinap/rinap1:Q003633, rinap/rinap2:Q006646, rinap/rinap4:Q003344; no fabricated/borrowed slots; review hardening adds omitted-word→omitted-line→slotted-face regression and documents zero-sign-only build limitation"
+      }
     },
     {
       "id": "P-001.M7",

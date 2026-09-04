@@ -443,5 +443,12 @@
       "status": "todo",
       "evidence": null
     }
+  ],
+  "selection_rule": "take the lowest-numbered task with status 'todo' whose blocked_by are all 'done', preferring P0 over P1 over P2; see docs/README.md",
+  "stop_conditions": [
+    "a P-002 gate fires",
+    "a philological judgement is required",
+    "a licence question arises",
+    "acceptance criteria cannot be evaluated"
   ]
 }

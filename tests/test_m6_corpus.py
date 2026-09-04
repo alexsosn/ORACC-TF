@@ -212,6 +212,8 @@ def test_joined_corpus_invariants_and_tf_warp_load(tmp_path):
         for node in zero_span["nodes"]
         if node["otype"] == "document" and node["features"].get("populated") == 1
     )
-    # Deliberate diagnostic RED: M6 measurement found three such documents.
-    # Pin their exact qualified ids after this assertion reports them.
-    assert populated_zero_span_documents == [], populated_zero_span_documents
+    assert populated_zero_span_documents == [
+        "rinap/rinap1:Q003633",
+        "rinap/rinap2:Q006646",
+        "rinap/rinap4:Q003344",
+    ]

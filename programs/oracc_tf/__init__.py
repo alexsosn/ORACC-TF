@@ -12,4 +12,4 @@ Three identities are kept apart on purpose (P-002 Phase 0.1):
 
 __version__ = "0.1.0"
 
-TF_VERSION = "0.1.0"
+TF_VERSION = "0.2.0"

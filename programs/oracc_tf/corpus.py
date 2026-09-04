@@ -498,6 +498,10 @@ def build_tf(
                     word_id=word.source_id,
                     src_path=sign.src_path,
                     utf8=utf8 if isinstance(utf8, str) else None,
+                    sign_json=_json(sign.value),
+                    gdl_id=sign.value.get("id"),
+                    gdl_form=sign.value.get("form"),
+                    gdl_sexified=sign.value.get("sexified"),
                 )
             next_slot = word.slot_end
 

@@ -35,7 +35,7 @@ def test_joined_tf_preserves_composite_sign_parent_payload(tmp_path):
     )
     api = corpus.load_tf(tmp_path)
 
-    numeral = _slot_by_identity(api, word_id="Q005620.l00a19", utf8="𒁹")
+    numeral = _slot_by_identity(api, word_id="Q005620.l009d1", utf8="𒁹")
     assert api.F.gdl_id.v(numeral) == "Q005620.44.1.0"
     assert api.F.gdl_form.v(numeral) == "1"
     assert api.F.gdl_sexified.v(numeral) == "1(diš)"

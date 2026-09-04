@@ -1,3 +1,14 @@
+---
+id: R-002-PH1
+title: Upstream configuration and lock contract
+type: research
+status: active
+priority: P0
+depends_on: [R-002]
+informs: [P-002-PH1]
+updated: 2026-09-05
+---
+
 # P-002 Phase 1 research note — upstream configuration and lock contract
 
 Date: 2026-09-05

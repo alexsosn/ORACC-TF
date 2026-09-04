@@ -6,7 +6,10 @@ Acceptance criteria from P-001 §5 M6:
 - every sign belongs to exactly one word and every word to exactly one line;
 - every populated document has a valid document/face/line section path;
 - the M1 sign count stays pinned and Unicode coverage is frozen here;
-- generated ``otype``/``oslots`` load cleanly in Text-Fabric.
+- generated ``otype``/``oslots`` load cleanly in Text-Fabric;
+- source entities with zero sign extent remain losslessly queryable in a
+  deterministic sidecar because Text-Fabric warp nodes cannot have empty
+  ``oslots``.
 """
 
 from __future__ import annotations
@@ -59,7 +62,7 @@ def _edition(subproject: str, text_id: str, *, signless: bool = False) -> loader
     )
 
 
-def test_slotless_source_word_survives_tf_and_keeps_explicit_line_edge(tmp_path):
+def test_slotless_source_word_survives_losslessly_without_fabricated_slot(tmp_path):
     edition = _edition("test/unit", "QTEST", signless=True)
     report = corpus.build_tf(
         tmp_path,
@@ -76,18 +79,37 @@ def test_slotless_source_word_survives_tf_and_keeps_explicit_line_edge(tmp_path)
     assert report.word_line_membership_errors == 0
     assert report.section_path_errors == 0
 
+    # Text-Fabric 13.1 has a hard warp invariant that every non-slot node maps
+    # to at least one slot. The source word with an empty sign span therefore
+    # must not be assigned an invented/borrowed sign just to enter otype/oslots.
+    assert report.tf_words == 1
+    assert report.zero_span_words == 1
+
     api = corpus.load_tf(tmp_path)
     word_nodes = api.F.otype.s("word")
     by_source = {api.F.source_id.v(node): node for node in word_nodes}
-
-    assert set(by_source) == {"QTEST.l0", "QTEST.l1"}
-    assert tuple(api.E.oslots.s(by_source["QTEST.l0"])) == ()
-    assert len(api.E.word_line.s(by_source["QTEST.l0"])) == 1
+    assert set(by_source) == {"QTEST.l1"}
     assert api.T.sectionFromNode(1) == (
         "test/unit:QTEST",
         "QTEST.face.1",
         "QTEST.1",
     )
+
+    zero_span = corpus.load_zero_span(tmp_path)
+    nodes = [node for node in zero_span["nodes"] if node["otype"] == "word"]
+    assert len(nodes) == 1
+    slotless = nodes[0]
+    assert slotless["features"]["source_id"] == "QTEST.l0"
+    assert slotless["features"]["document_key"] == "test/unit:QTEST"
+    assert slotless["features"]["gdl_json"] == "[]"
+
+    relation_edges = [
+        edge for edge in zero_span["edges"]
+        if edge["source"] == slotless["key"] and edge["feature"] == "word_line"
+    ]
+    assert len(relation_edges) == 1
+    assert len(relation_edges[0]["targets"]) == 1
+    assert relation_edges[0]["targets"][0].endswith(":QTEST.1")
 
 
 def test_same_q_number_in_two_subprojects_stays_two_documents(tmp_path):
@@ -130,13 +152,26 @@ def test_joined_corpus_invariants_and_tf_warp_load(tmp_path):
     assert report.word_line_membership_errors == 0
     assert report.section_path_errors == 0
 
+    # Zero-span source entities remain part of source cardinalities but cannot
+    # be warp nodes. At minimum this snapshot contains the 295 M2 signless
+    # words and all 233 metadata-only stub documents.
+    assert report.tf_words + report.zero_span_words == report.words
+    assert report.zero_span_words == 295
+    assert report.tf_documents + report.zero_span_documents == report.documents
+    assert report.zero_span_documents >= 233
+    assert report.zero_span_nodes >= report.zero_span_words + report.zero_span_documents
+
     # Diagnostic first freeze: implementation must report the measured exact
     # count, then this deliberate RED assertion is replaced with that value.
     assert report.unicode_signs == 0, report.report()
 
     api = corpus.load_tf(tmp_path)
     assert api.F.otype.maxSlot == 792651
-    assert len(api.F.otype.s("document")) == 2078
-    assert len(api.F.otype.s("word")) == 320975
-    assert len(api.F.otype.s("line")) == 56226
-    assert len(api.F.otype.s("lex")) == 8025
+    assert len(api.F.otype.s("document")) == report.tf_documents
+    assert len(api.F.otype.s("word")) == report.tf_words
+    assert len(api.F.otype.s("line")) == report.tf_lines
+    assert len(api.F.otype.s("lex")) == report.tf_lexemes
+
+    zero_span = corpus.load_zero_span(tmp_path)
+    assert zero_span["schema"] == "oracc-tf-zero-span-v1"
+    assert len(zero_span["nodes"]) == report.zero_span_nodes

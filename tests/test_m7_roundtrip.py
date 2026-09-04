@@ -73,6 +73,44 @@ def test_continued_word_reports_source_continuation_context():
     assert result.reason == "continuation_context"
 
 
+def test_sign_candidate_matching_source_frag_is_explicit_fragment_context():
+    word = words.from_source({
+        "node": "l",
+        "id": "QTEST.l4",
+        "frag": "a-bi",
+        "f": {
+            "form": "a-bi₂",
+            "gdl": [
+                {"v": "a", "utf8": "𒀀", "delim": "-"},
+                {"v": "bi", "utf8": "𒁉"},
+            ],
+        },
+    }, start_slot=1)
+
+    result = roundtrip.evaluate_word(word)
+
+    assert result.candidate == "a-bi"
+    assert not result.exact
+    assert result.reason == "fragment_context"
+
+
+def test_terminal_source_delimiter_is_explicit_exception():
+    word = words.from_source({
+        "node": "l",
+        "id": "QTEST.l5",
+        "f": {
+            "form": "a",
+            "gdl": [{"v": "a", "utf8": "𒀀", "delim": "-"}],
+        },
+    }, start_slot=1)
+
+    result = roundtrip.evaluate_word(word)
+
+    assert result.candidate == "a-"
+    assert not result.exact
+    assert result.reason == "trailing_delimiter"
+
+
 def test_canonical_gdl_storage_distinguishes_absent_empty_and_null():
     assert roundtrip.source_gdl_json({}) is None
     assert roundtrip.source_gdl_json({"gdl": []}) == "[]"

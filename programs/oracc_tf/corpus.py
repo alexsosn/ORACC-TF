@@ -2,10 +2,15 @@
 
 M0--M5 deliberately keep source interpretation in small independently tested
 modules. M6 is the first place where those views are joined into an actual
-Text-Fabric graph. ``sign`` is the TF slot type. Source words with no semantic
-sign slots are preserved as ordinary (empty-oslots) ``word`` nodes; they are
-never repaired by inventing a sign. Explicit relation edges keep such words
-connected to their source line/face/document path.
+Text-Fabric graph. ``sign`` is the TF slot type.
+
+Text-Fabric 13.1 has a hard warp invariant: every non-slot node in ``oslots``
+must map to at least one slot. ORACC legitimately contains source entities with
+zero sign extent (notably 295 words and 233 metadata-only documents in this
+snapshot). Inventing or borrowing a sign would corrupt the source model, so
+zero-span entities are omitted from the TF warp and written losslessly to a
+deterministic sidecar together with any relation edges crossing that boundary.
+Source cardinalities in :class:`CorpusBuildReport` always include both layers.
 """
 
 from __future__ import annotations
@@ -19,6 +24,15 @@ from pathlib import Path
 from tf.fabric import Fabric
 
 from . import TF_VERSION, lexemes, loader, metadata, paths, sections, words
+
+
+ZERO_SPAN_SCHEMA = "oracc-tf-zero-span-v1"
+ZERO_SPAN_FILENAME = "zero-span.json"
+ZERO_SPAN_REASON = (
+    "Text-Fabric warp requires every non-slot node to map to at least one sign slot; "
+    "zero-span ORACC source entities are preserved here rather than assigned "
+    "fabricated or borrowed slots."
+)
 
 
 class CorpusBuildError(RuntimeError):
@@ -43,12 +57,48 @@ class CorpusBuildReport:
     sign_word_membership_errors: int
     word_line_membership_errors: int
     section_path_errors: int
+    tf_node_counts: dict[str, int]
+    zero_span_counts: dict[str, int]
 
     @property
     def unicode_coverage(self) -> float:
         return self.unicode_signs / self.signs if self.signs else 0.0
 
+    @property
+    def tf_documents(self) -> int:
+        return self.tf_node_counts.get("document", 0)
+
+    @property
+    def tf_words(self) -> int:
+        return self.tf_node_counts.get("word", 0)
+
+    @property
+    def tf_lines(self) -> int:
+        return self.tf_node_counts.get("line", 0)
+
+    @property
+    def tf_lexemes(self) -> int:
+        return self.tf_node_counts.get("lex", 0)
+
+    @property
+    def zero_span_nodes(self) -> int:
+        return sum(self.zero_span_counts.values())
+
+    @property
+    def zero_span_documents(self) -> int:
+        return self.zero_span_counts.get("document", 0)
+
+    @property
+    def zero_span_words(self) -> int:
+        return self.zero_span_counts.get("word", 0)
+
     def report(self) -> str:
+        tf_counts = ", ".join(
+            f"{otype}={count}" for otype, count in sorted(self.tf_node_counts.items())
+        )
+        zero_counts = ", ".join(
+            f"{otype}={count}" for otype, count in sorted(self.zero_span_counts.items())
+        ) or "none"
         return "\n".join((
             f"documents                  : {self.documents:>8,}",
             f"populated documents        : {self.populated_documents:>8,}",
@@ -64,7 +114,19 @@ class CorpusBuildReport:
             f"sign→word errors           : {self.sign_word_membership_errors:>8,}",
             f"word→line errors           : {self.word_line_membership_errors:>8,}",
             f"section path errors        : {self.section_path_errors:>8,}",
+            f"TF node counts             : {tf_counts}",
+            f"zero-span sidecar counts   : {zero_counts}",
         ))
+
+
+@dataclass(frozen=True)
+class _MaterialisedGraph:
+    node_features: dict[str, dict[int, str | int]]
+    edge_features: dict[str, dict[int, set[int]]]
+    meta_data: dict[str, dict[str, object]]
+    sidecar: dict[str, object]
+    tf_node_counts: dict[str, int]
+    zero_span_counts: dict[str, int]
 
 
 class _Graph:
@@ -122,16 +184,42 @@ class _Graph:
     def add_oslots(self, node: int, slots: Iterable[int]) -> None:
         self.non_slot_oslots[node].update(slots)
 
-    def _node_remap(self, max_slot: int) -> dict[int, int]:
-        """Put every non-slot otype in one contiguous TF node interval.
+    def _node_features(self, node: int) -> dict[str, str | int]:
+        return {
+            name: data[node]
+            for name, data in self.node_features.items()
+            if node in data
+        }
 
-        Text-Fabric's special ``otype`` representation stores one interval per
-        type. Source-order provisional ids therefore cannot be written directly
-        when documents interleave document/face/line/word nodes.
-        """
+    def _stable_key(self, node: int) -> str:
+        """Return a deterministic source-facing identity for sidecar relations."""
+        otype = self.non_slot_otype[node]
+        features = self._node_features(node)
+        if otype == "document":
+            identity = features.get("document") or features.get("document_key")
+            if not identity:
+                raise CorpusBuildError("zero-span document lacks a stable document key")
+            return f"document:{identity}"
+        if otype == "lex":
+            identity = features.get("lexeme")
+            if not identity:
+                raise CorpusBuildError("zero-span lexeme lacks a stable lexeme key")
+            return f"lex:{identity}"
+
+        source_id = features.get("source_id")
+        document_key = features.get("document_key")
+        if not source_id or not document_key:
+            raise CorpusBuildError(
+                f"zero-span {otype} node lacks source_id/document_key for stable identity"
+            )
+        return f"{otype}:{document_key}:{source_id}"
+
+    def _node_remap(self, max_slot: int, included: set[int]) -> dict[int, int]:
+        """Put every included non-slot otype in one contiguous TF interval."""
         groups: dict[str, list[int]] = defaultdict(list)
         for node, otype in self.non_slot_otype.items():
-            groups[otype].append(node)
+            if node in included:
+                groups[otype].append(node)
 
         ordered_types = [otype for otype in self.TYPE_ORDER if otype in groups]
         ordered_types.extend(sorted(set(groups) - set(ordered_types)))
@@ -144,15 +232,32 @@ class _Graph:
                 actual += 1
         return remap
 
-    def materialise(self, max_slot: int) -> tuple[
-        dict[str, dict[int, str | int]],
-        dict[str, dict[int, set[int]]],
-        dict[str, dict[str, object]],
-    ]:
-        remap = self._node_remap(max_slot)
+    def materialise(self, max_slot: int) -> _MaterialisedGraph:
+        all_nodes = set(self.non_slot_otype)
+        included = {
+            node for node in all_nodes
+            if self.non_slot_oslots.get(node)
+        }
+        omitted = all_nodes - included
+        remap = self._node_remap(max_slot, included)
+
+        tf_counts = Counter(self.non_slot_otype[node] for node in included)
+        tf_counts["sign"] = max_slot
+        zero_counts = Counter(self.non_slot_otype[node] for node in omitted)
+
+        stable_keys = {node: self._stable_key(node) for node in all_nodes}
+        if len(set(stable_keys.values())) != len(stable_keys):
+            duplicates = Counter(stable_keys.values())
+            repeated = sorted(key for key, count in duplicates.items() if count > 1)
+            raise CorpusBuildError(
+                f"non-unique stable node keys: {repeated[:5]!r}"
+            )
 
         otype: dict[int, str] = {slot: "sign" for slot in range(1, max_slot + 1)}
-        otype.update({remap[node]: typ for node, typ in self.non_slot_otype.items()})
+        otype.update({
+            remap[node]: self.non_slot_otype[node]
+            for node in included
+        })
 
         node_features: dict[str, dict[int, str | int]] = {"otype": otype}
         all_names = set(self.slot_features) | set(self.node_features)
@@ -162,20 +267,62 @@ class _Graph:
             data.update({
                 remap[node]: value
                 for node, value in self.node_features.get(name, {}).items()
+                if node in included
             })
-            node_features[name] = data
+            if data:
+                node_features[name] = data
 
         edge_features: dict[str, dict[int, set[int]]] = {
             "oslots": {
-                remap[node]: set(slots)
-                for node, slots in self.non_slot_oslots.items()
+                remap[node]: set(self.non_slot_oslots[node])
+                for node in included
             }
         }
+        side_edges: list[dict[str, object]] = []
         for name, data in self.edges.items():
-            edge_features[name] = {
-                remap[source]: {remap[target] for target in targets}
-                for source, targets in data.items()
+            tf_data: dict[int, set[int]] = {}
+            for source, targets in data.items():
+                included_targets = {target for target in targets if target in included}
+                if source in included and included_targets:
+                    tf_data[remap[source]] = {
+                        remap[target] for target in included_targets
+                    }
+
+                boundary_targets = (
+                    set(targets)
+                    if source in omitted
+                    else {target for target in targets if target in omitted}
+                )
+                if boundary_targets:
+                    side_edges.append({
+                        "feature": name,
+                        "source": stable_keys[source],
+                        "targets": sorted(stable_keys[target] for target in boundary_targets),
+                    })
+            if tf_data:
+                edge_features[name] = tf_data
+
+        side_nodes = [
+            {
+                "key": stable_keys[node],
+                "otype": self.non_slot_otype[node],
+                "features": dict(sorted(self._node_features(node).items())),
             }
+            for node in sorted(omitted, key=lambda item: stable_keys[item])
+        ]
+        side_edges.sort(
+            key=lambda edge: (
+                str(edge["feature"]),
+                str(edge["source"]),
+                tuple(edge["targets"]),
+            )
+        )
+        sidecar: dict[str, object] = {
+            "schema": ZERO_SPAN_SCHEMA,
+            "reason": ZERO_SPAN_REASON,
+            "nodes": side_nodes,
+            "edges": side_edges,
+        }
 
         meta_data: dict[str, dict[str, object]] = {
             "": {
@@ -191,14 +338,21 @@ class _Graph:
             "oslots": {"valueType": "str"},
         }
         int_features = {"catalogue_present", "lemmaknown", "populated", "synthetic"}
-        for name in all_names:
+        for name in set(node_features) - {"otype"}:
             meta_data[name] = {
                 "valueType": "int" if name in int_features else "str"
             }
-        for name in self.edges:
+        for name in set(edge_features) - {"oslots"}:
             meta_data[name] = {"valueType": "str"}
 
-        return node_features, edge_features, meta_data
+        return _MaterialisedGraph(
+            node_features=node_features,
+            edge_features=edge_features,
+            meta_data=meta_data,
+            sidecar=sidecar,
+            tf_node_counts=dict(sorted(tf_counts.items())),
+            zero_span_counts=dict(sorted(zero_counts.items())),
+        )
 
 
 def _json(value: object) -> str:
@@ -260,13 +414,35 @@ def _add_section_features(
     )
 
 
+def _write_zero_span(out_dir: Path, sidecar: dict[str, object]) -> None:
+    path = out_dir / ZERO_SPAN_FILENAME
+    path.write_text(
+        json.dumps(sidecar, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def load_zero_span(out_dir: Path | str) -> dict[str, object]:
+    """Load and minimally validate the deterministic zero-span sidecar."""
+    path = Path(out_dir) / ZERO_SPAN_FILENAME
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CorpusBuildError(f"cannot read zero-span sidecar {path}: {exc}") from exc
+    if not isinstance(data, dict) or data.get("schema") != ZERO_SPAN_SCHEMA:
+        raise CorpusBuildError(f"unsupported zero-span sidecar schema in {path}")
+    if not isinstance(data.get("nodes"), list) or not isinstance(data.get("edges"), list):
+        raise CorpusBuildError(f"invalid zero-span sidecar structure in {path}")
+    return data
+
+
 def build_tf(
     out_dir: Path | str,
     *,
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
 ) -> CorpusBuildReport:
-    """Build one joined Text-Fabric dataset from already selected editions."""
+    """Build one joined TF dataset plus the lossless zero-span sidecar."""
     graph = _Graph()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -486,16 +662,21 @@ def build_tf(
         raise CorpusBuildError(
             f"qualified document keys are not unique: {collision_count} collisions"
         )
+    if max_slot == 0:
+        raise CorpusBuildError(
+            "Text-Fabric warp cannot be emitted without at least one sign slot"
+        )
 
-    node_features, edge_features, meta_data = graph.materialise(max_slot)
+    materialised = graph.materialise(max_slot)
     tf = Fabric(locations=str(out_dir), silent="deep")
     if not tf.save(
-        nodeFeatures=node_features,
-        edgeFeatures=edge_features,
-        metaData=meta_data,
+        nodeFeatures=materialised.node_features,
+        edgeFeatures=materialised.edge_features,
+        metaData=materialised.meta_data,
         silent="deep",
     ):
         raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
+    _write_zero_span(out_dir, materialised.sidecar)
 
     return CorpusBuildReport(
         documents=document_count,
@@ -512,6 +693,8 @@ def build_tf(
         sign_word_membership_errors=membership_errors,
         word_line_membership_errors=word_line_errors,
         section_path_errors=section_path_errors,
+        tf_node_counts=materialised.tf_node_counts,
+        zero_span_counts=materialised.zero_span_counts,
     )
 
 

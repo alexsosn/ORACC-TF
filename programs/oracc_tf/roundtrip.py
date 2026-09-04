@@ -1,8 +1,8 @@
 """Round-trip measurements and source-preservation helpers for P-001 M7.
 
 A flat sign sequence is intentionally treated as weaker than the original GDL
-tree.  The evaluator reconstructs a form only from semantic sign-slot payload
-and reports why that candidate cannot reproduce the source form.  Separately,
+tree. The evaluator reconstructs a form only from semantic sign-slot payload
+and reports why that candidate cannot reproduce the source form. Separately,
 ``source_gdl_json`` defines the canonical JSON contract used to preserve the
 original GDL representation without conflating an absent field with ``[]`` or
 ``null``.
@@ -17,6 +17,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import gdl, loader, paths, words
+
+
+# These are sign-local editorial/orthographic annotations that alter the
+# printed/transliterated surface without changing which semantic sign slot is
+# present. Structural wrappers (determinatives, logograms, qualifiers, etc.)
+# are classified separately and take precedence below.
+_SLOT_MARKUP_KEYS = frozenset({"break", "breakStart", "breakEnd", "o"})
 
 
 @dataclass(frozen=True)
@@ -61,7 +68,7 @@ def source_gdl_json(features: Mapping[str, object]) -> str | None:
     """Return canonical JSON for the source ``gdl`` field, preserving absence.
 
     An absent field returns ``None``; a present empty list returns ``"[]"``;
-    a present JSON null returns ``"null"``.  This distinction is required for
+    a present JSON null returns ``"null"``. This distinction is required for
     an auditable source-preservation contract.
     """
     if "gdl" not in features:
@@ -101,6 +108,13 @@ def _source_entries(word: words.WordRecord) -> Sequence[Mapping[str, object]]:
     )
 
 
+def _has_slot_markup(word: words.WordRecord) -> bool:
+    return any(
+        any(key in sign.value for key in _SLOT_MARKUP_KEYS)
+        for sign in word.signs
+    )
+
+
 def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
     """Attempt a form round-trip using only M1 semantic sign-slot payload."""
     if word.form is None:
@@ -110,6 +124,11 @@ def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
 
     pieces: list[str] = []
     for sign in word.signs:
+        # ``x`` is itself a semantic textual position but intentionally lacks a
+        # recoverable sign reading. Do not bury this known source state under a
+        # generic unsupported-payload bucket.
+        if "x" in sign.value:
+            return WordRoundTrip(candidate=None, exact=False, reason="unreadable_sign")
         piece = _sign_piece(sign.value)
         if piece is None:
             return WordRoundTrip(
@@ -129,6 +148,8 @@ def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
     }
     if gdl.Disposition.STRUCTURAL in dispositions:
         reason = "structural_context"
+    elif _has_slot_markup(word):
+        reason = "slot_markup"
     elif gdl.Disposition.MODIFIER in dispositions:
         reason = "modifier_context"
     elif gdl.Disposition.RENDERING in dispositions:

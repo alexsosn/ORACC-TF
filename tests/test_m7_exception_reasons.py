@@ -43,3 +43,43 @@ def test_bracket_break_markup_is_not_called_plain_spelling_difference():
     assert result.candidate == "a"
     assert not result.exact
     assert result.reason == "slot_markup"
+
+
+def test_source_h_normalization_of_gdl_h_with_breve_is_explicit():
+    word = words.from_source({
+        "node": "l",
+        "id": "QTEST.h",
+        "f": {
+            "form": "hab-ta",
+            "gdl": [
+                {"v": "ḫab", "utf8": "𒄩", "delim": "-"},
+                {"v": "ta", "utf8": "𒋫"},
+            ],
+        },
+    }, start_slot=1)
+
+    result = roundtrip.evaluate_word(word)
+
+    assert result.candidate == "ḫab-ta"
+    assert not result.exact
+    assert result.reason == "source_orthography"
+
+
+def test_source_orthography_does_not_hide_unrelated_spelling_change():
+    word = words.from_source({
+        "node": "l",
+        "id": "QTEST.other",
+        "f": {
+            "form": "hab-du",
+            "gdl": [
+                {"v": "ḫab", "utf8": "𒄩", "delim": "-"},
+                {"v": "ta", "utf8": "𒋫"},
+            ],
+        },
+    }, start_slot=1)
+
+    result = roundtrip.evaluate_word(word)
+
+    assert result.candidate == "ḫab-ta"
+    assert not result.exact
+    assert result.reason == "slot_spelling"

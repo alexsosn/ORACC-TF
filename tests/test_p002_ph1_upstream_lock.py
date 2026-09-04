@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 import json
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 
@@ -26,6 +28,37 @@ def _record(name: str, sha: str, text_sha: str) -> upstream.ArchiveLock:
         licence="CC0",
         extract_paths=("riao/ria1/",),
         text_ids_sha256=text_sha,
+    )
+
+
+def _zip_bytes(files: dict[str, bytes]) -> bytes:
+    out = BytesIO()
+    with ZipFile(out, "w", compression=ZIP_DEFLATED) as archive:
+        for path, body in files.items():
+            archive.writestr(path, body)
+    return out.getvalue()
+
+
+def _fixture_archive() -> tuple[bytes, bytes]:
+    text = b'{"textid":"Q000001","cdl":[]}'
+    metadata = json.dumps(
+        {
+            "type": "metadata",
+            "project": "riao/ria1",
+            "license": "This data is released under the CC0 license",
+            "UTC-timestamp": "2026-08-07T11:59:00",
+        },
+        separators=(",", ":"),
+    ).encode()
+    return (
+        _zip_bytes(
+            {
+                "riao/ria1/metadata.json": metadata,
+                "riao/ria1/catalogue.json": b"{}",
+                "riao/ria1/corpusjson/Q000001.json": text,
+            }
+        ),
+        text,
     )
 
 
@@ -90,3 +123,57 @@ def test_archive_lock_rejects_malformed_identity_and_duplicate_paths():
             extract_paths=("riao/ria1/", "riao/ria1/"),
             text_ids_sha256=digest,
         )
+
+
+def test_archive_inspection_derives_lock_from_archive_bytes():
+    body, text = _fixture_archive()
+    record = upstream.inspect_archive_bytes(
+        "riao-ria1",
+        body,
+        etag='"abc"',
+        last_modified="2026-08-07T12:00:00Z",
+    )
+    assert record.name == "riao-ria1"
+    assert record.sha256 == upstream.sha256_bytes(body)
+    assert record.bytes == len(body)
+    assert record.oracc_utc_timestamp == "2026-08-07T11:59:00"
+    assert record.licence == "This data is released under the CC0 license"
+    assert record.extract_paths == ("riao/ria1/",)
+    assert record.text_ids_sha256 == upstream.text_ids_digest(
+        {"Q000001": upstream.sha256_bytes(text)}
+    )
+
+
+def test_archive_inspection_rejects_non_zip_and_mismatched_project():
+    with pytest.raises(upstream.UpstreamModelError, match="valid ZIP"):
+        upstream.inspect_archive_bytes("riao-ria1", b"404", etag=None, last_modified=None)
+
+    body, _ = _fixture_archive()
+    wrong = body.replace(b"riao/ria1", b"rinap/r1 ")
+    with pytest.raises(upstream.UpstreamModelError):
+        upstream.inspect_archive_bytes("riao-ria1", wrong, etag=None, last_modified=None)
+
+
+def test_snapshot_diff_is_non_destructive_and_enumerates_every_file(tmp_path: Path):
+    body, _ = _fixture_archive()
+    root = tmp_path / "data"
+    (root / "riao/ria1/corpusjson").mkdir(parents=True)
+    (root / "riao/ria1/metadata.json").write_bytes(
+        json.dumps(
+            {
+                "type": "metadata",
+                "project": "riao/ria1",
+                "license": "This data is released under the CC0 license",
+                "UTC-timestamp": "2026-08-07T11:59:00",
+            },
+            separators=(",", ":"),
+        ).encode()
+    )
+    (root / "riao/ria1/catalogue.json").write_bytes(b'{"old":true}')
+    (root / "riao/ria1/corpusjson/Q000002.json").write_bytes(b"old")
+
+    diff = upstream.compare_archive_bytes_to_tree(body, root)
+    assert diff.added == ("riao/ria1/corpusjson/Q000001.json",)
+    assert diff.removed == ("riao/ria1/corpusjson/Q000002.json",)
+    assert diff.modified == ("riao/ria1/catalogue.json",)
+    assert (root / "riao/ria1/catalogue.json").read_bytes() == b'{"old":true}'

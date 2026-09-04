@@ -1,0 +1,166 @@
+"""Round-trip measurements and source-preservation helpers for P-001 M7.
+
+A flat sign sequence is intentionally treated as weaker than the original GDL
+tree.  The evaluator reconstructs a form only from semantic sign-slot payload
+and reports why that candidate cannot reproduce the source form.  Separately,
+``source_gdl_json`` defines the canonical JSON contract used to preserve the
+original GDL representation without conflating an absent field with ``[]`` or
+``null``.
+"""
+
+from __future__ import annotations
+
+import json
+from collections import Counter
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+
+from . import gdl, loader, paths, words
+
+
+@dataclass(frozen=True)
+class WordRoundTrip:
+    """Result of reconstructing one source word from semantic sign payload."""
+
+    candidate: str | None
+    exact: bool
+    reason: str | None
+
+
+@dataclass(frozen=True)
+class RoundTripCensus:
+    """Whole-corpus sign-derived form accounting."""
+
+    words: int
+    exact: int
+    zero_sign_words: int
+    exceptions: dict[str, int]
+
+    @property
+    def exception_words(self) -> int:
+        return sum(self.exceptions.values())
+
+    def report(self) -> str:
+        lines = [
+            f"words              : {self.words:>8,}",
+            f"exact              : {self.exact:>8,}",
+            f"exceptions         : {self.exception_words:>8,}",
+            f"zero-sign words    : {self.zero_sign_words:>8,}",
+        ]
+        for reason, count in sorted(self.exceptions.items()):
+            lines.append(f"  {reason:<20}: {count:>8,}")
+        return "\n".join(lines)
+
+
+def _json(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+
+
+def source_gdl_json(features: Mapping[str, object]) -> str | None:
+    """Return canonical JSON for the source ``gdl`` field, preserving absence.
+
+    An absent field returns ``None``; a present empty list returns ``"[]"``;
+    a present JSON null returns ``"null"``.  This distinction is required for
+    an auditable source-preservation contract.
+    """
+    if "gdl" not in features:
+        return None
+    return _json(features["gdl"])
+
+
+def _sign_piece(value: Mapping[str, object]) -> str | None:
+    """Return the transliteration contribution carried by one semantic slot."""
+    piece: object | None = None
+    for key in ("v", "s", "q", "c"):
+        if key in value:
+            piece = value[key]
+            break
+    if piece is None and "n" in value:
+        piece = value.get("form")
+    if not isinstance(piece, str):
+        return None
+
+    delim = value.get("delim")
+    if delim is None:
+        return piece
+    if not isinstance(delim, str):
+        return None
+    return piece + delim
+
+
+def _source_entries(word: words.WordRecord) -> Sequence[Mapping[str, object]]:
+    raw = word.features.get("gdl")
+    if raw is None:
+        return ()
+    if isinstance(raw, Sequence) and not isinstance(raw, (str, bytes, bytearray)):
+        return raw
+    # M2 already rejects this shape; keep the M7 helper fail-closed as well.
+    raise words.InvalidWordSource(
+        f"{word.source_id}: 'gdl' is {type(raw).__name__}, expected list"
+    )
+
+
+def evaluate_word(word: words.WordRecord) -> WordRoundTrip:
+    """Attempt a form round-trip using only M1 semantic sign-slot payload."""
+    if word.form is None:
+        return WordRoundTrip(candidate=None, exact=False, reason="missing_form")
+    if not word.signs:
+        return WordRoundTrip(candidate=None, exact=False, reason="zero_sign")
+
+    pieces: list[str] = []
+    for sign in word.signs:
+        piece = _sign_piece(sign.value)
+        if piece is None:
+            return WordRoundTrip(
+                candidate=None,
+                exact=False,
+                reason="unsupported_slot_payload",
+            )
+        pieces.append(piece)
+
+    candidate = "".join(pieces)
+    if candidate == word.form:
+        return WordRoundTrip(candidate=candidate, exact=True, reason=None)
+
+    dispositions = {
+        item.disposition
+        for item in gdl.classify_tree(_source_entries(word), word_id=word.source_id)
+    }
+    if gdl.Disposition.STRUCTURAL in dispositions:
+        reason = "structural_context"
+    elif gdl.Disposition.MODIFIER in dispositions:
+        reason = "modifier_context"
+    elif gdl.Disposition.RENDERING in dispositions:
+        reason = "rendering_context"
+    else:
+        reason = "slot_spelling"
+    return WordRoundTrip(candidate=candidate, exact=False, reason=reason)
+
+
+def census(data: Path = paths.DATA) -> RoundTripCensus:
+    """Measure sign-derived form round-trip over all parseable RIAO+RINAP words."""
+    total = 0
+    exact = 0
+    zero_sign = 0
+    exceptions: Counter[str] = Counter()
+
+    for edition in loader.iter_editions(Path(data), skip_unreadable=True):
+        for word in words.iter_words(edition.doc):
+            total += 1
+            result = evaluate_word(word)
+            if result.exact:
+                exact += 1
+                continue
+            if result.reason is None:
+                raise RuntimeError(f"{word.source_id}: failed round-trip without reason")
+            exceptions[result.reason] += 1
+            if result.reason == "zero_sign":
+                zero_sign += 1
+
+    return RoundTripCensus(
+        words=total,
+        exact=exact,
+        zero_sign_words=zero_sign,
+        exceptions=dict(sorted(exceptions.items())),
+    )

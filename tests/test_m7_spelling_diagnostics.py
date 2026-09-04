@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import unicodedata
 
 import pytest
 
@@ -11,9 +12,9 @@ from oracc_tf import loader, paths, roundtrip, words
 
 @pytest.mark.corpus
 def test_residual_slot_spelling_shapes_are_exposed_before_pinning():
-    key_profiles: Counter[tuple[str, ...]] = Counter()
+    relations: Counter[str] = Counter()
     continuation_profiles: Counter[tuple[str, ...]] = Counter()
-    samples: list[dict[str, object]] = []
+    feature_flags: Counter[str] = Counter()
 
     continuation_keys = {"headform", "tailform", "contrefs", "cont", "continuation"}
 
@@ -23,22 +24,38 @@ def test_residual_slot_spelling_shapes_are_exposed_before_pinning():
             if result.reason != "slot_spelling":
                 continue
 
-            keys = tuple(sorted(word.features))
-            key_profiles[keys] += 1
+            form = word.form or ""
+            candidate = result.candidate or ""
             continuation_profiles[tuple(sorted(continuation_keys & set(word.features)))] += 1
+            for key in continuation_keys:
+                if key in word.features:
+                    feature_flags[key] += 1
 
-            if len(samples) < 12:
-                samples.append({
-                    "document": edition.key,
-                    "word": word.source_id,
-                    "form": word.form,
-                    "candidate": result.candidate,
-                    "features": dict(word.features),
-                    "signs": [dict(sign.value) for sign in word.signs],
-                })
+            if candidate == form:
+                relation = "equal"
+            elif candidate.rstrip("-.:") == form:
+                relation = "candidate_trailing_delimiter"
+            elif form.rstrip("-.:") == candidate:
+                relation = "form_trailing_delimiter"
+            elif form.startswith(candidate):
+                relation = "candidate_prefix_of_form"
+            elif candidate.startswith(form):
+                relation = "form_prefix_of_candidate"
+            elif word.frag is not None and candidate == word.frag:
+                relation = "candidate_equals_frag"
+            elif word.frag is not None and form == word.frag:
+                relation = "form_equals_frag"
+            elif unicodedata.normalize("NFC", candidate) == unicodedata.normalize("NFC", form):
+                relation = "unicode_normalization_only"
+            else:
+                relation = "other"
+            relations[relation] += 1
 
-    assert not key_profiles, {
-        "key_profiles": dict(key_profiles.most_common()),
-        "continuation_profiles": dict(continuation_profiles.most_common()),
-        "samples": samples,
+    assert not relations, {
+        "relations": dict(relations.most_common()),
+        "continuation_profiles": {
+            "+".join(profile) if profile else "none": count
+            for profile, count in continuation_profiles.most_common()
+        },
+        "feature_flags": dict(feature_flags.most_common()),
     }

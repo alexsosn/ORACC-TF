@@ -43,6 +43,8 @@ def test_same_max_timestamp_with_different_archive_bytes_cannot_collide():
     assert first.source_digest != changed.source_digest
     assert first.tag != changed.tag
     assert first.tag.startswith("assyrian-royal-inscriptions/v1.2.0+oracc.2026-08-07.")
+    assert first.tag.endswith(first.source_digest)
+    assert changed.tag.endswith(changed.source_digest)
 
 
 def test_semver_precedence_depends_on_converter_version_not_source_metadata():
@@ -57,6 +59,21 @@ def test_semver_precedence_depends_on_converter_version_not_source_metadata():
 
     assert releases.semver_precedence_key(v120.tf_version) < releases.semver_precedence_key(v121.tf_version)
     assert releases.semver_precedence_key(v120.tf_version) == releases.semver_precedence_key(other_source.tf_version)
+
+
+def test_semver_prerelease_order_matches_the_spec_example():
+    ordered = [
+        "1.0.0-alpha",
+        "1.0.0-alpha.1",
+        "1.0.0-alpha.beta",
+        "1.0.0-beta",
+        "1.0.0-beta.2",
+        "1.0.0-beta.11",
+        "1.0.0-rc.1",
+        "1.0.0",
+    ]
+    assert sorted(ordered, key=releases.semver_precedence_key) == ordered
+    assert releases.semver_precedence_key("1.0.0+build.1") == releases.semver_precedence_key("1.0.0+build.2")
 
 
 def test_release_identity_rejects_ambiguous_or_invalid_inputs():

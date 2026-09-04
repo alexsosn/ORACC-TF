@@ -112,6 +112,22 @@ def test_slotless_source_word_survives_losslessly_without_fabricated_slot(tmp_pa
     assert relation_edges[0]["targets"][0].endswith(":QTEST.1")
 
 
+def test_zero_span_sidecar_is_byte_deterministic(tmp_path):
+    edition = _edition("test/unit", "QTEST", signless=True)
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    for target in (left, right):
+        corpus.build_tf(
+            target,
+            editions=(edition,),
+            metadata_index=metadata.MetadataIndex.empty(),
+        )
+
+    assert (left / corpus.ZERO_SPAN_FILENAME).read_bytes() == (
+        right / corpus.ZERO_SPAN_FILENAME
+    ).read_bytes()
+
+
 def test_same_q_number_in_two_subprojects_stays_two_documents(tmp_path):
     editions = (
         _edition("test/a", "QDUPE"),
@@ -147,31 +163,55 @@ def test_joined_corpus_invariants_and_tf_warp_load(tmp_path):
 
     assert report.words == 320975
     assert report.signs == 792651
+    assert report.unicode_signs == 778873
+    assert report.unicode_coverage == pytest.approx(778873 / 792651)
     assert report.slotless_words == 295
     assert report.sign_word_membership_errors == 0
     assert report.word_line_membership_errors == 0
     assert report.section_path_errors == 0
 
-    # Zero-span source entities remain part of source cardinalities but cannot
-    # be warp nodes. At minimum this snapshot contains the 295 M2 signless
-    # words and all 233 metadata-only stub documents.
+    assert report.tf_node_counts == {
+        "chunk": 13388,
+        "column": 723,
+        "document": 1842,
+        "face": 2036,
+        "lex": 8023,
+        "line": 56084,
+        "phrase": 4499,
+        "sign": 792651,
+        "word": 320680,
+    }
+    assert report.zero_span_counts == {
+        "chunk": 256,
+        "column": 35,
+        "document": 236,
+        "face": 276,
+        "lex": 2,
+        "line": 142,
+        "word": 295,
+    }
+    assert report.zero_span_nodes == 1242
     assert report.tf_words + report.zero_span_words == report.words
-    assert report.zero_span_words == 295
     assert report.tf_documents + report.zero_span_documents == report.documents
-    assert report.zero_span_documents >= 233
-    assert report.zero_span_nodes >= report.zero_span_words + report.zero_span_documents
-
-    # Diagnostic first freeze: implementation must report the measured exact
-    # count, then this deliberate RED assertion is replaced with that value.
-    assert report.unicode_signs == 0, report.report()
+    assert report.tf_lines + report.zero_span_counts["line"] == report.lines
+    assert report.tf_lexemes + report.zero_span_counts["lex"] == report.lexemes
 
     api = corpus.load_tf(tmp_path)
     assert api.F.otype.maxSlot == 792651
-    assert len(api.F.otype.s("document")) == report.tf_documents
-    assert len(api.F.otype.s("word")) == report.tf_words
-    assert len(api.F.otype.s("line")) == report.tf_lines
-    assert len(api.F.otype.s("lex")) == report.tf_lexemes
+    assert len(api.F.otype.s("document")) == 1842
+    assert len(api.F.otype.s("word")) == 320680
+    assert len(api.F.otype.s("line")) == 56084
+    assert len(api.F.otype.s("lex")) == 8023
 
     zero_span = corpus.load_zero_span(tmp_path)
     assert zero_span["schema"] == "oracc-tf-zero-span-v1"
-    assert len(zero_span["nodes"]) == report.zero_span_nodes
+    assert len(zero_span["nodes"]) == 1242
+
+    populated_zero_span_documents = sorted(
+        node["features"]["document"]
+        for node in zero_span["nodes"]
+        if node["otype"] == "document" and node["features"].get("populated") == 1
+    )
+    # Deliberate diagnostic RED: M6 measurement found three such documents.
+    # Pin their exact qualified ids after this assertion reports them.
+    assert populated_zero_span_documents == [], populated_zero_span_documents

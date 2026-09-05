@@ -3,21 +3,47 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from pathlib import Path
 
 from tf.fabric import Fabric
 
 MANUAL = re.compile(r"<!-- manual:begin ([^ ]+) -->.*?<!-- manual:end -->", re.S)
+MANIFEST = ".manual-regions.json"
 
 
 def manual_regions(text: str) -> dict[str, str]:
     return {m.group(1): m.group(0) for m in MANUAL.finditer(text)}
 
 
-def write_preserving(path: Path, generated: str) -> None:
+def _load_manifest(docs_dir: Path) -> dict[str, list[str]]:
+    path = docs_dir / MANIFEST
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError(f"invalid manual-region manifest at {path}")
+    return {
+        str(rel): [str(name) for name in names]
+        for rel, names in data.items()
+        if isinstance(names, list)
+    }
+
+
+def write_preserving(
+    path: Path,
+    generated: str,
+    *,
+    expected_regions: tuple[str, ...] = (),
+) -> None:
     old = path.read_text(encoding="utf-8") if path.exists() else ""
     regions = manual_regions(old)
+    missing = sorted(set(expected_regions) - set(regions))
+    if missing:
+        raise RuntimeError(
+            f"manual region(s) {missing!r} were deleted from {path}; restore them before regeneration"
+        )
     for name, block in regions.items():
         marker = f"<!-- manual:begin {name} -->\n<!-- manual:end -->"
         if marker not in generated:
@@ -27,26 +53,93 @@ def write_preserving(path: Path, generated: str) -> None:
     path.write_text(generated.rstrip() + "\n", encoding="utf-8")
 
 
-def generate(tf_dir: Path, docs_dir: Path) -> None:
+def _feature_page(
+    *,
+    name: str,
+    kind: str,
+    scope: str,
+    value_type: str,
+    description: str,
+) -> str:
+    return f"""# `{name}`\n\n- kind: `{kind}`\n- scope: `{scope}`\n- value type: `{value_type}`\n- description: {description}\n\n<!-- manual:begin interpretation -->\n<!-- manual:end -->\n"""
+
+
+def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
     tf = Fabric(locations=str(tf_dir), silent="deep")
     if not tf.loadAll(silent="deep") or tf.api is None:
         raise RuntimeError(f"cannot load Text-Fabric dataset at {tf_dir}")
     api = tf.api
-    features = sorted(name for name in api.Fall() if name not in {"otype"})
+    manifest = _load_manifest(docs_dir)
+    generated_paths: set[Path] = set()
+    next_manifest: dict[str, list[str]] = {}
+
     rows = ["# Feature reference", "", "Generated from TF metadata; do not hand-edit generated fields.", ""]
-    for name in features:
-        f = api.Fs(name)
-        description = str(f.meta.get("description", "")).strip()
-        value_type = str(f.meta.get("valueType", "str"))
+
+    for name in sorted(feature for feature in api.Fall() if feature != "otype"):
+        feature = api.Fs(name)
+        description = str(feature.meta.get("description", "")).strip()
+        value_type = str(feature.meta.get("valueType", "str"))
         if not description:
             raise RuntimeError(f"feature {name!r} has an empty @description")
-        node_types = sorted({api.F.otype.v(n) for n in f.items()})
-        node_type = node_types[0] if len(node_types) == 1 else "mixed"
-        rel = Path("features") / node_type / f"{name}.md"
+        node_types = sorted({api.F.otype.v(node) for node, _ in feature.items()})
+        scope = node_types[0] if len(node_types) == 1 else "mixed"
+        rel = Path("features") / scope / f"{name}.md"
         rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
-        page = f"""# `{name}`\n\n- node type: `{node_type}`\n- value type: `{value_type}`\n- description: {description}\n\n<!-- manual:begin interpretation -->\n<!-- manual:end -->\n"""
-        write_preserving(docs_dir / rel, page)
-    write_preserving(docs_dir / "features.md", "\n".join(rows) + "\n")
+        page = _feature_page(
+            name=name,
+            kind="node",
+            scope=scope,
+            value_type=value_type,
+            description=description,
+        )
+        write_preserving(
+            docs_dir / rel,
+            page,
+            expected_regions=tuple(manifest.get(rel.as_posix(), ())),
+        )
+        generated_paths.add(rel)
+        next_manifest[rel.as_posix()] = sorted(manual_regions((docs_dir / rel).read_text(encoding="utf-8")))
+
+    for name in sorted(feature for feature in api.Eall() if feature != "oslots"):
+        feature = api.Es(name)
+        description = str(feature.meta.get("description", "")).strip()
+        value_type = str(feature.meta.get("valueType", "str"))
+        if not description:
+            raise RuntimeError(f"edge feature {name!r} has an empty @description")
+        rel = Path("features") / "edge" / f"{name}.md"
+        rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
+        page = _feature_page(
+            name=name,
+            kind="edge",
+            scope="edge",
+            value_type=value_type,
+            description=description,
+        )
+        write_preserving(
+            docs_dir / rel,
+            page,
+            expected_regions=tuple(manifest.get(rel.as_posix(), ())),
+        )
+        generated_paths.add(rel)
+        next_manifest[rel.as_posix()] = sorted(manual_regions((docs_dir / rel).read_text(encoding="utf-8")))
+
+    feature_index = Path("features.md")
+    write_preserving(
+        docs_dir / feature_index,
+        "\n".join(rows) + "\n",
+        expected_regions=tuple(manifest.get(feature_index.as_posix(), ())),
+    )
+    generated_paths.add(feature_index)
+    next_manifest[feature_index.as_posix()] = sorted(
+        manual_regions((docs_dir / feature_index).read_text(encoding="utf-8"))
+    )
+
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    (docs_dir / MANIFEST).write_text(
+        json.dumps(next_manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return generated_paths
 
 
 def main() -> None:

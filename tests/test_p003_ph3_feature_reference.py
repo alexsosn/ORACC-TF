@@ -162,6 +162,46 @@ def test_edge_feature_page_has_source_target_types_links_and_degree_frequency(tm
     assert "| 2 | 1 |" in text
 
 
+def test_high_cardinality_edge_degree_domain_is_bounded(tmp_path, monkeypatch):
+    gen_docs = _load_gen_docs()
+    sources = list(range(100, 122))
+    targets = list(range(1000, 2000))
+    types = {source: "word" for source in sources}
+    types.update({target: "sign" for target in targets})
+
+    class ManyDegreesApi(_Api):
+        def __init__(self):
+            super().__init__()
+            self.F.otype = _Otype(types)
+            self._node = {}
+            self._edge = {
+                "oslots": _Feature(
+                    "Warp edge.",
+                    [(source, targets[:degree]) for source, degree in zip(sources, range(1, 23))],
+                )
+            }
+
+        def Fall(self):
+            return []
+
+        def Eall(self):
+            return ["oslots"]
+
+    class ManyDegreesFabric(_Fabric):
+        def __init__(self, *args, **kwargs):
+            self.api = ManyDegreesApi()
+
+    monkeypatch.setattr(gen_docs, "Fabric", ManyDegreesFabric)
+    docs = tmp_path / "docs"
+    gen_docs.generate(tmp_path / "tf", docs)
+    text = (docs / "features/edge/oslots.md").read_text(encoding="utf-8")
+    assert "Showing the 20 most frequent out-degrees" in text
+    degree_rows = [line for line in text.splitlines() if line.startswith("| ") and "out-degree" not in line]
+    assert len(degree_rows) == 21  # separator + 20 data rows
+    assert "| 21 | 1 |" not in text
+    assert "| 22 | 1 |" not in text
+
+
 def test_edge_targets_accept_text_fabric_array_storage(tmp_path, monkeypatch):
     gen_docs = _load_gen_docs()
 

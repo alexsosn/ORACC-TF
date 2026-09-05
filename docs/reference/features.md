@@ -1,3 +1,69 @@
 # Feature reference
 
 Generated from TF metadata; do not hand-edit generated fields.
+
+- [`catalogue_json`](features/document/catalogue_json.md) — Canonical JSON serialization of the joined ORACC catalogue record.
+- [`catalogue_present`](features/document/catalogue_present.md) — Integer flag: 1 when catalogue metadata was joined for the document, otherwise 0.
+- [`cdli_id`](features/document/cdli_id.md) — ORACC catalogue CDLI identifier value preserved as text.
+- [`cf`](features/mixed/cf.md) — ORACC citation form (lemma) attached to the word or lexeme.
+- [`chunk_subtype`](features/chunk/chunk_subtype.md) — ORACC chunk subtype preserved from the source structure.
+- [`chunk_type`](features/chunk/chunk_type.md) — ORACC chunk type preserved from the source structure.
+- [`collection`](features/document/collection.md) — ORACC catalogue collection value preserved as text.
+- [`column_id`](features/column/column_id.md) — Source ORACC column identifier.
+- [`designation`](features/document/designation.md) — ORACC catalogue designation value preserved as text.
+- [`document`](features/document/document.md) — Qualified ORACC document key used as the Text-Fabric document section value.
+- [`document_key`](features/mixed/document_key.md) — Qualified ORACC subproject/document key used by ORACC-TF for cross-node identity.
+- [`epos`](features/word/epos.md) — ORACC effective/contextual part-of-speech value for the word occurrence.
+- [`exemplars`](features/document/exemplars.md) — ORACC catalogue exemplars value preserved as text.
+- [`face`](features/face/face.md) — Source face identifier used as the Text-Fabric face section value.
+- [`form`](features/word/form.md) — Surface transliteration form of the ORACC word occurrence.
+- [`frag`](features/word/frag.md) — ORACC source fragment value for the word occurrence.
+- [`gdl_form`](features/sign/gdl_form.md) — ORACC GDL form value attached to this sign, when present.
+- [`gdl_id`](features/sign/gdl_id.md) — ORACC GDL identifier attached to this sign, when present.
+- [`gdl_json`](features/word/gdl_json.md) — Canonical JSON serialization of the source ORACC word-level GDL payload.
+- [`gdl_sexified`](features/sign/gdl_sexified.md) — ORACC GDL sexified value attached to this sign, when present.
+- [`genre`](features/document/genre.md) — ORACC catalogue genre value preserved as text.
+- [`gw`](features/mixed/gw.md) — ORACC guide word used to disambiguate the lexical entry.
+- [`implicit`](features/chunk/implicit.md) — Source section implicit marker preserved from ORACC.
+- [`inst`](features/word/inst.md) — ORACC source instance-analysis value preserved on the word occurrence.
+- [`label`](features/mixed/label.md) — Source section label preserved from ORACC.
+- [`lang`](features/mixed/lang.md) — ORACC language code attached to the word or lexeme.
+- [`language`](features/document/language.md) — ORACC catalogue language value preserved as text.
+- [`lemmaknown`](features/word/lemmaknown.md) — Integer ORACC lexical-analysis flag indicating whether the word has a known lemma analysis.
+- [`lexeme`](features/lex/lexeme.md) — Canonical JSON tuple [lang, cf, gw, pos] used by ORACC-TF as the lexeme key.
+- [`license`](features/document/license.md) — Licence label supplied by ORACC for the source document metadata.
+- [`license_url`](features/document/license_url.md) — Licence URL supplied by ORACC for the source document metadata.
+- [`line`](features/line/line.md) — Source ORACC line identifier used as the Text-Fabric line section value.
+- [`lnno`](features/line/lnno.md) — Source ATF/ORACC line label; compatibility alias used by cross-corpus tooling.
+- [`material`](features/document/material.md) — ORACC catalogue material value preserved as text.
+- [`norm`](features/word/norm.md) — ORACC normalized Akkadian form attached to the word occurrence, when available.
+- [`object_type`](features/document/object_type.md) — ORACC catalogue object-type value preserved as text.
+- [`period`](features/document/period.md) — ORACC catalogue period value preserved as text.
+- [`pleiades_coord`](features/document/pleiades_coord.md) — ORACC catalogue Pleiades coordinate value preserved as text.
+- [`pleiades_id`](features/document/pleiades_id.md) — ORACC catalogue Pleiades identifier value preserved as text.
+- [`populated`](features/document/populated.md) — Integer flag: 1 when the ORACC edition contains parsed words, otherwise 0.
+- [`pos`](features/mixed/pos.md) — ORACC lexical part-of-speech value.
+- [`primary_publication`](features/document/primary_publication.md) — ORACC catalogue primary-publication value preserved as text.
+- [`provenience`](features/document/provenience.md) — ORACC catalogue provenience value preserved as text.
+- [`readingu`](features/sign/readingu.md) — Compatibility alias for the ORACC Unicode cuneiform sign string in utf8.
+- [`ref`](features/mixed/ref.md) — Source reference string preserved from ORACC.
+- [`ruler`](features/document/ruler.md) — ORACC catalogue ruler value preserved as text.
+- [`script`](features/document/script.md) — ORACC catalogue script value preserved as text.
+- [`sense`](features/word/sense.md) — ORACC contextual lexical sense attached to the word occurrence.
+- [`sig`](features/word/sig.md) — ORACC occurrence analysis signature preserved verbatim; not a stable ORACC-TF lexeme identifier.
+- [`sign_json`](features/sign/sign_json.md) — Canonical JSON serialization of the source ORACC sign/GDL object.
+- [`source_id`](features/mixed/source_id.md) — Source ORACC node identifier preserved from the input data.
+- [`src_path`](features/sign/src_path.md) — Source GDL path of this sign within the ORACC word structure.
+- [`subgenre`](features/document/subgenre.md) — ORACC catalogue subgenre value preserved as text.
+- [`subproject`](features/document/subproject.md) — ORACC subproject that supplied the document.
+- [`supergenre`](features/document/supergenre.md) — ORACC catalogue supergenre value preserved as text.
+- [`synthetic`](features/mixed/synthetic.md) — Integer flag marking a section node synthesized by ORACC-TF to preserve source hierarchy.
+- [`text_id`](features/document/text_id.md) — ORACC text identifier without the subproject qualifier.
+- [`utf8`](features/sign/utf8.md) — Unicode cuneiform string supplied by ORACC for this sign, when available.
+- [`word_id`](features/sign/word_id.md) — Source ORACC word identifier containing this sign.
+- [`column_face`](features/edge/column_face.md) — Edge from a column node to its containing face node.
+- [`face_document`](features/edge/face_document.md) — Edge from a face node to its containing document node.
+- [`line_column`](features/edge/line_column.md) — Edge from a line node to its containing column node.
+- [`line_face`](features/edge/line_face.md) — Edge from a line node to its containing face node.
+- [`word_lex`](features/edge/word_lex.md) — Edge from a word occurrence to its ORACC-TF lexeme node.
+- [`word_line`](features/edge/word_line.md) — Edge from a word node to its containing line node.

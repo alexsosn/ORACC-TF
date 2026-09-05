@@ -4,6 +4,8 @@ from importlib.util import module_from_spec, spec_from_file_location
 import json
 from pathlib import Path
 
+import pytest
+
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "shard_index.py"
 spec = spec_from_file_location("shard_index_issue45_metadata", SCRIPT)
@@ -65,3 +67,21 @@ def test_verify_against_rejects_source_metadata_drift(tmp_path):
 
     # Payload digests are identical; provenance/metadata is not.
     assert module.verify(outdir, against=changed, quiet=True) == 1
+
+
+def test_duplicate_manifest_fields_fail_closed(tmp_path):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    _write_source(src)
+    module.split(src, outdir, max_mb=1)
+
+    manifest_path = outdir / module.MANIFEST
+    text = manifest_path.read_text(encoding="utf-8")
+    # Inject a second top-level project field without otherwise changing the
+    # manifest payload. Ordinary json.load would silently keep the latter one.
+    manifest_path.write_text(
+        text.replace("{", '{"project":"tampered",', 1), encoding="utf-8"
+    )
+
+    with pytest.raises(Exception, match="(?i)duplicate"):
+        module.verify(outdir, quiet=True)

@@ -15,6 +15,7 @@ spec.loader.exec_module(module)
 
 
 def _write_source(path: Path) -> bytes:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
             {
@@ -50,3 +51,27 @@ def test_split_rejects_existing_regular_file_output_without_mutation(tmp_path):
 
     assert out.is_file()
     assert out.read_bytes() == b"sentinel"
+
+
+def test_split_rejects_output_directory_that_contains_source(tmp_path):
+    outdir = tmp_path / "data"
+    src = outdir / "index.json"
+    original = _write_source(src)
+
+    with pytest.raises(Exception, match="(?i)(output|directory|source|contain|path)"):
+        module.split(src, outdir, max_mb=1)
+
+    assert src.is_file()
+    assert src.read_bytes() == original
+
+
+def test_dry_run_does_not_create_missing_output_parent(tmp_path, capsys):
+    src = tmp_path / "index.json"
+    _write_source(src)
+    outdir = tmp_path / "missing-parent" / "shards"
+    assert not outdir.parent.exists()
+
+    module.split(src, outdir, max_mb=1, dry_run=True)
+
+    assert "dry run, nothing written" in capsys.readouterr().out
+    assert not outdir.parent.exists()

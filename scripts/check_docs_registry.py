@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Validate the documentation registry against the documents on disk.
+"""Validate the maintainer documentation registry against documents on disk.
 
-docs/registry.json drives the automated development loop: an agent reads it to
-choose the next task. If it drifts from the documents, the agent works from a
-false map. This check keeps them honest.
+``docs/registry.json`` drives the automated development loop, so it owns the
+maintainer-facing document graph: the docs index plus research, plans, guides,
+and reports that declare stable document ids. ``docs/reference/**`` is a
+separate user-facing/generated surface owned by ``scripts/check_docs.py``; it
+is deliberately excluded here so generated per-feature pages never need manual
+registry entries.
 
 Verifies:
-  * every docs/**/*.md has front-matter with the required fields
+  * every registry-owned Markdown document has required front matter
   * every front-matter id is unique and matches its filename prefix
   * every depends_on / blocks target exists
   * registry documents match the files on disk, field for field
@@ -29,6 +32,7 @@ REQUIRED = ("id", "title", "type", "status", "priority")
 STATUSES = {"draft", "active", "done", "blocked", "superseded"}
 PRIORITIES = {"P0", "P1", "P2"}
 TASK_STATUSES = {"todo", "in_progress", "blocked", "done"}
+REFERENCE_DIR = "reference"
 
 
 def front_matter(path):
@@ -48,6 +52,11 @@ def front_matter(path):
     return out, body
 
 
+def _registry_owned(path, docs_root):
+    rel = os.path.relpath(path, docs_root)
+    return rel.split(os.sep, 1)[0] != REFERENCE_DIR
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--docs", default="docs")
@@ -56,7 +65,8 @@ def main():
 
     docs = {}
     bodies = {}
-    for path in sorted(glob.glob(os.path.join(a.docs, "**", "*.md"), recursive=True)):
+    all_markdown = sorted(glob.glob(os.path.join(a.docs, "**", "*.md"), recursive=True))
+    for path in (path for path in all_markdown if _registry_owned(path, a.docs)):
         fm, body = front_matter(path)
         if fm is None:
             problems.append(f"{path}: no YAML front-matter")
@@ -102,7 +112,8 @@ def main():
                 if str(reg_docs[did].get(field)) != str(docs[did].get(field)):
                     problems.append(
                         f"registry: {did}.{field} is {reg_docs[did].get(field)!r}, "
-                        f"document says {docs[did].get(field)!r}")
+                        f"document says {docs[did].get(field)!r}"
+                    )
 
     tasks = {t["id"]: t for t in reg.get("tasks", [])}
     for tid, t in tasks.items():
@@ -122,8 +133,8 @@ def main():
             if dep not in tasks:
                 problems.append(f"task {tid}: blocked_by unknown task {dep}")
 
-    # cycle detection
     colour = {}
+
     def visit(n, trail):
         if colour.get(n) == 1:
             problems.append("task cycle: " + " -> ".join(trail + [n]))
@@ -135,6 +146,7 @@ def main():
             if dep in tasks:
                 visit(dep, trail + [n])
         colour[n] = 2
+
     for tid in tasks:
         visit(tid, [])
 
@@ -144,9 +156,12 @@ def main():
                 if tasks.get(dep, {}).get("status") != "done":
                     problems.append(f"task {tid}: done but depends on unfinished {dep}")
 
-    ready = [tid for tid, t in sorted(tasks.items())
-             if t.get("status") == "todo"
-             and all(tasks.get(d, {}).get("status") == "done" for d in t.get("blocked_by") or [])]
+    ready = [
+        tid
+        for tid, t in sorted(tasks.items())
+        if t.get("status") == "todo"
+        and all(tasks.get(d, {}).get("status") == "done" for d in t.get("blocked_by") or [])
+    ]
     if not problems:
         print(f"documents: {len(docs)}   tasks: {len(tasks)}")
         print(f"ready now ({len(ready)}): {', '.join(ready[:8])}")

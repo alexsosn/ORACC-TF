@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tf.fabric import Fabric
+
 
 REFERENCE_PAGES = {
     "index.md",
@@ -18,6 +20,22 @@ REFERENCE_PAGES = {
     "reproducibility.md",
     "features.md",
 }
+
+
+def _tiny_tf(path: Path, *, token: str = "a") -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    tf = Fabric(locations=str(path), silent="deep")
+    assert tf.save(
+        nodeFeatures={"otype": {1: "sign"}, "token": {1: token}},
+        edgeFeatures={"oslots": {}},
+        metaData={
+            "": {"name": "docs-test", "version": "0.0.0"},
+            "otype": {"valueType": "str", "description": "Node type."},
+            "oslots": {"valueType": "str", "description": "Slot membership."},
+            "token": {"valueType": "str", "description": "Fixture token."},
+        },
+        silent="deep",
+    )
 
 
 def test_reference_skeleton_is_complete_and_indexed():
@@ -95,3 +113,51 @@ def test_drift_check_rejects_removed_manual_region(tmp_path):
     )
     assert result.returncode != 0
     assert "manual" in (result.stdout + result.stderr).lower()
+
+
+def test_generator_emits_feature_pages_and_full_drift_check_covers_tree(tmp_path):
+    tf_dir = tmp_path / "tf"
+    output = tmp_path / "reference" / "features.md"
+    _tiny_tf(tf_dir)
+
+    subprocess.run(
+        [sys.executable, "scripts/gen_docs.py", "--tf", str(tf_dir), "--output", str(output)],
+        check=True,
+    )
+    token_page = output.parent / "features" / "sign" / "token.md"
+    assert token_page.is_file()
+    assert "Fixture token." in token_page.read_text(encoding="utf-8")
+    assert "Populated entries: 1" in token_page.read_text(encoding="utf-8")
+
+    clean = subprocess.run(
+        [sys.executable, "scripts/check_docs.py", "--tf", str(tf_dir), "--generated", str(output)],
+        capture_output=True,
+        text=True,
+    )
+    assert clean.returncode == 0, clean.stdout + clean.stderr
+
+    token_page.unlink()
+    missing = subprocess.run(
+        [sys.executable, "scripts/check_docs.py", "--tf", str(tf_dir), "--generated", str(output)],
+        capture_output=True,
+        text=True,
+    )
+    assert missing.returncode != 0
+    assert "drift" in (missing.stdout + missing.stderr).lower()
+
+    subprocess.run(
+        [sys.executable, "scripts/gen_docs.py", "--tf", str(tf_dir), "--output", str(output)],
+        check=True,
+    )
+    token_tf = tf_dir / "token.tf"
+    token_tf.write_text(
+        token_tf.read_text(encoding="utf-8").replace("\n1\ta\n", "\n1\tb\n"),
+        encoding="utf-8",
+    )
+    changed = subprocess.run(
+        [sys.executable, "scripts/check_docs.py", "--tf", str(tf_dir), "--generated", str(output)],
+        capture_output=True,
+        text=True,
+    )
+    assert changed.returncode != 0
+    assert "drift" in (changed.stdout + changed.stderr).lower()

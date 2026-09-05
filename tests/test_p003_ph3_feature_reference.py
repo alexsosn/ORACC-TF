@@ -96,6 +96,9 @@ def test_high_cardinality_node_domain_is_bounded_and_deterministic(tmp_path, mon
                 "sig": _Feature("Occurrence signature.", [(i, f"v{i:02d}") for i in range(1, 23)])
             }
 
+        def Fall(self):
+            return ["sig"]
+
     class ManyFabric(_Fabric):
         def __init__(self, *args, **kwargs):
             self.api = ManyApi()

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from oracc_tf import corpus, loader, metadata, translations
+from oracc_tf import TF_VERSION, corpus, loader, metadata, translations
 
 
 def _edition() -> loader.Edition:
@@ -97,3 +97,7 @@ def test_translation_alignment_rejects_missing_endpoint_instead_of_shrinking_ran
                 "test/unit:QTEST": (_unit(eref="QTEST.999"),)
             },
         )
+
+
+def test_translation_layer_bumps_tf_schema_version():
+    assert TF_VERSION == "0.3.0"

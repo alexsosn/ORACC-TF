@@ -38,6 +38,7 @@ Generated from TF metadata; do not hand-edit generated fields.
 - [`material`](features/document/material.md) — ORACC catalogue material value preserved as text.
 - [`norm`](features/word/norm.md) — ORACC normalized Akkadian form attached to the word occurrence, when available.
 - [`object_type`](features/document/object_type.md) — ORACC catalogue object-type value preserved as text.
+- [`otype`](features/mixed/otype.md) — Text-Fabric node type.
 - [`period`](features/document/period.md) — ORACC catalogue period value preserved as text.
 - [`pleiades_coord`](features/document/pleiades_coord.md) — ORACC catalogue Pleiades coordinate value preserved as text.
 - [`pleiades_id`](features/document/pleiades_id.md) — ORACC catalogue Pleiades identifier value preserved as text.
@@ -65,5 +66,6 @@ Generated from TF metadata; do not hand-edit generated fields.
 - [`face_document`](features/edge/face_document.md) — Edge from a face node to its containing document node.
 - [`line_column`](features/edge/line_column.md) — Edge from a line node to its containing column node.
 - [`line_face`](features/edge/line_face.md) — Edge from a line node to its containing face node.
+- [`oslots`](features/edge/oslots.md) — Text-Fabric warp edge from a non-slot node to its sign slots.
 - [`word_lex`](features/edge/word_lex.md) — Edge from a word occurrence to its ORACC-TF lexeme node.
 - [`word_line`](features/edge/word_line.md) — Edge from a word node to its containing line node.

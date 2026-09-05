@@ -65,6 +65,23 @@ def test_split_rejects_output_directory_that_contains_source(tmp_path):
     assert src.read_bytes() == original
 
 
+def test_successful_split_preserves_unrelated_existing_files_and_drops_stale_shards(tmp_path):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    _write_source(src)
+    outdir.mkdir()
+    (outdir / "notes.txt").write_text("keep me", encoding="utf-8")
+    (outdir / "keys-z.json").write_text("stale", encoding="utf-8")
+
+    module.split(src, outdir, max_mb=1)
+
+    assert (outdir / "notes.txt").read_text(encoding="utf-8") == "keep me"
+    assert not (outdir / "keys-z.json").exists()
+    manifest = json.loads((outdir / module.MANIFEST).read_text(encoding="utf-8"))
+    assert manifest["split"]["shards"] == ["a"]
+    assert module.verify(outdir) == 0
+
+
 def test_dry_run_does_not_create_missing_output_parent(tmp_path, capsys):
     src = tmp_path / "index.json"
     _write_source(src)

@@ -440,9 +440,17 @@ def analyze(
 def claim_result(state: CoordinationState, session: str) -> str:
     """Return this session's claim disposition after re-reading GitHub."""
 
+    if state.phase == "conflict":
+        race_only = bool(state.problems) and all(
+            problem.endswith("multiple live claim sessions")
+            for problem in state.problems
+        )
+        if race_only and state.owner_session == session:
+            return "owned"
+        return "conflict"
     if state.owner_session == session:
         return "owned"
-    if state.owner_session is not None or state.phase == "conflict":
+    if state.owner_session is not None:
         return "conflict"
     if state.phase == "ready":
         return "available"

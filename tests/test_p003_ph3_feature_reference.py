@@ -116,6 +116,36 @@ def test_high_cardinality_node_domain_is_bounded_and_deterministic(tmp_path, mon
     assert "| `v22`" not in text
 
 
+def test_long_frequency_values_are_bounded_with_stable_digest(tmp_path, monkeypatch):
+    gen_docs = _load_gen_docs()
+    long_value = "x" * 500
+
+    class LongApi(_Api):
+        def __init__(self):
+            super().__init__()
+            self.F.otype = _Otype({1: "document"})
+            self._node = {"catalogue_json": _Feature("Catalogue JSON.", [(1, long_value)])}
+
+        def Fall(self):
+            return ["catalogue_json"]
+
+        def Eall(self):
+            return []
+
+    class LongFabric(_Fabric):
+        def __init__(self, *args, **kwargs):
+            self.api = LongApi()
+
+    monkeypatch.setattr(gen_docs, "Fabric", LongFabric)
+    docs = tmp_path / "docs"
+    gen_docs.generate(tmp_path / "tf", docs)
+    text = (docs / "features/document/catalogue_json.md").read_text(encoding="utf-8")
+    value_row = next(line for line in text.splitlines() if line.startswith("| `x"))
+    assert len(value_row) < 220
+    assert "sha256:" in value_row
+    assert long_value not in value_row
+
+
 def test_edge_feature_page_has_source_target_types_links_and_degree_frequency(tmp_path, monkeypatch):
     gen_docs = _load_gen_docs()
     monkeypatch.setattr(gen_docs, "Fabric", _Fabric)

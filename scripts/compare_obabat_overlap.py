@@ -9,6 +9,7 @@ or duplicated document identifiers.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -97,6 +98,65 @@ def compare_id_sets(
     }
 
 
+def _git_blob_sha(path: Path) -> str:
+    data = path.read_bytes()
+    header = f"blob {len(data)}\0".encode("ascii")
+    return hashlib.sha1(header + data).hexdigest()
+
+
+def validate_manifest_against_oracc(
+    oracc_path: str | Path, manifest_path: str | Path
+) -> dict[str, int]:
+    """Verify that the committed manifest partitions the exact pinned ORACC blob."""
+    oracc_path = Path(oracc_path)
+    manifest_path = Path(manifest_path)
+    with manifest_path.open(encoding="utf-8") as fh:
+        manifest = json.load(fh)
+
+    try:
+        expected_blob = manifest["sources"]["oracc_tf"]["blob_sha"]
+        counts = manifest["counts"]
+        overlap_raw = manifest["overlap_ids"]
+        unmatched_raw = manifest["not_in_pinned_nino_ids"]
+    except (KeyError, TypeError) as exc:
+        raise ComparisonError(f"malformed overlap manifest: missing {exc}") from exc
+
+    actual_blob = _git_blob_sha(oracc_path)
+    if actual_blob != expected_blob:
+        raise ComparisonError(
+            f"ORACC source blob SHA mismatch: expected {expected_blob}, got {actual_blob}"
+        )
+
+    oracc = read_oracc_members(oracc_path)
+    overlap = unique_p_ids(overlap_raw, source="manifest overlap_ids")
+    unmatched = unique_p_ids(
+        unmatched_raw, source="manifest not_in_pinned_nino_ids"
+    )
+    collision = overlap & unmatched
+    if collision:
+        raise ComparisonError(
+            "manifest classifications overlap: " + ", ".join(sorted(collision))
+        )
+    if overlap | unmatched != oracc:
+        missing = sorted(oracc - (overlap | unmatched))
+        extra = sorted((overlap | unmatched) - oracc)
+        raise ComparisonError(
+            f"manifest does not partition ORACC members; missing={missing}, extra={extra}"
+        )
+
+    actual_counts = {
+        "oracc_documents": len(oracc),
+        "overlap_documents": len(overlap),
+        "not_in_pinned_nino_documents": len(unmatched),
+    }
+    for key, value in actual_counts.items():
+        if counts.get(key) != value:
+            raise ComparisonError(
+                f"manifest count mismatch for {key}: {counts.get(key)!r} != {value}"
+            )
+    return actual_counts
+
+
 def _normalized_text(text: str) -> str:
     return " ".join(text.split())
 
@@ -119,9 +179,9 @@ def classify_pair(
     if left == right:
         return "exact_identifier"
     if left_text is not None and right_text is not None:
-        if _normalized_text(left_text) and _normalized_text(left_text) == _normalized_text(
-            right_text
-        ):
+        normalized_left = _normalized_text(left_text)
+        normalized_right = _normalized_text(right_text)
+        if normalized_left and normalized_left == normalized_right:
             return "content_match_distinct_ids"
     return "unresolved"
 

@@ -23,7 +23,7 @@ from pathlib import Path
 
 from tf.fabric import Fabric
 
-from . import TF_VERSION, lexemes, loader, metadata, paths, sections, words
+from . import TF_VERSION, feature_descriptions, lexemes, loader, metadata, paths, sections, words
 
 
 ZERO_SPAN_SCHEMA = "oracc-tf-zero-span-v1"
@@ -334,16 +334,26 @@ class _Graph:
                 "sectionTypes": "document,face,line",
                 "sectionFeatures": "document,face,line",
             },
-            "otype": {"valueType": "str"},
-            "oslots": {"valueType": "str"},
+            "otype": {
+                "valueType": "str",
+                "description": feature_descriptions.require("otype"),
+            },
+            "oslots": {
+                "valueType": "str",
+                "description": feature_descriptions.require("oslots"),
+            },
         }
         int_features = {"catalogue_present", "lemmaknown", "populated", "synthetic"}
         for name in set(node_features) - {"otype"}:
             meta_data[name] = {
-                "valueType": "int" if name in int_features else "str"
+                "valueType": "int" if name in int_features else "str",
+                "description": feature_descriptions.require(name),
             }
         for name in set(edge_features) - {"oslots"}:
-            meta_data[name] = {"valueType": "str"}
+            meta_data[name] = {
+                "valueType": "str",
+                "description": feature_descriptions.require(name),
+            }
 
         return _MaterialisedGraph(
             node_features=node_features,

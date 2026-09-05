@@ -14,7 +14,7 @@ At the document-identifier level, **86 of 121 OBABAT documents overlap with `Nin
 
 The overlap is large enough that OBABAT should **not** be treated as an independent evaluation corpus when a model, rule set, or benchmark process has been developed on the Nino corpus. The 86 matched documents should be excluded from any such evaluation. The 35 unmatched OBABAT documents are only candidates for an independent slice: because both resources draw on the AbB publication tradition, they still need a secondary transcription/publication fingerprint check before being declared leakage-free.
 
-A machine-readable manifest is committed beside this report as [`issue-39-obabat-overlap.json`](issue-39-obabat-overlap.json).
+A machine-readable manifest is committed beside this report as [`issue-39-obabat-overlap.json`](issue-39-obabat-overlap.json). Its unmatched classification is deliberately named `not_in_pinned_nino_ids`; absence from the pinned Nino revision is not evidence of independence.
 
 ## Sources frozen for this comparison
 
@@ -133,7 +133,8 @@ For a benchmark intended to be independent of `Nino-cunei/oldbabylonian`:
 Future overlap checks should consume the JSON manifest and fail closed when either source revision changes without recomputation. A future automated check should verify:
 
 1. source revision/blob identifiers still match the manifest;
-2. every current OBABAT member is classified as `overlap` or `oracc_only`;
+2. every current OBABAT member is classified as `overlap_ids` or `not_in_pinned_nino_ids`;
 3. no identifier appears in both classifications;
 4. counts equal the lengths of the corresponding arrays;
-5. a changed Nino or OBABAT snapshot requires regeneration and review of the benchmark recommendation.
+5. `not_in_pinned_nino_ids` is never treated as a leakage-clean set without the secondary fingerprint gate;
+6. a changed Nino or OBABAT snapshot requires regeneration and review of the benchmark recommendation.

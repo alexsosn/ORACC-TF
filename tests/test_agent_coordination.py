@@ -2,14 +2,14 @@
 
 Issue #43 acceptance requires GitHub-native leases/claims, one active PR per task,
 merge-safe evidence, dependency re-checks, and exact-head independent review.
-These tests intentionally precede ``scripts.task_coordination``.
+These tests intentionally precede ``oracc_tf.coordination``.
 """
 
 from datetime import datetime, timezone
 
 import pytest
 
-from scripts.task_coordination import (
+from oracc_tf.coordination import (
     analyze,
     claim_result,
     ready_tasks,

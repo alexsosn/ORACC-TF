@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "updated": "2026-09-05",
   "documents": [
     {
@@ -65,6 +65,17 @@
       ]
     },
     {
+      "id": "P-004",
+      "title": "Parallel-safe research-design-TDD-review task loop",
+      "type": "plan",
+      "status": "active",
+      "priority": "P0",
+      "path": "docs/plans/P-004-agent-coordination.md",
+      "depends_on": [
+        "R-004"
+      ]
+    },
+    {
       "id": "R-001",
       "title": "Which ORACC projects are worth converting to Text-Fabric",
       "type": "research",
@@ -95,6 +106,15 @@
         "R-001",
         "P-001"
       ]
+    },
+    {
+      "id": "R-004",
+      "title": "Parallel agent coordination and failure modes",
+      "type": "research",
+      "status": "done",
+      "priority": "P0",
+      "path": "docs/research/R-004-agent-coordination.md",
+      "depends_on": []
     }
   ],
   "tasks": [
@@ -252,7 +272,8 @@
         "P-001.M6"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 16,
+      "evidence_file": "docs/task-state/P-001.M9.json"
     },
     {
       "id": "P-002.PH0",
@@ -278,7 +299,8 @@
         "P-002.PH0"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 17,
+      "evidence_file": "docs/task-state/P-002.PH1.json"
     },
     {
       "id": "P-002.PH2",
@@ -290,7 +312,8 @@
         "P-002.PH1"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 18,
+      "evidence_file": "docs/task-state/P-002.PH2.json"
     },
     {
       "id": "P-002.PH3",
@@ -302,7 +325,8 @@
         "P-002.PH2"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 19,
+      "evidence_file": "docs/task-state/P-002.PH3.json"
     },
     {
       "id": "P-002.PH4",
@@ -315,7 +339,8 @@
         "P-001.M6"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 20,
+      "evidence_file": "docs/task-state/P-002.PH4.json"
     },
     {
       "id": "P-002.PH5",
@@ -327,7 +352,8 @@
         "P-002.PH4"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 21,
+      "evidence_file": "docs/task-state/P-002.PH5.json"
     },
     {
       "id": "P-002.PH6",
@@ -339,7 +365,8 @@
         "P-002.PH5"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 22,
+      "evidence_file": "docs/task-state/P-002.PH6.json"
     },
     {
       "id": "P-002.PH7",
@@ -351,7 +378,8 @@
         "P-002.PH6"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 23,
+      "evidence_file": "docs/task-state/P-002.PH7.json"
     },
     {
       "id": "P-002.PH8",
@@ -363,7 +391,8 @@
         "P-002.PH7"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 24,
+      "evidence_file": "docs/task-state/P-002.PH8.json"
     },
     {
       "id": "P-002.PH9",
@@ -375,7 +404,8 @@
         "P-002.PH5"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 25,
+      "evidence_file": "docs/task-state/P-002.PH9.json"
     },
     {
       "id": "P-003.PH0",
@@ -387,7 +417,8 @@
         "P-001.M1"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 26,
+      "evidence_file": "docs/task-state/P-003.PH0.json"
     },
     {
       "id": "P-003.PH1",
@@ -400,7 +431,8 @@
         "P-003.PH0"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 27,
+      "evidence_file": "docs/task-state/P-003.PH1.json"
     },
     {
       "id": "P-003.PH2",
@@ -413,7 +445,8 @@
         "P-002.PH1"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 28,
+      "evidence_file": "docs/task-state/P-003.PH2.json"
     },
     {
       "id": "P-003.PH3",
@@ -425,7 +458,8 @@
         "P-003.PH0"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 29,
+      "evidence_file": "docs/task-state/P-003.PH3.json"
     },
     {
       "id": "P-003.PH4",
@@ -437,7 +471,8 @@
         "P-003.PH1"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 30,
+      "evidence_file": "docs/task-state/P-003.PH4.json"
     },
     {
       "id": "P-003.PH5",
@@ -449,11 +484,25 @@
         "P-003.PH1"
       ],
       "status": "todo",
-      "evidence": null
+      "issue": 31,
+      "evidence_file": "docs/task-state/P-003.PH5.json"
+    },
+    {
+      "id": "P-004.PH0",
+      "title": "Parallel-safe agent coordination",
+      "plan": "P-004",
+      "spec": "§PH0",
+      "priority": "P0",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 43,
+      "evidence_file": "docs/task-state/P-004.PH0.json"
     }
   ],
-  "selection_rule": "take the lowest-numbered task with status 'todo' whose blocked_by are all 'done', preferring P0 over P1 over P2; see docs/README.md",
+  "selection_rule": "enumerate every dependency-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; losing sessions reselect unrelated ready work",
   "stop_conditions": [
+    "coordination reconciliation reports conflict",
+    "a stale lease exists without explicit recovery",
     "a P-002 gate fires",
     "a philological judgement is required",
     "a licence question arises",

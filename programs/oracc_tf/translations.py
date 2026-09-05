@@ -70,6 +70,7 @@ class TranslationArchive:
     source_name: str
     source_sha256: str
     units_by_document: Mapping[str, tuple[TranslationUnit, ...]]
+    word_ids_by_document: Mapping[str, tuple[str, ...]]
     source_url: str | None = None
     source_license: str | None = None
     source_license_url: str | None = None
@@ -325,6 +326,26 @@ def _tei_text_id(element: ET.Element) -> str | None:
     return next(iter(text_ids))
 
 
+def _tei_word_ids(element: ET.Element, *, text_id: str) -> tuple[str, ...]:
+    """Preserve source transliteration word ids for corpusjson reconciliation."""
+    prefix = f"{text_id}.l"
+    result: list[str] = []
+    seen: set[str] = set()
+    for descendant in element.iter():
+        if _local_name(descendant.tag) != "w":
+            continue
+        source_id = descendant.get(XML_ID)
+        if source_id is None or not source_id.startswith(prefix):
+            continue
+        if source_id in seen:
+            raise TranslationSourceError(
+                f"duplicate TEI word id {source_id!r} for translation text {text_id}"
+            )
+        seen.add(source_id)
+        result.append(source_id)
+    return tuple(result)
+
+
 def load_tei_zip(
     path: Path | str,
     *,
@@ -345,7 +366,9 @@ def load_tei_zip(
     source_sha256 = digest.hexdigest()
 
     units_by_document: dict[str, list[TranslationUnit]] = {}
+    word_ids_by_document: dict[str, list[str]] = {}
     seen_source_ids: dict[str, set[str]] = {}
+    seen_word_ids: dict[str, set[str]] = {}
     try:
         with zipfile.ZipFile(archive_path) as archive:
             infos = sorted(
@@ -399,6 +422,19 @@ def load_tei_zip(
                         )
                     source_ids.update(unit.source_id for unit in units)
                     units_by_document.setdefault(document_key, []).extend(units)
+
+                    word_ids = _tei_word_ids(tei, text_id=text_id)
+                    document_word_ids = seen_word_ids.setdefault(document_key, set())
+                    duplicate_word = next(
+                        (source_id for source_id in word_ids if source_id in document_word_ids),
+                        None,
+                    )
+                    if duplicate_word is not None:
+                        raise TranslationSourceError(
+                            f"duplicate TEI word id {duplicate_word!r} for {document_key}"
+                        )
+                    document_word_ids.update(word_ids)
+                    word_ids_by_document.setdefault(document_key, []).extend(word_ids)
     except zipfile.BadZipFile as exc:
         raise TranslationSourceError(f"invalid translation ZIP {archive_path}: {exc}") from exc
 
@@ -406,10 +442,15 @@ def load_tei_zip(
         key: tuple(units)
         for key, units in sorted(units_by_document.items())
     }
+    frozen_word_ids = {
+        key: tuple(word_ids)
+        for key, word_ids in sorted(word_ids_by_document.items())
+    }
     return TranslationArchive(
         source_name=archive_path.name,
         source_sha256=source_sha256,
         units_by_document=frozen,
+        word_ids_by_document=frozen_word_ids,
         source_url=source_url,
         source_license=source_license,
         source_license_url=source_license_url,

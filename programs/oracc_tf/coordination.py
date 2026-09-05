@@ -26,6 +26,7 @@ MARKER_RE = re.compile(
 # legacy spelling so its own lease remains auditable during the v1 -> v2 cutover.
 LEGACY_CLAIM_RE = re.compile(r"<!--\s*oracc-tf-claim\s+(.+?)\s*-->", re.DOTALL)
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+TASK_HINT_RE = re.compile(r'"task"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"')
 
 
 @dataclass
@@ -58,43 +59,79 @@ def _marker_kind_name(prefix: str) -> str:
     return prefix.rsplit(":", 1)[-1]
 
 
-def _markers(text: str | None) -> tuple[list[tuple[str, dict[str, Any]]], list[str]]:
-    """Parse machine markers; malformed HTML-comment marker attempts fail closed."""
+def _parse_markers(
+    text: str | None,
+) -> tuple[
+    list[tuple[str, dict[str, Any]]],
+    list[str],
+    list[tuple[str, str, str]],
+]:
+    """Parse markers and retain malformed-attempt text for task-local scoping."""
 
     text = text or ""
     found: list[tuple[str, dict[str, Any]]] = []
     problems: list[str] = []
+    malformed: list[tuple[str, str, str]] = []
     consumed: list[tuple[int, int, str]] = []
 
-    def parse_match(kind: str, raw: str, span: tuple[int, int]) -> None:
+    def parse_match(kind: str, raw: str, span: tuple[int, int], attempt: str) -> None:
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError as exc:
-            problems.append(f"malformed {kind} marker: {exc.msg}")
+            message = f"malformed {kind} marker: {exc.msg}"
+            problems.append(message)
+            malformed.append((kind, attempt, message))
             consumed.append((*span, kind))
             return
         if not isinstance(payload, dict):
-            problems.append(f"malformed {kind} marker: payload must be an object")
+            message = f"malformed {kind} marker: payload must be an object"
+            problems.append(message)
+            malformed.append((kind, attempt, message))
             consumed.append((*span, kind))
             return
         found.append((kind, payload))
         consumed.append((*span, kind))
 
     for match in MARKER_RE.finditer(text):
-        parse_match(match.group(1), match.group(2), match.span())
+        parse_match(match.group(1), match.group(2), match.span(), match.group(0))
     for match in LEGACY_CLAIM_RE.finditer(text):
-        parse_match("claim", match.group(1), match.span())
+        parse_match("claim", match.group(1), match.span(), match.group(0))
 
     # Detect an HTML-comment marker opener that did not form a complete marker.
     # Bare prose such as ``oracc-tf:recover`` is documentation, not a marker.
     for prefix in [*(f"oracc-tf:{kind}" for kind in KINDS), "oracc-tf-claim"]:
         kind = _marker_kind_name(prefix)
         opener = re.compile(rf"<!--\s*{re.escape(prefix)}\b")
-        starts = [match.start() for match in opener.finditer(text)]
-        for start in starts:
-            if not any(a <= start < b and parsed_kind == kind for a, b, parsed_kind in consumed):
-                problems.append(f"malformed {kind} marker")
+        for match in opener.finditer(text):
+            start = match.start()
+            if any(a <= start < b and parsed_kind == kind for a, b, parsed_kind in consumed):
+                continue
+            end = text.find("-->", start)
+            attempt = text[start : end + 3 if end >= 0 else len(text)]
+            message = f"malformed {kind} marker"
+            problems.append(message)
+            malformed.append((kind, attempt, message))
+    return found, problems, malformed
+
+
+def _markers(text: str | None) -> tuple[list[tuple[str, dict[str, Any]]], list[str]]:
+    """Parse machine markers; malformed HTML-comment marker attempts fail closed."""
+
+    found, problems, _ = _parse_markers(text)
     return found, problems
+
+
+def _task_hints(text: str) -> set[str]:
+    hints: set[str] = set()
+    for match in TASK_HINT_RE.finditer(text):
+        raw = f'"{match.group(1)}"'
+        try:
+            value = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, str):
+            hints.add(value)
+    return hints
 
 
 def _issue_map(snapshot: dict[str, Any]) -> dict[int, dict[str, Any]]:
@@ -223,6 +260,23 @@ def _claim_state(
     stale_unrecovered: list[dict[str, Any]] = []
     live: list[dict[str, Any]] = []
 
+    valid_releases: list[dict[str, Any]] = []
+    for release in releases:
+        release_id = release.get("id")
+        release_payload = release["payload"]
+        release_session = release_payload.get("session")
+        if not isinstance(release_id, int):
+            problems.append("release marker is attached to a comment without an integer id")
+            continue
+        if not isinstance(release_session, str) or not release_session:
+            problems.append(f"release {release_id}: missing session")
+            continue
+        claim_id = release_payload.get("claim_id")
+        if claim_id is not None and not isinstance(claim_id, int):
+            problems.append(f"release {release_id}: invalid claim_id")
+            continue
+        valid_releases.append(release)
+
     for event in claims:
         payload = event["payload"]
         claim_id = event.get("id")
@@ -243,23 +297,24 @@ def _claim_state(
             continue
 
         released = False
-        for release in releases:
-            if not isinstance(release.get("id"), int) or release["id"] <= claim_id:
+        for release in valid_releases:
+            if release["id"] <= claim_id:
                 continue
             release_payload = release["payload"]
+            release_session = release_payload["session"]
             targets_claim = release_payload.get("claim_id") == claim_id
             targets_session = (
-                release_payload.get("claim_id") is None
-                and release_payload.get("session") == session
+                release_payload.get("claim_id") is None and release_session == session
             )
-            if targets_claim or targets_session:
-                if release_payload.get("session") not in (None, session):
-                    problems.append(
-                        f"release {release['id']}: session does not own claim {claim_id}"
-                    )
-                    continue
-                released = True
-                break
+            if not (targets_claim or targets_session):
+                continue
+            if release_session != session:
+                problems.append(
+                    f"release {release['id']}: session does not own claim {claim_id}"
+                )
+                continue
+            released = True
+            break
         if released:
             continue
 
@@ -299,31 +354,56 @@ def _pr_info(
 ) -> tuple[list[dict[str, Any]], list[str]]:
     prs: list[dict[str, Any]] = []
     problems: list[str] = []
-    task_hint = re.compile(rf'"task"\s*:\s*{re.escape(json.dumps(task_id))}')
     for pr in snapshot.get("pull_requests", []) or []:
         if not isinstance(pr, dict) or pr.get("state") != "open":
             continue
         body = pr.get("body") or ""
-        parsed, parse_problems = _markers(body)
-        belongs_to_task = any(
-            payload.get("task") == task_id for _, payload in parsed
-        ) or bool(task_hint.search(body))
-        if not belongs_to_task:
+        parsed, _, malformed = _parse_markers(body)
+        valid_task_markers = [
+            (kind, payload)
+            for kind, payload in parsed
+            if payload.get("task") == task_id
+        ]
+        implementation_tasks = {
+            payload.get("task")
+            for kind, payload in parsed
+            if kind == "implementation" and isinstance(payload.get("task"), str)
+        }
+
+        scoped_problems: list[str] = []
+        for _, attempt, message in malformed:
+            hints = _task_hints(attempt)
+            if task_id in hints:
+                scoped_problems.append(message)
+            elif not hints and implementation_tasks == {task_id}:
+                # An unscoped malformed marker on a PR with one unambiguous
+                # implementation owner belongs to that PR's task.
+                scoped_problems.append(message)
+
+        if not valid_task_markers and not scoped_problems:
             continue
-        problems.extend(parse_problems)
+        problems.extend(scoped_problems)
+
         implementations = [
             payload
-            for kind, payload in parsed
-            if kind == "implementation" and payload.get("task") == task_id
+            for kind, payload in valid_task_markers
+            if kind == "implementation"
         ]
         if not implementations:
             continue
+        bindings = {
+            (payload.get("issue"), payload.get("session"))
+            for payload in implementations
+        }
+        if len(bindings) > 1:
+            problems.append(
+                f"task {task_id}: conflicting implementation markers in PR {pr.get('number')}"
+            )
         implementation = implementations[0]
         supersedes = {
             payload.get("old_pr")
-            for kind, payload in parsed
+            for kind, payload in valid_task_markers
             if kind == "supersede"
-            and payload.get("task") == task_id
             and payload.get("session") == implementation.get("session")
             and isinstance(payload.get("old_pr"), int)
         }
@@ -387,9 +467,7 @@ def analyze(
         )
         events, event_problems = _comment_events(issue, task_id)
         problems.extend(event_problems)
-        owner, winning_id, claim_conflict, stale, claim_problems = _claim_state(
-            events, now
-        )
+        owner, winning_id, claim_conflict, stale, claim_problems = _claim_state(events, now)
         problems.extend(claim_problems)
 
         prs, pr_parse_problems = _pr_info(snapshot, task_id)
@@ -529,17 +607,15 @@ def validate_completion(
 
     parsed, parse_problems = _markers(pr.get("body"))
     problems.extend(parse_problems)
-    implementation = next(
-        (
-            payload
-            for kind, payload in parsed
-            if kind == "implementation" and payload.get("task") == task_id
-        ),
-        None,
-    )
-    if implementation is None:
+    implementations = [
+        payload
+        for kind, payload in parsed
+        if kind == "implementation" and payload.get("task") == task_id
+    ]
+    if not implementations:
         problems.append(f"task {task_id}: active PR lacks implementation marker")
         return _dedupe(problems)
+    implementation = implementations[0]
     implementation_session = implementation.get("session")
     head_sha = pr.get("head_sha")
     if not isinstance(head_sha, str) or not SHA_RE.fullmatch(head_sha):
@@ -549,14 +625,12 @@ def validate_completion(
     saw_self_review = False
     saw_stale_pass = False
     saw_any_review = False
-    exact_reviews: list[tuple[tuple[int, int], str]] = []
+    exact_reviews: list[dict[str, Any]] = []
     for index, review in enumerate(pr.get("reviews", []) or []):
         if not isinstance(review, dict):
             continue
         review_markers, review_problems = _markers(review.get("body"))
         problems.extend(review_problems)
-        review_id = review.get("id")
-        order = (0, review_id) if isinstance(review_id, int) else (1, index)
         for kind, payload in review_markers:
             if kind != "review" or payload.get("task") != task_id:
                 continue
@@ -578,11 +652,38 @@ def validate_completion(
                 if payload.get("verdict") == "pass":
                     saw_stale_pass = True
                 continue
-            exact_reviews.append((order, str(payload.get("verdict"))))
+            exact_reviews.append(
+                {
+                    "verdict": str(payload.get("verdict")),
+                    "submitted_at": _iso_datetime(review.get("submitted_at")),
+                    "id": review.get("id"),
+                    "index": index,
+                }
+            )
 
     if exact_reviews:
-        _, latest_verdict = max(exact_reviews, key=lambda item: item[0])
-        if latest_verdict != "pass":
+        submitted = [entry["submitted_at"] for entry in exact_reviews]
+        int_ids = [entry["id"] for entry in exact_reviews]
+        latest_verdict: str | None = None
+        if all(value is not None for value in submitted):
+            latest = max(
+                exact_reviews,
+                key=lambda entry: (
+                    entry["submitted_at"],
+                    str(entry["id"]),
+                    entry["index"],
+                ),
+            )
+            latest_verdict = latest["verdict"]
+        elif all(isinstance(value, int) for value in int_ids):
+            latest = max(exact_reviews, key=lambda entry: (entry["id"], entry["index"]))
+            latest_verdict = latest["verdict"]
+        elif len(exact_reviews) == 1:
+            latest_verdict = exact_reviews[0]["verdict"]
+        else:
+            problems.append(f"task {task_id}: exact-head review order is ambiguous")
+
+        if latest_verdict is not None and latest_verdict != "pass":
             problems.append(
                 f"task {task_id}: latest exact-head review is {latest_verdict!r}, not pass"
             )

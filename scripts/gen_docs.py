@@ -142,10 +142,14 @@ def _edge_feature_page(
     target_types: set[str],
     degree_counts: Counter[int],
 ) -> str:
+    degree_items = sorted(
+        degree_counts.items(), key=lambda item: (-item[1], item[0])
+    )[:MAX_FREQUENCY_ROWS]
     degree_rows = ["| out-degree | sources |", "|---:|---:|"]
-    degree_rows.extend(
-        f"| {degree} | {count} |" for degree, count in sorted(degree_counts.items())
-    )
+    degree_rows.extend(f"| {degree} | {count} |" for degree, count in degree_items)
+    degree_intro = ""
+    if len(degree_counts) > MAX_FREQUENCY_ROWS:
+        degree_intro = f"Showing the {MAX_FREQUENCY_ROWS} most frequent out-degrees.\n\n"
     return f"""# `{name}`
 
 - kind: `edge`
@@ -160,7 +164,7 @@ def _edge_feature_page(
 
 ## Out-degree frequencies
 
-{chr(10).join(degree_rows)}
+{degree_intro}{chr(10).join(degree_rows)}
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

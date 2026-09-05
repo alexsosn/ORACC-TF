@@ -76,7 +76,7 @@ def test_every_emitted_feature_has_nonempty_description():
     )
     materialised = graph.materialise(1)
     for name, meta in materialised.meta_data.items():
-        if name in {"", "otext", "otype", "oslots"}:
+        if name in {"", "otext"}:
             continue
         assert meta.get("description", "").strip(), name
 
@@ -99,8 +99,12 @@ def test_generator_documents_node_and_edge_features(tmp_path, monkeypatch):
     monkeypatch.setattr(gen_docs, "Fabric", _Fabric)
     gen_docs.generate(tmp_path / "tf", tmp_path / "docs")
 
-    assert (tmp_path / "docs/features/sign/form.md").is_file()
-    assert (tmp_path / "docs/features/edge/linked.md").is_file()
+    node_page = tmp_path / "docs/features/sign/form.md"
+    edge_page = tmp_path / "docs/features/edge/linked.md"
+    assert node_page.is_file()
+    assert edge_page.is_file()
+    assert "populated values: `1`" in node_page.read_text(encoding="utf-8")
+    assert "populated values: `1`" in edge_page.read_text(encoding="utf-8")
     index = (tmp_path / "docs/features.md").read_text(encoding="utf-8")
     assert "features/sign/form.md" in index
     assert "features/edge/linked.md" in index

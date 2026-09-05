@@ -2,6 +2,10 @@
   "schema_version": 1,
   "research_issue": 39,
   "match_key": "cdli_p_number",
+  "classification_semantics": {
+    "overlap_ids": "exact CDLI P-number present in both frozen sources",
+    "not_in_pinned_nino_ids": "absent from the pinned Nino pnumber feature; this does not establish leakage-free independence"
+  },
   "sources": {
     "oracc_tf": {
       "repository": "alexsosn/ORACC-TF",
@@ -20,7 +24,7 @@
     "oracc_documents": 121,
     "nino_documents": 1285,
     "overlap_documents": 86,
-    "oracc_only_documents": 35
+    "not_in_pinned_nino_documents": 35
   },
   "fractions": {
     "oracc_overlapping": 0.710744,
@@ -114,7 +118,7 @@
     "P510722",
     "P510857"
   ],
-  "oracc_only_ids": [
+  "not_in_pinned_nino_ids": [
     "P248018",
     "P257844",
     "P257871",

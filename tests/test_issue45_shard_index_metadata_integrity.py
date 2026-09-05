@@ -39,7 +39,8 @@ def test_verify_rejects_key_shard_metadata_drift(tmp_path):
     shard["project"] = "tampered-project"
     shard_path.write_text(json.dumps(shard), encoding="utf-8")
 
-    assert module.verify(outdir, quiet=True) == 1
+    with pytest.raises(module.IndexFormatError, match="metadata.*manifest"):
+        module.verify(outdir, quiet=True)
 
 
 def test_verify_rejects_map_shard_metadata_drift(tmp_path):
@@ -53,7 +54,8 @@ def test_verify_rejects_map_shard_metadata_drift(tmp_path):
     shard["license"] = "tampered-license"
     map_path.write_text(json.dumps(shard), encoding="utf-8")
 
-    assert module.verify(outdir, quiet=True) == 1
+    with pytest.raises(module.IndexFormatError, match="metadata.*manifest"):
+        module.verify(outdir, quiet=True)
 
 
 def test_verify_against_rejects_source_metadata_drift(tmp_path):

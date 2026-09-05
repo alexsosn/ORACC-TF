@@ -541,7 +541,7 @@ def _publish_dir(staged, outdir):
 
 def _manifest(indir):
     with open(Path(indir) / MANIFEST, encoding="utf-8") as fp:
-        result = json.load(fp)
+        result = json.load(fp, object_pairs_hook=_unique_object)
     if not isinstance(result.get("split"), dict):
         raise IndexFormatError(f"{indir}: invalid shard manifest")
     return result
@@ -558,6 +558,22 @@ def _validate_split_paths(src, outdir, *, dry_run):
     if src_resolved == out_resolved or src_resolved.is_relative_to(out_resolved):
         raise ShardIndexError(
             f"output directory must not be the source or contain the source: {outdir}"
+        )
+
+
+def _validate_join_path(indir, out, spec):
+    """Reject a destination that aliases a shard or manifest read by join."""
+    inputs = [Path(indir) / MANIFEST]
+    inputs.extend(
+        Path(indir) / f"{KEYS_PREFIX}{label}.json"
+        for label in spec.get("shards", [])
+    )
+    if spec.get("has_map"):
+        inputs.append(Path(indir) / MAP_FILE)
+    out_resolved = Path(out).resolve()
+    if any(out_resolved == path.resolve() for path in inputs):
+        raise ShardIndexError(
+            f"output destination must not overwrite a shard input: {out}"
         )
 
 
@@ -657,31 +673,48 @@ def split(src, outdir, max_mb=DEFAULT_MAX_MB, dry_run=False):
     print(f"  largest: {biggest} ({biggest_size/1048576:.1f} MB)")
 
 
-def _stream_key_shard(path, label, callback):
+def _source_metadata(meta):
+    """Strip shard-only routing fields, leaving source metadata."""
+    return {k: v for k, v in meta.items() if k not in {"section", "shard"}}
+
+
+def _check_metadata(path, meta, expected_meta):
+    if expected_meta is not None and _source_metadata(meta) != expected_meta:
+        raise IndexFormatError(f"{path}: shard metadata does not match manifest")
+
+
+def _stream_key_shard(path, label, callback, expected_meta=None):
     meta, saw_keys, has_map = _stream_index(path, callback, require_keys=True)
     if has_map or meta.get("section") != "keys" or meta.get("shard") != label:
         raise IndexFormatError(f"{path}: key shard metadata does not match {label!r}")
+    _check_metadata(path, meta, expected_meta)
     return saw_keys
 
 
-def _stream_map_shard(path, callback):
+def _stream_map_shard(path, callback, expected_meta=None):
     meta, saw_keys, has_map = _stream_index(
         path, on_map=callback, require_keys=False
     )
     if saw_keys or not has_map or meta.get("section") != "map":
         raise IndexFormatError(f"{path}: invalid map shard")
+    _check_metadata(path, meta, expected_meta)
 
 
-def _shard_state(indir, spec, db_path):
+def _shard_state(indir, spec, db_path, expected_meta=None):
     spool = _Spool(db_path)
     try:
         for label in spec.get("shards", []):
             _stream_key_shard(
-                Path(indir) / f"{KEYS_PREFIX}{label}.json", label, spool.add_key
+                Path(indir) / f"{KEYS_PREFIX}{label}.json",
+                label,
+                spool.add_key,
+                expected_meta,
             )
         has_map = bool(spec.get("has_map"))
         if has_map:
-            _stream_map_shard(Path(indir) / MAP_FILE, spool.add_map)
+            _stream_map_shard(
+                Path(indir) / MAP_FILE, spool.add_map, expected_meta
+            )
         return spool.state(has_map)
     finally:
         spool.close()
@@ -690,8 +723,8 @@ def _shard_state(indir, spec, db_path):
 def _source_state(path, db_path):
     spool = _Spool(db_path)
     try:
-        _meta, _saw_keys, has_map = _stream_index(path, spool.add_key, spool.add_map)
-        return spool.state(has_map)
+        meta, _saw_keys, has_map = _stream_index(path, spool.add_key, spool.add_map)
+        return meta, spool.state(has_map)
     finally:
         spool.close()
 
@@ -700,6 +733,7 @@ def verify(indir, against=None, *, quiet=False):
     indir = Path(indir)
     manifest = _manifest(indir)
     spec = manifest["split"]
+    meta = {k: v for k, v in manifest.items() if k != "split"}
     want = spec.get("verify", {})
     expected = (
         want.get("keys_count"),
@@ -708,8 +742,13 @@ def verify(indir, against=None, *, quiet=False):
         want.get("map_digest"),
     )
     with tempfile.TemporaryDirectory(prefix=".shard-verify-", dir=indir.parent) as td:
-        got = _shard_state(indir, spec, Path(td) / "shards.sqlite")
-        original = _source_state(against, Path(td) / "source.sqlite") if against else None
+        got = _shard_state(indir, spec, Path(td) / "shards.sqlite", meta)
+        if against:
+            original_meta, original = _source_state(
+                against, Path(td) / "source.sqlite"
+            )
+        else:
+            original_meta, original = None, None
     labels = ("keys count ", "keys digest", "map count  ", "map digest ")
     ok = got == expected
     if not quiet:
@@ -718,10 +757,12 @@ def verify(indir, against=None, *, quiet=False):
             print(f"  [{'ok  ' if actual == exp else 'FAIL'}] {label}  {shown}")
     if original is not None:
         same_keys, same_map = original[:2] == got[:2], original[2:] == got[2:]
-        ok = ok and same_keys and same_map
+        same_meta = original_meta == meta
+        ok = ok and same_keys and same_map and same_meta
         if not quiet:
             print(f"  [{'ok  ' if same_keys else 'FAIL'}] keys match {against}")
             print(f"  [{'ok  ' if same_map else 'FAIL'}] map  match {against}")
+            print(f"  [{'ok  ' if same_meta else 'FAIL'}] metadata match {against}")
     if not quiet:
         print("VERIFIED" if ok else "VERIFICATION FAILED")
     return 0 if ok else 1
@@ -732,6 +773,7 @@ def join(indir, out):
     out = Path(out)
     manifest = _manifest(indir)
     spec = manifest["split"]
+    _validate_join_path(indir, out, spec)
     want = spec.get("verify", {})
     expected = (
         want.get("keys_count"), want.get("keys_digest"),
@@ -762,7 +804,10 @@ def join(indir, out):
 
                 for label in spec.get("shards", []):
                     _stream_key_shard(
-                        indir / f"{KEYS_PREFIX}{label}.json", label, emit_key
+                        indir / f"{KEYS_PREFIX}{label}.json",
+                        label,
+                        emit_key,
+                        meta,
                     )
                 fp.write("]")
                 has_map = bool(spec.get("has_map"))
@@ -780,7 +825,7 @@ def join(indir, out):
                         first_map = False
                         spool.add_map(key, value)
 
-                    _stream_map_shard(indir / MAP_FILE, emit_map)
+                    _stream_map_shard(indir / MAP_FILE, emit_map, meta)
                     fp.write("}")
                 fp.write("}")
             got = spool.state(has_map)
@@ -802,10 +847,11 @@ def load_shards(indir):
     indir = Path(indir)
     manifest = _manifest(indir)
     spec = manifest["split"]
+    meta = {k: v for k, v in manifest.items() if k != "split"}
     entries = []
     for label in spec.get("shards", []):
         _stream_key_shard(
-            indir / f"{KEYS_PREFIX}{label}.json", label, entries.append
+            indir / f"{KEYS_PREFIX}{label}.json", label, entries.append, meta
         )
     mapping = None
     if spec.get("has_map"):
@@ -816,7 +862,7 @@ def load_shards(indir):
                 raise IndexFormatError(f"duplicate map key: {key}")
             mapping[key] = value
 
-        _stream_map_shard(indir / MAP_FILE, add_map)
+        _stream_map_shard(indir / MAP_FILE, add_map, meta)
     return manifest, spec, entries, mapping
 
 

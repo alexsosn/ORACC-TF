@@ -52,6 +52,16 @@ def _forbid_large_json_load(monkeypatch, forbidden_paths):
     monkeypatch.setattr(module.json, "load", guarded_load)
 
 
+def _force_parser_chunks(monkeypatch, chunk_chars):
+    stream_cls = module._JsonStream
+    real_init = stream_cls.__init__
+
+    def forced_init(self, fp, *args, **kwargs):
+        return real_init(self, fp, chunk_chars=chunk_chars)
+
+    monkeypatch.setattr(stream_cls, "__init__", forced_init)
+
+
 def test_split_streams_source_instead_of_json_loading_whole_document(tmp_path, monkeypatch):
     src = tmp_path / "index.json"
     outdir = tmp_path / "shards"
@@ -86,13 +96,7 @@ def test_tiny_parser_chunks_preserve_escaped_unicode_and_nested_values(tmp_path,
         mapping_marker={"𒀭": 'DINGIR "quoted"'},
         metadata={"nested": {"unicode": "ṭuppu", "list": [1, 2, 3]}},
     )
-    stream_cls = module._JsonStream
-    real_init = stream_cls.__init__
-
-    def tiny_init(self, fp, *args, **kwargs):
-        return real_init(self, fp, chunk_chars=7)
-
-    monkeypatch.setattr(stream_cls, "__init__", tiny_init)
+    _force_parser_chunks(monkeypatch, 7)
     _forbid_large_json_load(monkeypatch, [src])
 
     module.split(src, outdir, max_mb=1)
@@ -100,6 +104,29 @@ def test_tiny_parser_chunks_preserve_escaped_unicode_and_nested_values(tmp_path,
     assert module.join(outdir, joined) == 0
     got = json.loads(joined.read_text(encoding="utf-8"))
     assert got == original
+
+
+def test_tiny_chunks_do_not_split_or_reject_json_primitives(tmp_path, monkeypatch):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    joined = tmp_path / "joined.json"
+    original = write_index(
+        src,
+        keys=[{"key": "a", "count": "1", "instances": []}],
+        metadata={
+            "long_number": 123456789012345,
+            "enabled": True,
+            "disabled": False,
+            "nothing": None,
+            "fraction": -12345.6789,
+        },
+    )
+    _force_parser_chunks(monkeypatch, 4)
+
+    module.split(src, outdir, max_mb=1)
+    assert module.verify(outdir, against=src) == 0
+    assert module.join(outdir, joined) == 0
+    assert json.loads(joined.read_text(encoding="utf-8")) == original
 
 
 def test_verify_and_join_stream_shard_payloads(tmp_path, monkeypatch):

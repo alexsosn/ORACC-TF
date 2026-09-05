@@ -107,7 +107,7 @@ def _node_feature_page(
 def _targets(value: object) -> tuple[int, ...]:
     if isinstance(value, Mapping):
         raw: Iterable[object] = value.keys()
-    elif isinstance(value, (set, frozenset, list, tuple)):
+    elif isinstance(value, Iterable) and not isinstance(value, (str, bytes, bytearray)):
         raw = value
     else:
         raw = (value,)

@@ -1,5 +1,6 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -10,6 +11,7 @@ def _load_script(name: str):
     spec = spec_from_file_location(name, Path("scripts") / f"{name}.py")
     assert spec is not None and spec.loader is not None
     module = module_from_spec(spec)
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -140,3 +142,29 @@ def test_generator_detects_deleted_manual_region(tmp_path, monkeypatch):
     )
     with pytest.raises(RuntimeError, match="manual region"):
         gen_docs.generate(tmp_path / "tf", docs)
+
+
+def test_drift_check_preserves_manual_prose_and_rejects_stale_feature_pages(tmp_path, monkeypatch):
+    gen_docs = _load_script("gen_docs")
+    monkeypatch.setattr(gen_docs, "Fabric", _Fabric)
+    docs = tmp_path / "docs"
+    tf_dir = tmp_path / "tf"
+    gen_docs.generate(tf_dir, docs)
+
+    page = docs / "features/sign/form.md"
+    page.write_text(
+        page.read_text(encoding="utf-8").replace(
+            "<!-- manual:begin interpretation -->\n<!-- manual:end -->",
+            "<!-- manual:begin interpretation -->\nHuman caveat.\n<!-- manual:end -->",
+        ),
+        encoding="utf-8",
+    )
+
+    check_docs = _load_script("check_docs")
+    monkeypatch.setattr(sys.modules["gen_docs"], "Fabric", _Fabric)
+    check_docs.check(tf_dir, docs)
+
+    stale = docs / "features/sign/stale.md"
+    stale.write_text("# stale\n", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="feature set drift"):
+        check_docs.check(tf_dir, docs)

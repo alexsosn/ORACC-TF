@@ -31,7 +31,7 @@ def test_split_parser_buffer_does_not_scale_with_total_input(tmp_path, monkeypat
             "instances": [f"P{i:06d}.1"],
             "payload": "x" * 256,
         }
-        for i in range(12_000)
+        for i in range(14_000)
     ]
     src.write_text(
         json.dumps(

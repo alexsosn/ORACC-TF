@@ -59,6 +59,11 @@ class CorpusBuildReport:
     section_path_errors: int
     tf_node_counts: dict[str, int]
     zero_span_counts: dict[str, int]
+    translation_source_supplied: bool = False
+    translation_units: int = 0
+    translated_documents: int = 0
+    translation_missing_documents: int = 0
+    translation_notes: int = 0
 
     @property
     def unicode_coverage(self) -> float:
@@ -99,7 +104,7 @@ class CorpusBuildReport:
         zero_counts = ", ".join(
             f"{otype}={count}" for otype, count in sorted(self.zero_span_counts.items())
         ) or "none"
-        return "\n".join((
+        rows = [
             f"documents                  : {self.documents:>8,}",
             f"populated documents        : {self.populated_documents:>8,}",
             f"stub documents             : {self.stub_documents:>8,}",
@@ -116,7 +121,15 @@ class CorpusBuildReport:
             f"section path errors        : {self.section_path_errors:>8,}",
             f"TF node counts             : {tf_counts}",
             f"zero-span sidecar counts   : {zero_counts}",
-        ))
+        ]
+        if self.translation_source_supplied:
+            rows.extend((
+                f"translation units          : {self.translation_units:>8,}",
+                f"translation notes          : {self.translation_notes:>8,}",
+                f"translated documents       : {self.translated_documents:>8,}",
+                f"translation missing docs   : {self.translation_missing_documents:>8,}",
+            ))
+        return "\n".join(rows)
 
 
 @dataclass(frozen=True)
@@ -138,6 +151,7 @@ class _Graph:
         "column",
         "line",
         "translation_unit",
+        "translation_note",
         "chunk",
         "phrase",
         "word",
@@ -458,6 +472,7 @@ def build_tf(
     graph = _Graph()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    translation_source_supplied = translations_by_document is not None
     translation_index = {
         key: tuple(units)
         for key, units in (translations_by_document or {}).items()
@@ -473,9 +488,12 @@ def build_tf(
     line_count = 0
     word_line_errors = 0
     section_path_errors = 0
+    translation_unit_count = 0
+    translated_document_count = 0
     key_counts: Counter[str] = Counter()
     sign_word_memberships: Counter[int] = Counter()
     lex_nodes: dict[lexemes.LexemeKey, int] = {}
+    translation_note_nodes: dict[tuple[str, str], int] = {}
 
     for edition in editions:
         document_count += 1
@@ -603,6 +621,7 @@ def build_tf(
 
         translation_units = translation_index.get(edition.key, ())
         if translation_units:
+            translated_document_count += 1
             ordered_lines = list(section_view.lines)
             ref_positions: dict[str, int] = {}
             for position, line in enumerate(ordered_lines):
@@ -645,6 +664,7 @@ def build_tf(
                     raise CorpusBuildError(
                         f"{edition.key}: translation {unit.source_id!r} has empty oslots"
                     )
+                translation_unit_count += 1
                 node = graph.node("translation_unit", unit_slots)
                 graph.feature(
                     node,
@@ -659,8 +679,35 @@ def build_tf(
                     translation_text=unit.text,
                     translation_text_raw=unit.text_raw,
                     translation_source=unit.source_name,
+                    translation_source_sha256=unit.source_sha256,
+                    translation_source_url=unit.source_url,
+                    translation_license=unit.source_license,
+                    translation_license_url=unit.source_license_url,
                 )
                 graph.edge("translation_document", node, document_node)
+
+                for note in unit.notes:
+                    note_key = (edition.key, note.source_id)
+                    note_node = translation_note_nodes.get(note_key)
+                    if note_node is None:
+                        note_node = graph.node("translation_note", unit_slots)
+                        translation_note_nodes[note_key] = note_node
+                        graph.feature(
+                            note_node,
+                            source_id=note.source_id,
+                            document_key=edition.key,
+                            translation_note_text=note.text,
+                            translation_note_text_raw=note.text_raw,
+                            translation_source=note.source_name,
+                            translation_source_sha256=note.source_sha256,
+                            translation_source_url=note.source_url,
+                            translation_license=note.source_license,
+                            translation_license_url=note.source_license_url,
+                        )
+                        graph.edge("translation_note_document", note_node, document_node)
+                    else:
+                        graph.add_oslots(note_node, unit_slots)
+                    graph.edge("translation_note", node, note_node)
 
         for chunk in section_view.chunks:
             slots = {
@@ -766,6 +813,11 @@ def build_tf(
         raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
     _write_zero_span(out_dir, materialised.sidecar)
 
+    missing_translation_documents = (
+        document_count - translated_document_count
+        if translation_source_supplied
+        else 0
+    )
     return CorpusBuildReport(
         documents=document_count,
         populated_documents=populated_count,
@@ -783,6 +835,11 @@ def build_tf(
         section_path_errors=section_path_errors,
         tf_node_counts=materialised.tf_node_counts,
         zero_span_counts=materialised.zero_span_counts,
+        translation_source_supplied=translation_source_supplied,
+        translation_units=translation_unit_count,
+        translated_documents=translated_document_count,
+        translation_missing_documents=missing_translation_documents,
+        translation_notes=len(translation_note_nodes),
     )
 
 

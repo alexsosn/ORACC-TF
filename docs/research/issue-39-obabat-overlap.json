@@ -2,9 +2,11 @@
   "schema_version": 1,
   "research_issue": 39,
   "match_key": "cdli_p_number",
+  "reproducer": "scripts/compare_obabat_overlap.py",
   "classification_semantics": {
     "overlap_ids": "exact CDLI P-number present in both frozen sources",
-    "not_in_pinned_nino_ids": "absent from the pinned Nino pnumber feature; this does not establish leakage-free independence"
+    "not_in_pinned_nino_ids": "absent from the pinned Nino pnumber feature; this does not establish leakage-free independence",
+    "reference_only": "present in pinned Nino but not OBABAT; the complete set is deterministically emitted by the reproducer and is not materialized here because it contains 1199 IDs"
   },
   "sources": {
     "oracc_tf": {
@@ -24,7 +26,8 @@
     "oracc_documents": 121,
     "nino_documents": 1285,
     "overlap_documents": 86,
-    "not_in_pinned_nino_documents": 35
+    "not_in_pinned_nino_documents": 35,
+    "reference_only_documents": 1199
   },
   "fractions": {
     "oracc_overlapping": 0.710744,

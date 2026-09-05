@@ -1,0 +1,49 @@
+name: p003-docs-unit
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/p003-docs-unit.yml"
+      - "docs/**"
+      - "programs/oracc_tf/**"
+      - "scripts/gen_docs.py"
+      - "scripts/check_docs.py"
+      - "scripts/check_docs_registry.py"
+      - "tests/test_p003_ph0_*.py"
+      - "tests/test_m8_cross_validation.py"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docs-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout documentation surface
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/p003-docs-unit.yml
+            docs
+            programs
+            scripts
+            tests
+            pyproject.toml
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run P-003 Phase 0 unit contracts
+        run: pytest -q tests/test_p003_ph0_skeleton.py tests/test_p003_ph0_schema_version.py
+
+      - name: Registry projection remains valid
+        run: python scripts/check_docs_registry.py

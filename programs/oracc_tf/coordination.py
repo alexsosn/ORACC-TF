@@ -260,6 +260,33 @@ def _claim_state(
     stale_unrecovered: list[dict[str, Any]] = []
     live: list[dict[str, Any]] = []
 
+    claim_ids = {
+        event.get("id")
+        for event in claims
+        if isinstance(event.get("id"), int)
+    }
+    valid_recoveries: list[dict[str, Any]] = []
+    for recovery in recoveries:
+        recovery_id = recovery.get("id")
+        recovery_payload = recovery["payload"]
+        recovery_session = recovery_payload.get("session")
+        recovery_claim_id = recovery_payload.get("claim_id")
+        if not isinstance(recovery_id, int):
+            problems.append("recover marker is attached to a comment without an integer id")
+            continue
+        if not isinstance(recovery_session, str) or not recovery_session:
+            problems.append(f"recover {recovery_id}: missing session")
+            continue
+        if not isinstance(recovery_claim_id, int):
+            problems.append(f"recover {recovery_id}: invalid claim_id")
+            continue
+        if recovery_claim_id not in claim_ids:
+            problems.append(
+                f"recover {recovery_id}: references unknown claim {recovery_claim_id}"
+            )
+            continue
+        valid_recoveries.append(recovery)
+
     valid_releases: list[dict[str, Any]] = []
     for release in releases:
         release_id = release.get("id")
@@ -319,12 +346,9 @@ def _claim_state(
             continue
 
         recovered = any(
-            isinstance(recovery.get("id"), int)
-            and recovery["id"] > claim_id
-            and recovery["payload"].get("claim_id") == claim_id
-            and isinstance(recovery["payload"].get("session"), str)
-            and bool(recovery["payload"].get("session"))
-            for recovery in recoveries
+            recovery["id"] > claim_id
+            and recovery["payload"]["claim_id"] == claim_id
+            for recovery in valid_recoveries
         )
         if expiry <= now:
             if not recovered:
@@ -666,15 +690,21 @@ def validate_completion(
         int_ids = [entry["id"] for entry in exact_reviews]
         latest_verdict: str | None = None
         if all(value is not None for value in submitted):
-            latest = max(
-                exact_reviews,
-                key=lambda entry: (
-                    entry["submitted_at"],
-                    str(entry["id"]),
-                    entry["index"],
-                ),
-            )
-            latest_verdict = latest["verdict"]
+            latest_time = max(submitted)
+            latest_entries = [
+                entry for entry in exact_reviews if entry["submitted_at"] == latest_time
+            ]
+            latest_verdicts = {entry["verdict"] for entry in latest_entries}
+            if len(latest_verdicts) == 1:
+                latest_verdict = next(iter(latest_verdicts))
+            elif all(isinstance(entry["id"], int) for entry in latest_entries):
+                latest = max(
+                    latest_entries,
+                    key=lambda entry: (entry["id"], entry["index"]),
+                )
+                latest_verdict = latest["verdict"]
+            else:
+                problems.append(f"task {task_id}: exact-head review order is ambiguous")
         elif all(isinstance(value, int) for value in int_ids):
             latest = max(exact_reviews, key=lambda entry: (entry["id"], entry["index"]))
             latest_verdict = latest["verdict"]

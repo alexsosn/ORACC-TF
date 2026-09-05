@@ -59,7 +59,7 @@ def _marker_kind_name(prefix: str) -> str:
 
 
 def _markers(text: str | None) -> tuple[list[tuple[str, dict[str, Any]]], list[str]]:
-    """Parse machine markers; recognized malformed markers fail closed."""
+    """Parse machine markers; malformed HTML-comment marker attempts fail closed."""
 
     text = text or ""
     found: list[tuple[str, dict[str, Any]]] = []
@@ -85,10 +85,12 @@ def _markers(text: str | None) -> tuple[list[tuple[str, dict[str, Any]]], list[s
     for match in LEGACY_CLAIM_RE.finditer(text):
         parse_match("claim", match.group(1), match.span())
 
-    # Detect a recognized prefix that did not form a complete marker at all.
+    # Detect an HTML-comment marker opener that did not form a complete marker.
+    # Bare prose such as ``oracc-tf:recover`` is documentation, not a marker.
     for prefix in [*(f"oracc-tf:{kind}" for kind in KINDS), "oracc-tf-claim"]:
         kind = _marker_kind_name(prefix)
-        starts = [m.start() for m in re.finditer(re.escape(prefix), text)]
+        opener = re.compile(rf"<!--\s*{re.escape(prefix)}\b")
+        starts = [match.start() for match in opener.finditer(text)]
         for start in starts:
             if not any(a <= start < b and parsed_kind == kind for a, b, parsed_kind in consumed):
                 problems.append(f"malformed {kind} marker")
@@ -297,21 +299,26 @@ def _pr_info(
 ) -> tuple[list[dict[str, Any]], list[str]]:
     prs: list[dict[str, Any]] = []
     problems: list[str] = []
+    task_hint = re.compile(rf'"task"\s*:\s*{re.escape(json.dumps(task_id))}')
     for pr in snapshot.get("pull_requests", []) or []:
         if not isinstance(pr, dict) or pr.get("state") != "open":
             continue
-        parsed, parse_problems = _markers(pr.get("body"))
-        problems.extend(parse_problems)
-        implementation = next(
-            (
-                payload
-                for kind, payload in parsed
-                if kind == "implementation" and payload.get("task") == task_id
-            ),
-            None,
-        )
-        if implementation is None:
+        body = pr.get("body") or ""
+        parsed, parse_problems = _markers(body)
+        belongs_to_task = any(
+            payload.get("task") == task_id for _, payload in parsed
+        ) or bool(task_hint.search(body))
+        if not belongs_to_task:
             continue
+        problems.extend(parse_problems)
+        implementations = [
+            payload
+            for kind, payload in parsed
+            if kind == "implementation" and payload.get("task") == task_id
+        ]
+        if not implementations:
+            continue
+        implementation = implementations[0]
         supersedes = {
             payload.get("old_pr")
             for kind, payload in parsed
@@ -513,6 +520,8 @@ def validate_completion(
 
     state = analyze(registry, snapshot, now)[task_id]
     problems.extend(state.problems)
+    if state.phase == "blocked":
+        problems.append(f"task {task_id}: blocked task cannot pass completion gate")
     pr = _find_active_pr(snapshot, state.active_pr)
     if pr is None:
         problems.append(f"task {task_id}: no active implementation PR")
@@ -537,21 +546,21 @@ def validate_completion(
         problems.append(f"task {task_id}: active PR has invalid head_sha")
         return _dedupe(problems)
 
-    exact_independent_pass = False
     saw_self_review = False
     saw_stale_pass = False
     saw_any_review = False
-    for review in pr.get("reviews", []) or []:
+    exact_reviews: list[tuple[tuple[int, int], str]] = []
+    for index, review in enumerate(pr.get("reviews", []) or []):
         if not isinstance(review, dict):
             continue
         review_markers, review_problems = _markers(review.get("body"))
         problems.extend(review_problems)
+        review_id = review.get("id")
+        order = (0, review_id) if isinstance(review_id, int) else (1, index)
         for kind, payload in review_markers:
             if kind != "review" or payload.get("task") != task_id:
                 continue
             saw_any_review = True
-            if payload.get("verdict") != "pass":
-                continue
             if payload.get("implementation_session") != implementation_session:
                 problems.append(
                     f"task {task_id}: review names a different implementation session"
@@ -562,14 +571,22 @@ def validate_completion(
                 problems.append(f"task {task_id}: review is missing review_session")
                 continue
             if review_session == implementation_session:
-                saw_self_review = True
+                if payload.get("verdict") == "pass":
+                    saw_self_review = True
                 continue
             if payload.get("head_sha") != head_sha:
-                saw_stale_pass = True
+                if payload.get("verdict") == "pass":
+                    saw_stale_pass = True
                 continue
-            exact_independent_pass = True
+            exact_reviews.append((order, str(payload.get("verdict"))))
 
-    if not exact_independent_pass:
+    if exact_reviews:
+        _, latest_verdict = max(exact_reviews, key=lambda item: item[0])
+        if latest_verdict != "pass":
+            problems.append(
+                f"task {task_id}: latest exact-head review is {latest_verdict!r}, not pass"
+            )
+    else:
         if saw_self_review:
             problems.append(
                 f"task {task_id}: self-review cannot satisfy independent review"

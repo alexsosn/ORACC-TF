@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from collections import Counter
@@ -14,6 +15,7 @@ from tf.fabric import Fabric
 MANUAL = re.compile(r"<!-- manual:begin ([^ ]+) -->.*?<!-- manual:end -->", re.S)
 MANIFEST = ".manual-regions.json"
 MAX_FREQUENCY_ROWS = 20
+MAX_RENDERED_VALUE = 120
 
 
 def manual_regions(text: str) -> dict[str, str]:
@@ -57,7 +59,11 @@ def write_preserving(
 
 
 def _md_code(value: object) -> str:
-    text = str(value).replace("\n", "\\n").replace("|", "\\|").replace("`", "\\`")
+    raw = str(value)
+    text = raw.replace("\n", "\\n").replace("|", "\\|").replace("`", "\\`")
+    if len(text) > MAX_RENDERED_VALUE:
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+        text = f"{text[:MAX_RENDERED_VALUE]}… sha256:{digest}"
     return f"`{text}`"
 
 

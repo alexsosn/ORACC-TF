@@ -14,6 +14,8 @@ def _edition() -> loader.Edition:
     doc = {
         "type": "cdl",
         "textid": text_id,
+        "license": "CC0",
+        "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
         "cdl": [{
             "node": "c",
             "type": "text",
@@ -37,12 +39,7 @@ def _edition() -> loader.Edition:
 
 
 def _metadata() -> metadata.MetadataIndex:
-    return metadata.MetadataIndex(records={
-        "test/unit:QTEST": {
-            "license": "CC0",
-            "license-url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        }
-    })
+    return metadata.MetadataIndex(records={"test/unit:QTEST": {}})
 
 
 def _unit(*, sref: str = "QTEST.1", eref: str = "QTEST.2") -> translations.TranslationUnit:
@@ -85,6 +82,7 @@ def test_translation_unit_oslots_are_union_of_inclusive_source_line_range(tmp_pa
 
     document = api.F.otype.s("document")[0]
     assert api.F.license.v(document) == "CC0"
+    assert api.F.license_url.v(document) == "https://creativecommons.org/publicdomain/zero/1.0/"
 
 
 def test_translation_alignment_rejects_missing_endpoint_instead_of_shrinking_range(tmp_path):

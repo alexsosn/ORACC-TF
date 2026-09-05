@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Validate the documentation registry against the documents on disk.
+"""Validate the agentic documentation registry against its source documents.
 
 docs/registry.json drives the automated development loop: an agent reads it to
-choose the next task. If it drifts from the documents, the agent works from a
-false map. This check keeps them honest.
+choose the next task. If it drifts from the plan/research documents, the agent
+works from a false map. User-facing generated/reference documentation under
+``docs/reference`` is intentionally outside this registry contract.
 
 Verifies:
-  * every docs/**/*.md has front-matter with the required fields
+  * every registered-source docs/**/*.md outside docs/reference has required front-matter
   * every front-matter id is unique and matches its filename prefix
   * every depends_on / blocks target exists
   * registry documents match the files on disk, field for field
@@ -56,7 +57,10 @@ def main():
 
     docs = {}
     bodies = {}
+    reference_root = os.path.abspath(os.path.join(a.docs, "reference"))
     for path in sorted(glob.glob(os.path.join(a.docs, "**", "*.md"), recursive=True)):
+        if os.path.abspath(path).startswith(reference_root + os.sep):
+            continue
         fm, body = front_matter(path)
         if fm is None:
             problems.append(f"{path}: no YAML front-matter")
@@ -124,6 +128,7 @@ def main():
 
     # cycle detection
     colour = {}
+
     def visit(n, trail):
         if colour.get(n) == 1:
             problems.append("task cycle: " + " -> ".join(trail + [n]))
@@ -135,6 +140,7 @@ def main():
             if dep in tasks:
                 visit(dep, trail + [n])
         colour[n] = 2
+
     for tid in tasks:
         visit(tid, [])
 

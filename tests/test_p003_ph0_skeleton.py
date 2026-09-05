@@ -30,6 +30,16 @@ def test_reference_skeleton_is_complete_and_indexed():
         assert f"reference/{page}" in docs_index
 
 
+def test_reference_pages_are_owned_by_reference_drift_not_maintainer_registry():
+    """Generated per-feature pages must not require registry.json entries."""
+    result = subprocess.run(
+        [sys.executable, "scripts/check_docs_registry.py"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_generator_is_idempotent_and_preserves_manual_regions(tmp_path):
     output = tmp_path / "features.md"
     output.write_text(

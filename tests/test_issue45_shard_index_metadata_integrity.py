@@ -26,12 +26,16 @@ def _write_source(path: Path, *, project="fixture", mapping=None):
     path.write_text(json.dumps(doc), encoding="utf-8")
 
 
-def test_verify_rejects_key_shard_metadata_drift(tmp_path):
+def _split_fixture(tmp_path, *, mapping=None):
     src = tmp_path / "index.json"
     outdir = tmp_path / "shards"
-    _write_source(src)
+    _write_source(src, mapping=mapping)
     module.split(src, outdir, max_mb=1)
+    return src, outdir
 
+
+def test_verify_rejects_key_shard_metadata_drift(tmp_path):
+    _src, outdir = _split_fixture(tmp_path)
     manifest = json.loads((outdir / module.MANIFEST).read_text(encoding="utf-8"))
     label = manifest["split"]["shards"][0]
     shard_path = outdir / f"{module.KEYS_PREFIX}{label}.json"
@@ -44,11 +48,7 @@ def test_verify_rejects_key_shard_metadata_drift(tmp_path):
 
 
 def test_verify_rejects_map_shard_metadata_drift(tmp_path):
-    src = tmp_path / "index.json"
-    outdir = tmp_path / "shards"
-    _write_source(src, mapping={"raw": "norm"})
-    module.split(src, outdir, max_mb=1)
-
+    _src, outdir = _split_fixture(tmp_path, mapping={"raw": "norm"})
     map_path = outdir / module.MAP_FILE
     shard = json.loads(map_path.read_text(encoding="utf-8"))
     shard["license"] = "tampered-license"
@@ -59,12 +59,8 @@ def test_verify_rejects_map_shard_metadata_drift(tmp_path):
 
 
 def test_verify_against_rejects_source_metadata_drift(tmp_path):
-    src = tmp_path / "index.json"
+    src, outdir = _split_fixture(tmp_path, mapping={"raw": "norm"})
     changed = tmp_path / "changed.json"
-    outdir = tmp_path / "shards"
-    _write_source(src, project="fixture", mapping={"raw": "norm"})
-    module.split(src, outdir, max_mb=1)
-
     _write_source(changed, project="different-project", mapping={"raw": "norm"})
 
     # Payload digests are identical; provenance/metadata is not.
@@ -72,18 +68,32 @@ def test_verify_against_rejects_source_metadata_drift(tmp_path):
 
 
 def test_duplicate_manifest_fields_fail_closed(tmp_path):
-    src = tmp_path / "index.json"
-    outdir = tmp_path / "shards"
-    _write_source(src)
-    module.split(src, outdir, max_mb=1)
-
+    _src, outdir = _split_fixture(tmp_path)
     manifest_path = outdir / module.MANIFEST
     text = manifest_path.read_text(encoding="utf-8")
-    # Inject a second top-level project field without otherwise changing the
-    # manifest payload. Ordinary json.load would silently keep the latter one.
     manifest_path.write_text(
         text.replace("{", '{"project":"tampered",', 1), encoding="utf-8"
     )
 
     with pytest.raises(Exception, match="(?i)duplicate"):
+        module.verify(outdir, quiet=True)
+
+
+@pytest.mark.parametrize(
+    "mutate, message",
+    [
+        (lambda split: split.update(shards=["a/../../../outside"]), "shard"),
+        (lambda split: split.update(shards=["a", "a"]), "duplicate|shard"),
+        (lambda split: split.update(shards="a"), "shard|list"),
+        (lambda split: split.update(has_map="false"), "has_map|boolean"),
+    ],
+)
+def test_malformed_manifest_split_schema_fails_before_path_use(tmp_path, mutate, message):
+    _src, outdir = _split_fixture(tmp_path)
+    manifest_path = outdir / module.MANIFEST
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    mutate(manifest["split"])
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(module.IndexFormatError, match=f"(?i)({message})"):
         module.verify(outdir, quiet=True)

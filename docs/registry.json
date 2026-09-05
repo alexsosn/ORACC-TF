@@ -36,9 +36,7 @@
       "status": "draft",
       "priority": "P0",
       "path": "docs/plans/P-001-riao-rinap-tf.md",
-      "depends_on": [
-        "R-001"
-      ]
+      "depends_on": ["R-001"]
     },
     {
       "id": "P-002",
@@ -47,10 +45,7 @@
       "status": "draft",
       "priority": "P0",
       "path": "docs/plans/P-002-upstream-automation.md",
-      "depends_on": [
-        "R-002",
-        "P-001"
-      ]
+      "depends_on": ["R-002", "P-001"]
     },
     {
       "id": "P-003",
@@ -59,10 +54,7 @@
       "status": "draft",
       "priority": "P1",
       "path": "docs/plans/P-003-documentation.md",
-      "depends_on": [
-        "R-003",
-        "P-001"
-      ]
+      "depends_on": ["R-003", "P-001"]
     },
     {
       "id": "R-001",
@@ -80,9 +72,7 @@
       "status": "active",
       "priority": "P0",
       "path": "docs/research/R-002-upstream-automation.md",
-      "depends_on": [
-        "R-001"
-      ]
+      "depends_on": ["R-001"]
     },
     {
       "id": "R-003",
@@ -91,10 +81,7 @@
       "status": "active",
       "priority": "P1",
       "path": "docs/research/R-003-documentation.md",
-      "depends_on": [
-        "R-001",
-        "P-001"
-      ]
+      "depends_on": ["R-001", "P-001"]
     }
   ],
   "tasks": [
@@ -119,9 +106,7 @@
       "plan": "P-001",
       "spec": "§5 M1",
       "priority": "P0",
-      "blocked_by": [
-        "P-001.M0"
-      ],
+      "blocked_by": ["P-001.M0"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m1_gdl.py; final CI run 33773932651 passed fast + corpus suites",
@@ -135,9 +120,7 @@
       "plan": "P-001",
       "spec": "§5 M2",
       "priority": "P0",
-      "blocked_by": [
-        "P-001.M1"
-      ],
+      "blocked_by": ["P-001.M1"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m2_words.py; final CI run 33778024418: 23 fast + 6 corpus tests passed",
@@ -151,9 +134,7 @@
       "plan": "P-001",
       "spec": "§5 M3",
       "priority": "P0",
-      "blocked_by": [
-        "P-001.M2"
-      ],
+      "blocked_by": ["P-001.M2"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m3_sections.py; initial RED run 33779399973; diagnostic RED run 33780195914; final GREEN run 33782934876 passed fast + corpus suites",
@@ -167,9 +148,7 @@
       "plan": "P-001",
       "spec": "§5 M4",
       "priority": "P0",
-      "blocked_by": [
-        "P-001.M2"
-      ],
+      "blocked_by": ["P-001.M2"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m4_lexemes.py; initial RED run 33784395913; source-format RED runs 33784826212, 33785353542 and 33785851515; core GREEN 33786319344; hardening RED 33786760548; final GREEN 33787212022: 38 fast + 8 corpus tests passed",
@@ -183,9 +162,7 @@
       "plan": "P-001",
       "spec": "§5 M5",
       "priority": "P0",
-      "blocked_by": [
-        "P-001.M3"
-      ],
+      "blocked_by": ["P-001.M3"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m5_metadata.py; initial RED 33798646079; source-provenance RED 33798976847; first whole-corpus GREEN 33799461875; diagnostic RED 33799927211; licence-census RED 33800403630; final GREEN 33800980390: 42 fast + 9 corpus tests passed",
@@ -199,10 +176,7 @@
       "plan": "P-001",
       "spec": "§5 M6",
       "priority": "P0",
-      "blocked_by": [
-        "P-001.M4",
-        "P-001.M5"
-      ],
+      "blocked_by": ["P-001.M4", "P-001.M5"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m6_corpus.py + tests/test_m6_sign_payload.py; initial RED 33842490363; zero-span contract RED 33845846836; Unicode/sidecar census RED 33846146102; populated-zero-sign diagnostic RED 33846629836; implementation GREEN 33847037449; independent review PR #7 review 5110207348 required sidecar-chain regression + normative docs hardening; composite-sign payload RED 33869014981; final GREEN 33869334226: 47 fast + 10 corpus tests passed",
@@ -216,9 +190,7 @@
       "plan": "P-001",
       "spec": "§5 M7",
       "priority": "P0",
-      "blocked_by": [
-        "P-001.M6"
-      ],
+      "blocked_by": ["P-001.M6"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m7_roundtrip.py + tests/test_m7_exception_reasons.py + M7 persistence assertions in tests/test_m6_corpus.py; RED runs 33914784127, 33915526570, 33916081482, 33919212600, 33919784104",
@@ -232,9 +204,7 @@
       "plan": "P-001",
       "spec": "§5 M8",
       "priority": "P1",
-      "blocked_by": [
-        "P-001.M6"
-      ],
+      "blocked_by": ["P-001.M6"],
       "status": "done",
       "evidence": {
         "tests": "tests/test_m8_cross_validation.py + tests/test_m8_oldbabylonian_integration.py; compatibility RED 33928141176; schema-version RED 33928565741; implementation GREEN 33928777533; independent review 5118596320 required real-corpus validation; integration REDs 33929390895 and 33950936106; pinned real-corpus GREEN 33951068791; standard exact-head GREEN 33951068705; independent re-review 5120242184 required registry evidence synchronization",
@@ -248,9 +218,7 @@
       "plan": "P-001",
       "spec": "§5 M9",
       "priority": "P1",
-      "blocked_by": [
-        "P-001.M6"
-      ],
+      "blocked_by": ["P-001.M6"],
       "status": "todo",
       "evidence": null
     },
@@ -274,9 +242,7 @@
       "plan": "P-002",
       "spec": "§Phase 1",
       "priority": "P0",
-      "blocked_by": [
-        "P-002.PH0"
-      ],
+      "blocked_by": ["P-002.PH0"],
       "status": "todo",
       "evidence": null
     },
@@ -286,9 +252,7 @@
       "plan": "P-002",
       "spec": "§Phase 2",
       "priority": "P0",
-      "blocked_by": [
-        "P-002.PH1"
-      ],
+      "blocked_by": ["P-002.PH1"],
       "status": "todo",
       "evidence": null
     },
@@ -298,9 +262,7 @@
       "plan": "P-002",
       "spec": "§Phase 3",
       "priority": "P0",
-      "blocked_by": [
-        "P-002.PH2"
-      ],
+      "blocked_by": ["P-002.PH2"],
       "status": "todo",
       "evidence": null
     },
@@ -310,10 +272,7 @@
       "plan": "P-002",
       "spec": "§Phase 4",
       "priority": "P0",
-      "blocked_by": [
-        "P-002.PH3",
-        "P-001.M6"
-      ],
+      "blocked_by": ["P-002.PH3", "P-001.M6"],
       "status": "todo",
       "evidence": null
     },
@@ -323,9 +282,7 @@
       "plan": "P-002",
       "spec": "§Phase 5",
       "priority": "P0",
-      "blocked_by": [
-        "P-002.PH4"
-      ],
+      "blocked_by": ["P-002.PH4"],
       "status": "todo",
       "evidence": null
     },
@@ -335,9 +292,7 @@
       "plan": "P-002",
       "spec": "§Phase 6",
       "priority": "P0",
-      "blocked_by": [
-        "P-002.PH5"
-      ],
+      "blocked_by": ["P-002.PH5"],
       "status": "todo",
       "evidence": null
     },
@@ -347,9 +302,7 @@
       "plan": "P-002",
       "spec": "§Phase 7",
       "priority": "P1",
-      "blocked_by": [
-        "P-002.PH6"
-      ],
+      "blocked_by": ["P-002.PH6"],
       "status": "todo",
       "evidence": null
     },
@@ -359,9 +312,7 @@
       "plan": "P-002",
       "spec": "§Phase 8",
       "priority": "P1",
-      "blocked_by": [
-        "P-002.PH7"
-      ],
+      "blocked_by": ["P-002.PH7"],
       "status": "todo",
       "evidence": null
     },
@@ -371,9 +322,7 @@
       "plan": "P-002",
       "spec": "§Phase 9",
       "priority": "P0",
-      "blocked_by": [
-        "P-002.PH5"
-      ],
+      "blocked_by": ["P-002.PH5"],
       "status": "todo",
       "evidence": null
     },
@@ -383,11 +332,14 @@
       "plan": "P-003",
       "spec": "§Phase 0",
       "priority": "P1",
-      "blocked_by": [
-        "P-001.M1"
-      ],
-      "status": "todo",
-      "evidence": null
+      "blocked_by": ["P-001.M1"],
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_p003_ph0_docs.py; legitimate initial RED run 33971830683; exact-head GREEN runs 33975072969 (standard fast + whole-corpus), 33975072902 (real-corpus docs generation/drift), and 33975072783 (retained M8 cross-validation)",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus; dedicated p003-docs-reference workflow; retained m8-oldbabylonian-cross-validation workflow",
+        "review": "PR #50 review 5121817792 found omitted Text-Fabric warp features otype/oslots; follow-up RED run 33974562176 failed only the new warp-feature regression (73 passed, 1 skipped); generated warp pages were then derived from real-corpus workflow artifact 9972028847 and revalidated by exact-head CI",
+        "result": "docs/reference skeleton linked from docs/README; every emitted TF node, edge, and warp feature has a non-empty description; deterministic generated feature pages include real populated-value counts; manual regions are preserved and deletion-detected via manifest; drift checker preserves manual prose while rejecting stale/generated drift; real full-corpus CI verifies committed reference output"
+      }
     },
     {
       "id": "P-003.PH1",
@@ -395,10 +347,7 @@
       "plan": "P-003",
       "spec": "§Phase 1",
       "priority": "P1",
-      "blocked_by": [
-        "P-001.M6",
-        "P-003.PH0"
-      ],
+      "blocked_by": ["P-001.M6", "P-003.PH0"],
       "status": "todo",
       "evidence": null
     },
@@ -408,10 +357,7 @@
       "plan": "P-003",
       "spec": "§Phase 2",
       "priority": "P1",
-      "blocked_by": [
-        "P-003.PH1",
-        "P-002.PH1"
-      ],
+      "blocked_by": ["P-003.PH1", "P-002.PH1"],
       "status": "todo",
       "evidence": null
     },
@@ -421,9 +367,7 @@
       "plan": "P-003",
       "spec": "§Phase 3",
       "priority": "P1",
-      "blocked_by": [
-        "P-003.PH0"
-      ],
+      "blocked_by": ["P-003.PH0"],
       "status": "todo",
       "evidence": null
     },
@@ -433,9 +377,7 @@
       "plan": "P-003",
       "spec": "§Phase 4",
       "priority": "P2",
-      "blocked_by": [
-        "P-003.PH1"
-      ],
+      "blocked_by": ["P-003.PH1"],
       "status": "todo",
       "evidence": null
     },
@@ -445,9 +387,7 @@
       "plan": "P-003",
       "spec": "§Phase 5",
       "priority": "P2",
-      "blocked_by": [
-        "P-003.PH1"
-      ],
+      "blocked_by": ["P-003.PH1"],
       "status": "todo",
       "evidence": null
     }

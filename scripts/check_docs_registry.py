@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Validate the documentation registry against the documents on disk.
 
-docs/registry.json drives the automated development loop: an agent reads it to
-choose the next task. If it drifts from the documents, the agent works from a
-false map. This check keeps them honest.
+docs/registry.json drives the automated development loop. This static check
+validates git-side metadata only; a task is not claimable until GitHub issue,
+claim, and PR state have also been reconciled by ``oracc_tf.coordination``.
 
 Verifies:
   * every docs/**/*.md has front-matter with the required fields
@@ -13,6 +13,9 @@ Verifies:
   * every task's plan exists and its spec section is findable in that plan
   * the task graph is acyclic and every blocked_by id exists
   * no task is 'done' while something it depends on is not
+  * schema-v2 unfinished tasks have unique GitHub issue mappings
+  * task-specific evidence_file paths are unique
+  * completed/blocked task evidence files, when declared, exist
 
 Usage: scripts/check_docs_registry.py [--docs docs]
 Exit code 1 on any problem.
@@ -25,10 +28,15 @@ import os
 import re
 import sys
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "programs"))
+
+from oracc_tf.coordination import validate_registry
+
 REQUIRED = ("id", "title", "type", "status", "priority")
 STATUSES = {"draft", "active", "done", "blocked", "superseded"}
 PRIORITIES = {"P0", "P1", "P2"}
-TASK_STATUSES = {"todo", "in_progress", "blocked", "done"}
+TASK_STATUSES = {"todo", "blocked", "done"}
 
 
 def front_matter(path):
@@ -37,13 +45,21 @@ def front_matter(path):
         return None, text
     _, fm, body = text.split("---\n", 2)
     out = {}
+    pending_list = None
     for line in fm.splitlines():
+        if pending_list and re.match(r"^\s+-\s+", line):
+            out[pending_list].append(re.sub(r"^\s+-\s+", "", line).strip())
+            continue
+        pending_list = None
         m = re.match(r"^(\w+):\s*(.*)$", line)
         if not m:
             continue
         key, val = m.group(1), m.group(2).strip()
         if val.startswith("["):
             val = [v.strip() for v in val.strip("[]").split(",") if v.strip()]
+        elif val == "":
+            val = []
+            pending_list = key
         out[key] = val
     return out, body
 
@@ -90,6 +106,7 @@ def main():
         problems.append(f"{reg_path}: missing")
         return report(problems)
     reg = json.load(open(reg_path, encoding="utf-8"))
+    problems.extend(validate_registry(reg))
 
     reg_docs = {d["id"]: d for d in reg.get("documents", [])}
     for did in set(docs) | set(reg_docs):
@@ -121,9 +138,14 @@ def main():
         for dep in t.get("blocked_by") or []:
             if dep not in tasks:
                 problems.append(f"task {tid}: blocked_by unknown task {dep}")
+        evidence_file = t.get("evidence_file")
+        if evidence_file and t.get("status") in {"done", "blocked"}:
+            if not os.path.isfile(evidence_file):
+                problems.append(f"task {tid}: evidence_file does not exist: {evidence_file}")
 
     # cycle detection
     colour = {}
+
     def visit(n, trail):
         if colour.get(n) == 1:
             problems.append("task cycle: " + " -> ".join(trail + [n]))
@@ -135,6 +157,7 @@ def main():
             if dep in tasks:
                 visit(dep, trail + [n])
         colour[n] = 2
+
     for tid in tasks:
         visit(tid, [])
 
@@ -144,12 +167,18 @@ def main():
                 if tasks.get(dep, {}).get("status") != "done":
                     problems.append(f"task {tid}: done but depends on unfinished {dep}")
 
-    ready = [tid for tid, t in sorted(tasks.items())
-             if t.get("status") == "todo"
-             and all(tasks.get(d, {}).get("status") == "done" for d in t.get("blocked_by") or [])]
+    dependency_ready = [
+        tid
+        for tid, t in sorted(tasks.items())
+        if t.get("status") == "todo"
+        and all(tasks.get(d, {}).get("status") == "done" for d in t.get("blocked_by") or [])
+    ]
     if not problems:
         print(f"documents: {len(docs)}   tasks: {len(tasks)}")
-        print(f"ready now ({len(ready)}): {', '.join(ready[:8])}")
+        print(
+            "dependency-ready; reconcile GitHub before claiming "
+            f"({len(dependency_ready)}): {', '.join(dependency_ready[:8])}"
+        )
     return report(problems)
 
 

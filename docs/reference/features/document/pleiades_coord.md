@@ -1,0 +1,10 @@
+# `pleiades_coord`
+
+- kind: `node`
+- scope: `document`
+- value type: `str`
+- populated values: `1834`
+- description: ORACC catalogue Pleiades coordinate value preserved as text.
+
+<!-- manual:begin interpretation -->
+<!-- manual:end -->

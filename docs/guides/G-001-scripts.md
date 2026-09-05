@@ -10,7 +10,7 @@ updated: 2026-09-06
 
 # Utility scripts
 
-Four small tools cover the pipeline from ORACC's published ZIPs to a
+Seven small tools cover the pipeline from ORACC's published ZIPs to a
 GitHub-hosted working copy. All are dependency-free (Python 3 stdlib + bash).
 
 | Script | Purpose |
@@ -157,8 +157,9 @@ standalone valid JSON carrying the original metadata header.
 
 `--replace` deletes the source only after a complete staged shard directory has
 verified against its manifest. Failed parsing, size checks, or verification do
-not publish partial output. A pre-existing output directory is preserved when
-staging fails.
+not publish partial output. A pre-existing output directory keeps unrelated
+files; successful publication replaces only the script-managed manifest,
+`map.json`, and `keys-*.json` set. `--dry-run` creates no output directories.
 
 ### Ordering and integrity
 
@@ -170,10 +171,12 @@ SHA-1 values — recorded in `_index.json` alongside entry counts. The streaming
 implementation deliberately preserves those digest bytes so existing shard
 manifests remain verifiable without migration.
 
-`verify --against <original>` streams both the shards and source and compares
-their semantic digests. An explicitly present empty `map: {}` remains distinct
-from an absent map. Duplicate map keys and duplicate top-level fields fail
-closed instead of being silently collapsed by `json.load`.
+Every key shard and `map.json` must also carry the same source metadata as the
+manifest. `verify --against <original>` streams both sides and compares metadata
+as well as key/map counts and digests. An explicitly present empty `map: {}`
+remains distinct from an absent map. Duplicate object fields fail closed at any
+nesting depth in source values, shards, and the manifest instead of being
+silently collapsed by `json.load`.
 
 ### Memory and temporary disk
 
@@ -181,9 +184,10 @@ closed instead of being silently collapsed by `json.load`.
 payloads in Python memory. JSON is read incrementally. A temporary stdlib
 SQLite database provides disk-backed payload storage, duplicate detection, and
 sorting for the legacy digest; its configured SQLite page cache is 8 MiB.
-Python-side parser memory therefore scales with the configured read chunk and
-the largest individual JSON value being decoded, rather than with total index
-size. Temporary disk use does scale with the data being processed.
+Python-side parser memory therefore scales with the configured read chunk,
+retained top-level metadata, and the largest individual JSON value being
+decoded, rather than with total index size. Temporary disk use does scale with
+the data being processed.
 
 The pre-redesign synthetic baseline showed the old whole-document path scaling
 approximately linearly with input size:
@@ -206,12 +210,13 @@ remain an explicit lower bound on required memory.
 
 ### Failure model
 
-Malformed or truncated JSON, invalid nesting, duplicate object fields that would
-lose information, a single shard that cannot satisfy `--max-mb`, and manifest
-digest mismatches all abort before new output is accepted. `join` writes to a
-temporary destination and only replaces the requested output after the staged
-content matches the manifest. The committed v1 shard format remains readable
-and joinable.
+Malformed or truncated JSON, invalid nesting, duplicate object fields that
+would lose information, shard/manifest metadata disagreement, a single shard
+that cannot satisfy `--max-mb`, and manifest digest mismatches all abort before
+new output is accepted. `join` writes to a temporary destination and only
+replaces the requested output after the staged content matches the manifest;
+it refuses an output path that aliases the manifest or any managed shard it is
+reading. The committed v1 shard format remains readable and joinable.
 
 ---
 

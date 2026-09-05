@@ -1,6 +1,7 @@
 ---
 title: ORACC-TF reference
-status: skeleton
+status: draft
+type: reference
 ---
 
-User-facing orientation and loading entry point. Generated and verified content is added only from built dataset evidence.
+Purpose: provide the user-facing orientation and loading entry point. Generated and verified content is added only from built dataset evidence.

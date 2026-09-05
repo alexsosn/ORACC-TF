@@ -76,7 +76,7 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
 
     rows = ["# Feature reference", "", "Generated from TF metadata; do not hand-edit generated fields.", ""]
 
-    for name in sorted(feature for feature in api.Fall() if feature != "otype"):
+    for name in sorted(api.Fall()):
         feature = api.Fs(name)
         description = str(feature.meta.get("description", "")).strip()
         value_type = str(feature.meta.get("valueType", "str"))
@@ -106,7 +106,7 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
         generated_paths.add(rel)
         next_manifest[rel.as_posix()] = sorted(manual_regions((docs_dir / rel).read_text(encoding="utf-8")))
 
-    for name in sorted(feature for feature in api.Eall() if feature != "oslots"):
+    for name in sorted(api.Eall()):
         feature = api.Es(name)
         description = str(feature.meta.get("description", "")).strip()
         value_type = str(feature.meta.get("valueType", "str"))

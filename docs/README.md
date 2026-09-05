@@ -4,15 +4,21 @@ title: ORACC-TF documentation index
 type: index
 status: active
 priority: P0
-updated: 2026-08-29
+updated: 2026-09-05
 ---
 
 # ORACC-TF documentation
 
-Every document has an **id**, a **status**, a **priority** and explicit
-**dependencies**, declared in YAML front-matter. [`registry.json`](registry.json)
-is the machine-readable projection of all of it and is what an automated agent
-reads to choose work.
+Maintainer documents have an **id**, a **status**, a **priority** and explicit
+**dependencies** in YAML front matter. [`registry.json`](registry.json) is the
+machine-readable projection of that maintainer graph and is what an automated
+agent reads to choose work.
+
+User-facing files under [`reference/`](reference/) are a separate surface:
+they are generated or drift-checked against the built Text-Fabric dataset and
+do **not** require individual `registry.json` entries. This keeps generated
+per-feature pages out of the task registry while preserving reviewable source
+for research, plans, and guides.
 
 ## Layout
 
@@ -21,13 +27,29 @@ reads to choose work.
 | [`research/`](research/) | `R-NNN` — measured findings and why decisions were made | maintainers |
 | [`plans/`](plans/) | `P-NNN` — what will be built, with phases and acceptance | maintainers, agents |
 | [`guides/`](guides/) | `G-NNN` — how to operate the repository | maintainers |
-| `reference/` | user-facing corpus documentation (created by P-003) | **users** |
+| [`reference/`](reference/) | user-facing corpus documentation; generated facts come from TF | **users** |
 | `reports/` | generated validation evidence | both |
 
 Research and plans stay in the repository rather than a GitHub wiki: they must
 be reviewable in pull requests next to the code they describe.
 
-## Documents
+## User reference
+
+- [Start here](reference/index.md)
+- [Data model](reference/model.md)
+- [Signs](reference/signs.md)
+- [Words and lexemes](reference/words-and-lexemes.md)
+- [Translations](reference/translations.md)
+- [Document identity](reference/identity.md)
+- [Query guide](reference/query-guide.md)
+- [Reproducibility](reference/reproducibility.md)
+- [Feature reference](reference/features.md)
+
+The Phase 0 pages are deliberately skeletal. They state purpose and ownership,
+not unverified corpus facts. Feature facts, counts, domains, and later examples
+are generated from the built dataset in subsequent P-003 phases.
+
+## Maintainer documents
 
 | id | title | status | prio | depends on |
 |---|---|---|---|---|

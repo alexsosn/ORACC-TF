@@ -17,13 +17,13 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
 from tf.fabric import Fabric
 
-from . import TF_VERSION, lexemes, loader, metadata, paths, sections, words
+from . import TF_VERSION, lexemes, loader, metadata, paths, sections, translations, words
 
 
 ZERO_SPAN_SCHEMA = "oracc-tf-zero-span-v1"
@@ -137,6 +137,7 @@ class _Graph:
         "face",
         "column",
         "line",
+        "translation_unit",
         "chunk",
         "phrase",
         "word",
@@ -337,7 +338,13 @@ class _Graph:
             "otype": {"valueType": "str"},
             "oslots": {"valueType": "str"},
         }
-        int_features = {"catalogue_present", "lemmaknown", "populated", "synthetic"}
+        int_features = {
+            "catalogue_present",
+            "lemmaknown",
+            "populated",
+            "synthetic",
+            "translation_rows",
+        }
         for name in set(node_features) - {"otype"}:
             meta_data[name] = {
                 "valueType": "int" if name in int_features else "str"
@@ -443,11 +450,18 @@ def build_tf(
     *,
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
+    translations_by_document: Mapping[
+        str, Iterable[translations.TranslationUnit]
+    ] | None = None,
 ) -> CorpusBuildReport:
     """Build one joined TF dataset plus the lossless zero-span sidecar."""
     graph = _Graph()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    translation_index = {
+        key: tuple(units)
+        for key, units in (translations_by_document or {}).items()
+    }
 
     next_slot = 1
     document_count = 0
@@ -587,6 +601,67 @@ def build_tf(
                     graph.add_oslots(column_nodes[line.column_id], slots)
                     graph.edge("line_column", node, column_nodes[line.column_id])
 
+        translation_units = translation_index.get(edition.key, ())
+        if translation_units:
+            ordered_lines = list(section_view.lines)
+            ref_positions: dict[str, int] = {}
+            for position, line in enumerate(ordered_lines):
+                if not line.ref:
+                    continue
+                if line.ref in ref_positions:
+                    raise CorpusBuildError(
+                        f"{edition.key}: duplicate line ref {line.ref!r} prevents translation alignment"
+                    )
+                ref_positions[line.ref] = position
+
+            for unit in translation_units:
+                if unit.document_key != edition.key or unit.text_id != edition.text_id:
+                    raise CorpusBuildError(
+                        f"{edition.key}: translation {unit.source_id!r} identity mismatch"
+                    )
+                if unit.sref not in ref_positions:
+                    raise CorpusBuildError(
+                        f"{edition.key}: translation {unit.source_id!r} sref "
+                        f"{unit.sref!r} is not a source line ref"
+                    )
+                if unit.eref not in ref_positions:
+                    raise CorpusBuildError(
+                        f"{edition.key}: translation {unit.source_id!r} eref "
+                        f"{unit.eref!r} is not a source line ref"
+                    )
+                start = ref_positions[unit.sref]
+                end = ref_positions[unit.eref]
+                if start > end:
+                    raise CorpusBuildError(
+                        f"{edition.key}: translation {unit.source_id!r} has reversed line range"
+                    )
+                unit_slots = {
+                    slot
+                    for line in ordered_lines[start:end + 1]
+                    for word_id in line.word_ids
+                    for slot in by_word[word_id].slot_ids
+                }
+                if not unit_slots:
+                    raise CorpusBuildError(
+                        f"{edition.key}: translation {unit.source_id!r} has empty oslots"
+                    )
+                node = graph.node("translation_unit", unit_slots)
+                graph.feature(
+                    node,
+                    source_id=unit.source_id,
+                    document_key=edition.key,
+                    translation_subtype=unit.subtype,
+                    translation_sref=unit.sref,
+                    translation_eref=unit.eref,
+                    translation_rows=unit.rows,
+                    translation_label=unit.label,
+                    translation_se_label=unit.se_label,
+                    translation_text=unit.text,
+                    translation_text_raw=unit.text_raw,
+                    translation_source=unit.source_name,
+                )
+                graph.edge("translation_document", node, document_node)
+
         for chunk in section_view.chunks:
             slots = {
                 slot
@@ -664,10 +739,16 @@ def build_tf(
         + max_slot
         - len(sign_word_memberships)
     )
+    orphan_translation_keys = set(translation_index) - set(key_counts)
 
     if collision_count:
         raise CorpusBuildError(
             f"qualified document keys are not unique: {collision_count} collisions"
+        )
+    if orphan_translation_keys:
+        raise CorpusBuildError(
+            "translation index contains unknown document keys: "
+            f"{sorted(orphan_translation_keys)[:5]!r}"
         )
     if max_slot == 0:
         raise CorpusBuildError(

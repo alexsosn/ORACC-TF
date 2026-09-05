@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from oracc_tf import TF_VERSION, corpus, loader, paths, releases
+from oracc_tf import TF_VERSION, corpus, loader, paths, publishing, releases
 
 
 def _edition() -> loader.Edition:
@@ -100,7 +100,7 @@ def test_registered_builder_resolves_the_canonical_root(tmp_path, monkeypatch):
         return sentinel
 
     monkeypatch.setattr(corpus, "build_full_tf", fake_build)
-    root, report = corpus.build_registered_tf(
+    root, report = publishing.build_registered_tf(
         tmp_path, "assyrian-royal-inscriptions", tf_version=TF_VERSION
     )
 
@@ -113,7 +113,7 @@ def test_registered_builder_resolves_the_canonical_root(tmp_path, monkeypatch):
 
 def test_registered_builder_rejects_unregistered_dataset(tmp_path):
     with pytest.raises(ValueError):
-        corpus.build_registered_tf(tmp_path, "not-registered", tf_version=TF_VERSION)
+        publishing.build_registered_tf(tmp_path, "not-registered", tf_version=TF_VERSION)
 
 
 def test_version_root_is_standalone_loadable_and_owns_sidecar(tmp_path):

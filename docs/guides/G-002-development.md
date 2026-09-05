@@ -61,6 +61,19 @@ This `/tf/` boundary is an ORACC-TF repository contract. It is also compatible
 with Agora Context-Fabric discovery, but downstream compatibility is evidence,
 not the reason for the invariant.
 
+Architecture/TDD evidence for issue #14: the initial test-only RED run
+`33982968272` failed 21 new layout assertions because the canonical-root and
+registered-builder APIs did not exist, while 80 pre-existing fast tests passed
+and 1 skipped. Review then found a schema-identity hole: a caller could request
+a different `tf_version` and relabel the current converter bytes. After fixing
+an unrelated test-fixture error, clean RED run `33983503132` failed exactly
+that one regression while 101 other fast tests passed and 1 skipped. The guard
+landed at `cd9db297a4b5ed7e2d272258af3a22043072c3c9`; exact-head GREEN runs were
+`33983685262` (standard fast + whole-corpus), `33983685320` (real-corpus
+generated-reference/drift), and `33983685383` (retained M8 cross-validation).
+No immutable publishable TF release using a conflicting repository layout
+existed when this contract was adopted, so no migration shim is required.
+
 ## Tests
 
 ```bash

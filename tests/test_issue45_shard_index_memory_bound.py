@@ -18,7 +18,7 @@ def test_split_parser_buffer_does_not_scale_with_total_input(tmp_path, monkeypat
     This is deliberately a structural memory regression rather than an RSS
     threshold: process RSS is noisy across Python/runner versions, while the
     parser buffer is the part of the algorithm that previously risked growing
-    with total JSON size.  The SQLite spool is separately configured with a
+    with total JSON size. The SQLite spool is separately configured with a
     bounded cache and stores corpus-sized state on disk.
     """
     src = tmp_path / "index.json"
@@ -64,7 +64,8 @@ def test_split_parser_buffer_does_not_scale_with_total_input(tmp_path, monkeypat
     monkeypatch.setattr(stream_cls, "__init__", forced_init)
     monkeypatch.setattr(stream_cls, "_fill", measured_fill)
 
-    module.split(src, outdir, max_mb=1)
+    # Keep shard sizing out of this test: it isolates parser memory growth.
+    module.split(src, outdir, max_mb=90)
 
     assert module.verify(outdir) == 0
     # Individual entries are well below 1 KiB, so a 64 KiB ceiling leaves

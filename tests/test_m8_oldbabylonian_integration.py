@@ -22,7 +22,7 @@ def _oldbab_api():
     location = os.environ.get("OLDBABYLONIAN_TF")
     if not location:
         pytest.skip("real oldbabylonian TF is supplied by the dedicated M8 CI gate")
-    path = Path(location)
+    path = Path(location).resolve()
     assert path.name == "1.0.6"
     for feature in SHARED_FEATURES:
         assert (path / f"{feature}.tf").is_file()

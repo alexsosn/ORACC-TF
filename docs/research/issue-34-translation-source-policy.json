@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "research_issue": 34,
+  "status": "partial",
+  "default": {
+    "translation_status": "unavailable",
+    "fail_closed": true,
+    "reason": "translation is opt-in only after a source passes acquisition, rights, alignment, and coverage gates"
+  },
+  "source_families": {
+    "oracc_index_tra": {
+      "eligible": false,
+      "use": "coverage_hint_only",
+      "reason": "stemmed search index does not preserve recoverable running translation text"
+    },
+    "checked_in_corpusjson": {
+      "eligible": false,
+      "use": "linguistic_source_only",
+      "reason": "current snapshot has no running translation nodes"
+    },
+    "live_html": {
+      "eligible": false,
+      "use": "independent_audit_only",
+      "reason": "moving presentation format is not an ingestion/versioning contract"
+    },
+    "oracc_tei": {
+      "eligible": "conditional",
+      "requirements": [
+        "freeze exact bytes and checksum",
+        "verify translation payload and alignment structure",
+        "verify project-specific rights",
+        "measure corpus coverage"
+      ]
+    },
+    "public_atf": {
+      "eligible": "conditional_preferred",
+      "requirements": [
+        "pin immutable revision or release",
+        "verify #tr/@translation content",
+        "verify project-specific rights",
+        "preserve source labels/ranges"
+      ]
+    },
+    "immutable_release_bundle": {
+      "eligible": "conditional_preferred",
+      "requirements": [
+        "pin record/version",
+        "verify file checksum",
+        "inspect payload for structured running translation",
+        "verify project/source rights",
+        "measure coverage"
+      ]
+    },
+    "publication_ocr_or_rekey": {
+      "eligible": false,
+      "reason": "derived text and publication rights require a separate research/licensing decision"
+    }
+  },
+  "representative_corpora": {
+    "balt": {
+      "status": "provisionally_eligible_pending_payload_inspection",
+      "candidate_record": "10.5281/zenodo.17667912",
+      "candidate_version": "1.1.0",
+      "candidate_file": "BALT.zip",
+      "candidate_md5": "595a70f55011592cfad3acad3fced0ec",
+      "next_gate": "independently acquire the pinned archive, verify translation-bearing structured source, and measure coverage"
+    },
+    "saao": {
+      "status": "translation_disabled_pending_rights_resolution",
+      "reason": "running translations exist, but ORACC reuse guidance and AEB rights statements show source-specific author/NATCP restrictions may apply"
+    },
+    "hbtin": {
+      "status": "translation_free_default",
+      "reason": "checked-in index-tra is not running text and no pinned structured translation artifact was verified"
+    },
+    "adsd": {
+      "status": "subproject_review_required",
+      "reason": "umbrella project contains multiple subprojects; translation eligibility cannot be inherited globally"
+    },
+    "tcma": {
+      "status": "subproject_review_required",
+      "reason": "umbrella project contains multiple subprojects; translation eligibility cannot be inherited globally"
+    }
+  },
+  "provenance_contract": {
+    "available_required": [
+      "status",
+      "language",
+      "source_kind",
+      "source_url",
+      "source_record",
+      "source_version",
+      "source_sha256",
+      "license",
+      "attribution",
+      "alignment",
+      "coverage.documents_total",
+      "coverage.documents_with_translation",
+      "coverage.translation_units"
+    ],
+    "unavailable_required": [
+      "status",
+      "reason"
+    ]
+  },
+  "remaining_gates": [
+    "independent acquisition and file-level inspection of the pinned BALT artifact",
+    "BALT translation coverage and alignment census from the structured payload",
+    "project/source-specific rights resolution before redistributing SAAO translation text",
+    "source-family checks for HBTIN and representative ADSD/TCMA subprojects if translation enablement is pursued"
+  ]
+}

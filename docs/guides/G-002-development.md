@@ -5,7 +5,7 @@ type: guide
 status: active
 priority: P1
 depends_on: []
-updated: 2026-08-29
+updated: 2026-09-05
 ---
 
 # Development setup and conventions
@@ -33,6 +33,33 @@ docs/                   research, plans, guides; see docs/README.md
 
 `scripts/` stays dependency-free so it runs against a bare Python; anything
 needing the package lives in `programs/`.
+
+### Publishable Text-Fabric dataset roots
+
+A publishable dataset root has exactly this grammar:
+
+```text
+<output-base>/<dataset>/tf/<tf_version>/
+```
+
+`dataset` is the stable dataset identity from `datasets.toml`. `tf_version` is
+the Text-Fabric schema version (`oracc_tf.TF_VERSION`) and is a SemVer value.
+Upstream ORACC dates, archive hashes, and release source-state digests do **not**
+appear in this path; they belong to release/provenance metadata and tags. This
+keeps dataset identity stable when source bytes change without a schema change
+and lets multiple schema versions coexist without collision.
+
+The version directory is the independently loadable Text-Fabric root. It must
+contain the TF warp (`otype.tf`, `oslots.tf`, `otext.tf`) and coordinated
+sidecars such as `zero-span.json`. Consumers and packaging code must resolve
+this root through the shared layout helper rather than duplicating string path
+logic. Dataset and version identifiers are validated before any path is
+constructed; absolute paths, separators, traversal components, and ambiguous
+identifiers are rejected.
+
+This `/tf/` boundary is an ORACC-TF repository contract. It is also compatible
+with Agora Context-Fabric discovery, but downstream compatibility is evidence,
+not the reason for the invariant.
 
 ## Tests
 

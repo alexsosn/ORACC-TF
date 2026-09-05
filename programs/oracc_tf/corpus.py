@@ -23,7 +23,7 @@ from pathlib import Path
 
 from tf.fabric import Fabric
 
-from . import TF_VERSION, lexemes, loader, metadata, paths, sections, words
+from . import TF_VERSION, feature_docs, lexemes, loader, metadata, paths, sections, words
 
 
 ZERO_SPAN_SCHEMA = "oracc-tf-zero-span-v1"
@@ -324,6 +324,15 @@ class _Graph:
             "edges": side_edges,
         }
 
+        def feature_meta(name: str, value_type: str) -> dict[str, object]:
+            try:
+                description = feature_docs.description_for(name)
+            except KeyError as exc:
+                raise CorpusBuildError(
+                    f"emitted TF feature {name!r} has no canonical description"
+                ) from exc
+            return {"valueType": value_type, "description": description}
+
         meta_data: dict[str, dict[str, object]] = {
             "": {
                 "name": "ORACC-TF RIAO + RINAP",
@@ -334,16 +343,16 @@ class _Graph:
                 "sectionTypes": "document,face,line",
                 "sectionFeatures": "document,face,line",
             },
-            "otype": {"valueType": "str"},
-            "oslots": {"valueType": "str"},
+            "otype": feature_meta("otype", "str"),
+            "oslots": feature_meta("oslots", "str"),
         }
         int_features = {"catalogue_present", "lemmaknown", "populated", "synthetic"}
         for name in set(node_features) - {"otype"}:
-            meta_data[name] = {
-                "valueType": "int" if name in int_features else "str"
-            }
+            meta_data[name] = feature_meta(
+                name, "int" if name in int_features else "str"
+            )
         for name in set(edge_features) - {"oslots"}:
-            meta_data[name] = {"valueType": "str"}
+            meta_data[name] = feature_meta(name, "str")
 
         return _MaterialisedGraph(
             node_features=node_features,

@@ -60,8 +60,9 @@ def _feature_page(
     scope: str,
     value_type: str,
     description: str,
+    populated_values: int,
 ) -> str:
-    return f"""# `{name}`\n\n- kind: `{kind}`\n- scope: `{scope}`\n- value type: `{value_type}`\n- description: {description}\n\n<!-- manual:begin interpretation -->\n<!-- manual:end -->\n"""
+    return f"""# `{name}`\n\n- kind: `{kind}`\n- scope: `{scope}`\n- value type: `{value_type}`\n- populated values: `{populated_values}`\n- description: {description}\n\n<!-- manual:begin interpretation -->\n<!-- manual:end -->\n"""
 
 
 def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
@@ -81,8 +82,12 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
         value_type = str(feature.meta.get("valueType", "str"))
         if not description:
             raise RuntimeError(f"feature {name!r} has an empty @description")
-        node_types = sorted({api.F.otype.v(node) for node, _ in feature.items()})
-        scope = node_types[0] if len(node_types) == 1 else "mixed"
+        node_types: set[str] = set()
+        populated_values = 0
+        for node, _ in feature.items():
+            populated_values += 1
+            node_types.add(api.F.otype.v(node))
+        scope = next(iter(node_types)) if len(node_types) == 1 else "mixed"
         rel = Path("features") / scope / f"{name}.md"
         rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
         page = _feature_page(
@@ -91,6 +96,7 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
             scope=scope,
             value_type=value_type,
             description=description,
+            populated_values=populated_values,
         )
         write_preserving(
             docs_dir / rel,
@@ -106,6 +112,7 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
         value_type = str(feature.meta.get("valueType", "str"))
         if not description:
             raise RuntimeError(f"edge feature {name!r} has an empty @description")
+        populated_values = sum(1 for _ in feature.items())
         rel = Path("features") / "edge" / f"{name}.md"
         rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
         page = _feature_page(
@@ -114,6 +121,7 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
             scope="edge",
             value_type=value_type,
             description=description,
+            populated_values=populated_values,
         )
         write_preserving(
             docs_dir / rel,

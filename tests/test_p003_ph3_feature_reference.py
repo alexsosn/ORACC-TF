@@ -1,3 +1,4 @@
+from array import array
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 import sys
@@ -128,4 +129,27 @@ def test_edge_feature_page_has_source_target_types_links_and_degree_frequency(tm
     assert "- links: `3`" in text
     assert "## Out-degree frequencies" in text
     assert "| 1 | 1 |" in text
+    assert "| 2 | 1 |" in text
+
+
+def test_edge_targets_accept_text_fabric_array_storage(tmp_path, monkeypatch):
+    gen_docs = _load_gen_docs()
+
+    class ArrayApi(_Api):
+        def __init__(self):
+            super().__init__()
+            self._edge = {
+                "linked": _Feature("Word to lexeme.", [(10, array("I", [20, 21]))]),
+            }
+
+    class ArrayFabric(_Fabric):
+        def __init__(self, *args, **kwargs):
+            self.api = ArrayApi()
+
+    monkeypatch.setattr(gen_docs, "Fabric", ArrayFabric)
+    docs = tmp_path / "docs"
+    gen_docs.generate(tmp_path / "tf", docs)
+    text = (docs / "features/edge/linked.md").read_text(encoding="utf-8")
+    assert "- links: `2`" in text
+    assert "- target node types: `lex`" in text
     assert "| 2 | 1 |" in text

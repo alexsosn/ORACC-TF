@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "compare_obabat_overlap.py"
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "compare_obabat_overlap.py"
 spec = spec_from_file_location("compare_obabat_overlap", SCRIPT)
 module = module_from_spec(spec)
 assert spec.loader is not None
@@ -70,3 +71,28 @@ def test_ambiguous_distinct_ids_without_strong_content_match_remain_unresolved()
 
 def test_exact_identifier_wins_without_requiring_content():
     assert module.classify_pair("P510527", " P510527 ") == "exact_identifier"
+
+
+def test_committed_manifest_partitions_the_exact_pinned_oracc_source():
+    result = module.validate_manifest_against_oracc(
+        ROOT / "data" / "obabat" / "atletters" / "corpus.json",
+        ROOT / "docs" / "research" / "issue-39-obabat-overlap.json",
+    )
+
+    assert result == {
+        "oracc_documents": 121,
+        "overlap_documents": 86,
+        "not_in_pinned_nino_documents": 35,
+    }
+
+
+def test_manifest_validation_rejects_source_bytes_that_no_longer_match_pin(tmp_path):
+    source = ROOT / "data" / "obabat" / "atletters" / "corpus.json"
+    changed = tmp_path / "corpus.json"
+    changed.write_bytes(source.read_bytes() + b"\n")
+
+    with pytest.raises(module.ComparisonError, match="blob SHA"):
+        module.validate_manifest_against_oracc(
+            changed,
+            ROOT / "docs" / "research" / "issue-39-obabat-overlap.json",
+        )

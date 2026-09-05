@@ -3,8 +3,8 @@
 
 Source/shard payloads are parsed incrementally. A temporary stdlib SQLite spool
 provides disk-backed ordering, duplicate detection, and digest sorting, so heap
-usage depends on parser buffers and the largest single JSON value rather than
-on total corpus size.
+usage depends on parser buffers, retained top-level metadata, and the largest
+single JSON value rather than on total corpus size.
 """
 
 from __future__ import annotations
@@ -36,6 +36,16 @@ class IndexFormatError(ShardIndexError):
 
 class ShardSizeError(ShardIndexError):
     pass
+
+
+def _unique_object(pairs):
+    """Build a JSON object while rejecting duplicate keys recursively."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise IndexFormatError(f"duplicate JSON object key: {key}")
+        result[key] = value
+    return result
 
 
 def canon(obj):
@@ -183,8 +193,8 @@ class _JsonStream:
             end = i
         else:
             # JSON numbers and true/false/null are complete only at a structural
-            # delimiter or whitespace. This avoids raw_decode accepting the
-            # prefix `1` when a chunk currently ends in `123...`.
+            # delimiter or whitespace. This avoids accepting the prefix `1`
+            # when a chunk currently ends in `123...`.
             i = 0
             while True:
                 if i >= len(self.buf):
@@ -202,7 +212,7 @@ class _JsonStream:
 
         token = self.buf[:end]
         try:
-            value = json.loads(token)
+            value = json.loads(token, object_pairs_hook=_unique_object)
         except json.JSONDecodeError as exc:
             raise IndexFormatError(
                 f"invalid JSON value near character {exc.pos}: {exc.msg}"
@@ -484,16 +494,41 @@ def _write_map_shard(path, meta, spool):
         fp.write("}}")
 
 
+def _managed_output_name(name):
+    return name in {MANIFEST, MAP_FILE} or (
+        name.startswith(KEYS_PREFIX) and name.endswith(".json")
+    )
+
+
+def _seed_publish_dir(outdir, publish):
+    """Create staged output while retaining unrelated existing directory data."""
+    publish.mkdir()
+    if not outdir.exists():
+        return
+    for child in outdir.iterdir():
+        if _managed_output_name(child.name):
+            continue
+        dest = publish / child.name
+        if child.is_symlink():
+            os.symlink(os.readlink(child), dest, target_is_directory=child.is_dir())
+        elif child.is_dir():
+            shutil.copytree(child, dest, symlinks=True)
+        else:
+            shutil.copy2(child, dest)
+
+
 def _publish_dir(staged, outdir):
-    """Replace a completed directory; restore the old one on immediate failure."""
+    """Replace a completed directory, restoring the old one on publication failure."""
     staged = Path(staged)
     outdir = Path(outdir)
     if not outdir.exists():
         os.replace(staged, outdir)
         return
-    backup = outdir.parent / f".{outdir.name}.backup-{os.getpid()}"
-    if backup.exists():
-        shutil.rmtree(backup)
+
+    backup = Path(
+        tempfile.mkdtemp(prefix=f".{outdir.name}.backup-", dir=outdir.parent)
+    )
+    backup.rmdir()
     os.replace(outdir, backup)
     try:
         os.replace(staged, outdir)
@@ -501,7 +536,7 @@ def _publish_dir(staged, outdir):
         os.replace(backup, outdir)
         raise
     else:
-        shutil.rmtree(backup)
+        shutil.rmtree(backup, ignore_errors=True)
 
 
 def _manifest(indir):
@@ -512,14 +547,37 @@ def _manifest(indir):
     return result
 
 
+def _validate_split_paths(src, outdir, *, dry_run):
+    """Reject output choices that could replace source or unrelated files."""
+    if dry_run:
+        return
+    if outdir.exists() and (outdir.is_symlink() or not outdir.is_dir()):
+        raise ShardIndexError(f"output path must be a directory: {outdir}")
+    src_resolved = src.resolve()
+    out_resolved = outdir.resolve()
+    if src_resolved == out_resolved or src_resolved.is_relative_to(out_resolved):
+        raise ShardIndexError(
+            f"output directory must not be the source or contain the source: {outdir}"
+        )
+
+
 def split(src, outdir, max_mb=DEFAULT_MAX_MB, dry_run=False):
     src = Path(src)
     outdir = Path(outdir)
     if max_mb <= 0:
         raise ShardSizeError("max_mb must be positive")
     limit = int(max_mb * 1024 * 1024)
-    outdir.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".shard-index-", dir=outdir.parent) as td:
+    _validate_split_paths(src, outdir, dry_run=dry_run)
+
+    if dry_run:
+        temp_context = tempfile.TemporaryDirectory(prefix=".shard-index-")
+    else:
+        outdir.parent.mkdir(parents=True, exist_ok=True)
+        temp_context = tempfile.TemporaryDirectory(
+            prefix=".shard-index-", dir=outdir.parent
+        )
+
+    with temp_context as td:
         work = Path(td)
         spool = _Spool(work / "spool.sqlite", keep_payload=True)
         try:
@@ -561,14 +619,20 @@ def split(src, outdir, max_mb=DEFAULT_MAX_MB, dry_run=False):
                         f"{count:>9,} entries"
                     )
                 return
+
             publish = work / "publish"
-            publish.mkdir()
+            _seed_publish_dir(outdir, publish)
             dump(manifest, publish / MANIFEST)
             if has_map:
                 _write_map_shard(publish / MAP_FILE, meta, spool)
             for label in shards:
-                _write_key_shard(publish / f"{KEYS_PREFIX}{label}.json", meta, label, spool)
-            oversized = [p.name for p in publish.iterdir() if p.stat().st_size > limit]
+                _write_key_shard(
+                    publish / f"{KEYS_PREFIX}{label}.json", meta, label, spool
+                )
+            managed_files = [
+                p for p in publish.iterdir() if _managed_output_name(p.name)
+            ]
+            oversized = [p.name for p in managed_files if p.stat().st_size > limit]
             if oversized:
                 raise ShardSizeError(
                     f"output exceeds shard size limit {limit} bytes: {', '.join(oversized)}"
@@ -578,18 +642,19 @@ def split(src, outdir, max_mb=DEFAULT_MAX_MB, dry_run=False):
 
         if verify(publish, quiet=True):
             raise ShardIndexError("staged shards failed manifest verification")
-        files = list(publish.iterdir())
-        total = sum(p.stat().st_size for p in files)
-        biggest = max(files, key=lambda p: p.stat().st_size).name
+        total = sum(p.stat().st_size for p in managed_files)
+        biggest_path = max(managed_files, key=lambda p: p.stat().st_size)
+        biggest = biggest_path.name
+        biggest_size = biggest_path.stat().st_size
         _publish_dir(publish, outdir)
 
     print(f"split {src} -> {outdir}")
     print(f"  {len(shards)} key shards{' + map.json' if has_map else ''} + {MANIFEST}")
     print(
         f"  {src.stat().st_size/1048576:.1f} MB -> {total/1048576:.1f} MB "
-        f"in {len(files)} files"
+        f"in {len(managed_files)} managed files"
     )
-    print(f"  largest: {biggest} ({(outdir/biggest).stat().st_size/1048576:.1f} MB)")
+    print(f"  largest: {biggest} ({biggest_size/1048576:.1f} MB)")
 
 
 def _stream_key_shard(path, label, callback):
@@ -696,7 +761,9 @@ def join(indir, out):
                     spool.add_key(entry)
 
                 for label in spec.get("shards", []):
-                    _stream_key_shard(indir / f"{KEYS_PREFIX}{label}.json", label, emit_key)
+                    _stream_key_shard(
+                        indir / f"{KEYS_PREFIX}{label}.json", label, emit_key
+                    )
                 fp.write("]")
                 has_map = bool(spec.get("has_map"))
                 if has_map:
@@ -737,7 +804,9 @@ def load_shards(indir):
     spec = manifest["split"]
     entries = []
     for label in spec.get("shards", []):
-        _stream_key_shard(indir / f"{KEYS_PREFIX}{label}.json", label, entries.append)
+        _stream_key_shard(
+            indir / f"{KEYS_PREFIX}{label}.json", label, entries.append
+        )
     mapping = None
     if spec.get("has_map"):
         mapping = {}

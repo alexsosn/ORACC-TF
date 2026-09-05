@@ -86,7 +86,13 @@ def test_tiny_parser_chunks_preserve_escaped_unicode_and_nested_values(tmp_path,
         mapping_marker={"𒀭": 'DINGIR "quoted"'},
         metadata={"nested": {"unicode": "ṭuppu", "list": [1, 2, 3]}},
     )
-    monkeypatch.setattr(module, "STREAM_CHUNK_CHARS", 7, raising=False)
+    stream_cls = module._JsonStream
+    real_init = stream_cls.__init__
+
+    def tiny_init(self, fp, *args, **kwargs):
+        return real_init(self, fp, chunk_chars=7)
+
+    monkeypatch.setattr(stream_cls, "__init__", tiny_init)
     _forbid_large_json_load(monkeypatch, [src])
 
     module.split(src, outdir, max_mb=1)
@@ -157,6 +163,22 @@ def test_single_entry_larger_than_limit_fails_without_publishing_partial_output(
 
     assert not outdir.exists()
     assert src.exists()
+
+
+def test_failed_split_preserves_existing_output_directory(tmp_path):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    outdir.mkdir()
+    sentinel = outdir / "sentinel.txt"
+    sentinel.write_text("keep", encoding="utf-8")
+    huge = {"key": "aa", "count": "1", "instances": ["x" * 20_000]}
+    write_index(src, keys=[huge])
+
+    with pytest.raises(Exception, match="(?i)(limit|large|size|shard)"):
+        module.split(src, outdir, max_mb=0.001)
+
+    assert sentinel.read_text(encoding="utf-8") == "keep"
+    assert sorted(p.name for p in outdir.iterdir()) == ["sentinel.txt"]
 
 
 def test_duplicate_map_keys_fail_closed(tmp_path):

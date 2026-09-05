@@ -91,6 +91,31 @@ def test_every_registered_dataset_has_a_distinct_publishable_root(tmp_path):
     assert all(root.name == TF_VERSION for root in roots.values())
 
 
+def test_registered_builder_resolves_the_canonical_root(tmp_path, monkeypatch):
+    calls = []
+    sentinel = object()
+
+    def fake_build(out_dir, *, data):
+        calls.append((Path(out_dir), Path(data)))
+        return sentinel
+
+    monkeypatch.setattr(corpus, "build_full_tf", fake_build)
+    root, report = corpus.build_registered_tf(
+        tmp_path, "assyrian-royal-inscriptions", tf_version=TF_VERSION
+    )
+
+    assert root == paths.publishable_tf_root(
+        tmp_path, "assyrian-royal-inscriptions", TF_VERSION
+    )
+    assert calls == [(root, paths.DATA)]
+    assert report is sentinel
+
+
+def test_registered_builder_rejects_unregistered_dataset(tmp_path):
+    with pytest.raises(ValueError):
+        corpus.build_registered_tf(tmp_path, "not-registered", tf_version=TF_VERSION)
+
+
 def test_version_root_is_standalone_loadable_and_owns_sidecar(tmp_path):
     root = paths.publishable_tf_root(tmp_path, "assyrian-royal-inscriptions", TF_VERSION)
     corpus.build_tf(root, editions=[_edition()], metadata_index={})

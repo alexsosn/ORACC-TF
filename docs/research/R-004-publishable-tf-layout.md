@@ -1,7 +1,10 @@
 ---
 id: R-004
 title: Publishable Text-Fabric output layout
-status: complete
+type: research
+status: done
+priority: P0
+depends_on: []
 updated: 2026-09-05
 ---
 

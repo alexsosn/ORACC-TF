@@ -4,7 +4,7 @@ title: ORACC-TF documentation index
 type: index
 status: active
 priority: P0
-updated: 2026-08-29
+updated: 2026-09-05
 ---
 
 # ORACC-TF documentation
@@ -14,6 +14,21 @@ Every document has an **id**, a **status**, a **priority** and explicit
 is the machine-readable projection of all of it and is what an automated agent
 reads to choose work.
 
+## User reference
+
+P-003 maintains the user-facing reference tree. Phase 0 pages are deliberately
+claim-free skeletons until their generated evidence is available:
+
+- [Reference home](reference/index.md)
+- [Data model](reference/model.md)
+- [Signs](reference/signs.md)
+- [Words and lexemes](reference/words-and-lexemes.md)
+- [Translations](reference/translations.md)
+- [Document identity](reference/identity.md)
+- [Query guide](reference/query-guide.md)
+- [Reproducibility](reference/reproducibility.md)
+- [Feature reference](reference/features.md)
+
 ## Layout
 
 | folder | holds | audience |
@@ -21,7 +36,7 @@ reads to choose work.
 | [`research/`](research/) | `R-NNN` — measured findings and why decisions were made | maintainers |
 | [`plans/`](plans/) | `P-NNN` — what will be built, with phases and acceptance | maintainers, agents |
 | [`guides/`](guides/) | `G-NNN` — how to operate the repository | maintainers |
-| `reference/` | user-facing corpus documentation (created by P-003) | **users** |
+| [`reference/`](reference/) | user-facing corpus documentation | **users** |
 | `reports/` | generated validation evidence | both |
 
 Research and plans stay in the repository rather than a GitHub wiki: they must

@@ -368,8 +368,12 @@
       "spec": "§Phase 3",
       "priority": "P1",
       "blocked_by": ["P-003.PH0"],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_p003_ph3_feature_reference.py; legitimate RED runs 33977655650, 33979307657, 33979895807; exact-head GREEN runs 33981667263 (standard fast + whole-corpus) and 33981667270 (real-corpus generation + drift)",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus; dedicated p003-docs-reference workflow",
+        "result": "all 67 emitted node, edge, and warp features have generated reference pages with TF-derived scope/type, metadata description, value-domain statistics, and preserved manual interpretation regions; high-cardinality node values and edge out-degrees are deterministically capped at 20 rows; long displayed values are capped at 120 characters with a stable SHA-256 suffix while counts and ordering use full raw values; Text-Fabric array-backed edges are supported; real-corpus regeneration is byte-stable"
+      }
     },
     {
       "id": "P-003.PH4",

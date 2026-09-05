@@ -30,11 +30,17 @@ def build_registered_tf(
 
     Registration and builder support are checked separately so adding a dataset
     to ``datasets.toml`` without wiring a builder fails closed instead of
-    silently publishing to an ad-hoc path.
+    silently publishing to an ad-hoc path. The current converter can publish
+    only its own schema version; callers cannot relabel those bytes by choosing
+    a different version directory.
     """
     config = releases.load_datasets(paths.ROOT / "datasets.toml")
     if dataset not in config:
         raise ValueError(f"unregistered dataset: {dataset!r}")
+    if tf_version != TF_VERSION:
+        raise ValueError(
+            f"TF version {tf_version!r} does not match converter schema {TF_VERSION!r}"
+        )
 
     builder_name = _DATASET_BUILDERS.get(dataset)
     if builder_name is None:

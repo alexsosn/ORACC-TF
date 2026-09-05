@@ -26,9 +26,16 @@ class _Feature:
 
 
 class _Otype:
+    meta = {"description": "Text-Fabric node type.", "valueType": "str"}
+
     @staticmethod
     def v(node):
         return "sign" if node == 1 else "word"
+
+    @staticmethod
+    def items():
+        yield (1, "sign")
+        yield (2, "word")
 
 
 class _Api:
@@ -37,15 +44,20 @@ class _Api:
 
     def __init__(self):
         self._node = {"form": _Feature("Source sign form.", [(1, "a")])}
-        self._edge = {"linked": _Feature("Source relation.", [(1, {2})])}
+        self._edge = {
+            "oslots": _Feature("Text-Fabric warp edge.", [(2, {1})]),
+            "linked": _Feature("Source relation.", [(1, {2})]),
+        }
 
     def Fall(self):
         return ["otype", *self._node]
 
     def Eall(self):
-        return ["oslots", *self._edge]
+        return list(self._edge)
 
     def Fs(self, name):
+        if name == "otype":
+            return self.F.otype
         return self._node[name]
 
     def Es(self, name):
@@ -94,20 +106,26 @@ def test_phase0_reference_tree_and_generators_exist():
     assert Path("scripts/check_docs.py").is_file()
 
 
-def test_generator_documents_node_and_edge_features(tmp_path, monkeypatch):
+def test_generator_documents_node_edge_and_warp_features(tmp_path, monkeypatch):
     gen_docs = _load_script("gen_docs")
     monkeypatch.setattr(gen_docs, "Fabric", _Fabric)
     gen_docs.generate(tmp_path / "tf", tmp_path / "docs")
 
     node_page = tmp_path / "docs/features/sign/form.md"
     edge_page = tmp_path / "docs/features/edge/linked.md"
+    otype_page = tmp_path / "docs/features/mixed/otype.md"
+    oslots_page = tmp_path / "docs/features/edge/oslots.md"
     assert node_page.is_file()
     assert edge_page.is_file()
+    assert otype_page.is_file()
+    assert oslots_page.is_file()
     assert "populated values: `1`" in node_page.read_text(encoding="utf-8")
     assert "populated values: `1`" in edge_page.read_text(encoding="utf-8")
     index = (tmp_path / "docs/features.md").read_text(encoding="utf-8")
     assert "features/sign/form.md" in index
     assert "features/edge/linked.md" in index
+    assert "features/mixed/otype.md" in index
+    assert "features/edge/oslots.md" in index
 
 
 def test_generator_is_idempotent_and_preserves_manual_regions(tmp_path, monkeypatch):

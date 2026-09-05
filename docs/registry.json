@@ -235,8 +235,12 @@
       "blocked_by": [
         "P-001.M6"
       ],
-      "status": "todo",
-      "evidence": null
+      "status": "done",
+      "evidence": {
+        "tests": "tests/test_m8_cross_validation.py + tests/test_m8_oldbabylonian_integration.py; compatibility RED 33928141176; schema-version RED 33928565741; implementation GREEN 33928777533; independent review 5118596320 required real-corpus validation; integration REDs 33929390895 and 33950936106; pinned real-corpus GREEN 33951068791; standard exact-head GREEN 33951068705; independent re-review 5120242184 required registry evidence synchronization",
+        "command": "pytest -q -m 'not corpus' && pytest -q -m corpus; dedicated m8-oldbabylonian-cross-validation workflow",
+        "result": "Pinned Nino-cunei/oldbabylonian tf/1.0.6 at immutable commit cd8ffe826a598af4715fd724387d9834ec1300d8. Real TF 13 load confirms readingu=sign-level cuneiform Unicode str, lnno=line-level ATF label str, period/genre=document metadata str; real witnesses include cuneiform readings, lnno=1, Old Babylonian period, and genre=Letter. ORACC-TF exposes additive readingu=utf8 and lnno=line.label aliases without fabricating Unicode or normalizing line labels; existing source-facing features remain intact; TF schema version bumped 0.1.0→0.2.0. Whole-corpus invariants remain green."
+      }
     },
     {
       "id": "P-001.M9",

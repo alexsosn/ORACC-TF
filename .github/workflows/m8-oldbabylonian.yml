@@ -1,0 +1,44 @@
+name: m8-oldbabylonian-cross-validation
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/m8-oldbabylonian.yml"
+      - "docs/registry.json"
+      - "programs/oracc_tf/**"
+      - "tests/test_m8_cross_validation.py"
+      - "tests/test_m8_oldbabylonian_integration.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ORACC-TF
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ORACC-TF test dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Checkout pinned oldbabylonian TF 1.0.6
+        uses: actions/checkout@v4
+        with:
+          repository: Nino-cunei/oldbabylonian
+          ref: cd8ffe826a598af4715fd724387d9834ec1300d8
+          path: .external/oldbabylonian
+          sparse-checkout: tf/1.0.6
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Load and cross-validate real oldbabylonian corpus
+        env:
+          OLDBABYLONIAN_TF: .external/oldbabylonian/tf/1.0.6
+        run: pytest -q tests/test_m8_oldbabylonian_integration.py

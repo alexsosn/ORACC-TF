@@ -500,6 +500,7 @@ def build_tf(
                     word_id=word.source_id,
                     src_path=sign.src_path,
                     utf8=utf8 if isinstance(utf8, str) else None,
+                    readingu=utf8 if isinstance(utf8, str) else None,
                     sign_json=_json(sign.value),
                     gdl_id=sign.value.get("id"),
                     gdl_form=sign.value.get("form"),
@@ -570,7 +571,7 @@ def build_tf(
             node = graph.node("line", slots)
             line_nodes[line.source_id] = node
             _add_section_features(graph, node, line, document_key=edition.key)
-            graph.feature(node, line=line.source_id)
+            graph.feature(node, line=line.source_id, lnno=line.label)
 
             if line.face_id is None or line.face_id not in face_nodes:
                 if edition.populated:

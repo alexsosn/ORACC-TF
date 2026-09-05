@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "issue": 58,
+  "source_dataset_identity": "obabat/atletters",
+  "publication_slug": "obabat-atletters",
+  "source_subprojects": ["obabat/atletters"],
+  "architecture": {
+    "strategy": "thin_adapter_over_generic_builder",
+    "loader": "oracc_tf.loader.iter_editions(data, subprojects=['obabat/atletters'], skip_unreadable=False)",
+    "metadata": "oracc_tf.metadata.load_index(data, subprojects=['obabat/atletters'])",
+    "builder": "oracc_tf.corpus.build_tf",
+    "publication": "register obabat-atletters with a dedicated builder wrapper",
+    "existing_riao_rinap_default_behavior": "unchanged"
+  },
+  "identity": {
+    "document_key": "obabat/atletters:P######",
+    "text_id": "source CDLI P-number",
+    "subproject": "obabat/atletters",
+    "nino_nodes_imported": false,
+    "source_edition_equivalence_claim": false
+  },
+  "source_fidelity": {
+    "existing_generic_word_features": [
+      "ref", "frag", "form", "lang", "cf", "gw", "sense", "norm",
+      "pos", "epos", "inst", "sig", "lemmaknown", "gdl_json"
+    ],
+    "obabat_additional_word_features": [
+      "props_json", "discourse", "base", "morph", "morph2"
+    ],
+    "additional_feature_policy": "opt-in generic projection hook; default builder output remains unchanged for RIAO/RINAP",
+    "gdl": "preserve canonical source gdl_json and existing semantic sign-slot/sign_json/src_path contract",
+    "unicode": "never synthesize utf8/readingu; source snapshot has zero utf8 sign values",
+    "missing_lexical_analysis": "retain every source word; missing cf/gw/sense remains absent and lemmaknown remains source-evidence based",
+    "catalogue": "reuse qualified metadata index and preserve complete catalogue_json plus supported ergonomic catalogue features"
+  },
+  "overlap": {
+    "accepted_manifest": "docs/research/issue-39-obabat-overlap.json",
+    "required_source_blob": "f3dae9f3e713683ebc4c49075ff8475a44e3b1f8",
+    "exact_overlap_count": 86,
+    "not_in_pinned_nino_count": 35,
+    "document_feature": "nino_overlap_status",
+    "statuses": {
+      "exact_overlap": "exact-p-number-overlap",
+      "unmatched": "not-in-pinned-nino-unverified"
+    },
+    "sidecar": "overlap-provenance.json",
+    "fail_closed": [
+      "missing or malformed accepted manifest",
+      "ORACC corpus blob mismatch",
+      "pinned Nino revision/blob missing or changed in manifest",
+      "86/35 partition does not exactly cover 121 current members",
+      "unknown document status"
+    ],
+    "benchmark_policy": "exclude exact overlap; unmatched records remain unverified until a separate normalized-transliteration/publication fingerprint audit"
+  },
+  "publication": {
+    "datasets_toml_key": "obabat-atletters",
+    "archive_input": "obabat-atletters",
+    "tei_inputs": [],
+    "canonical_tf_path": "obabat-atletters/tf/<TF_VERSION>",
+    "translation": "disabled; no independently approved translation source"
+  },
+  "tdd_order": [
+    "qualified document identity and all 121 members",
+    "P510527 lexical round-trip: ana PRP, Ilšu-ibni PN, Šamaš DN",
+    "unlemmatised word retention",
+    "zero Unicode / no fabricated cuneiform",
+    "GDL and props source preservation",
+    "qualified collision-safe catalogue join",
+    "overlap manifest source revision/blob/count fail-closed checks",
+    "86 exact-overlap and 35 unverified-unmatched statuses",
+    "malformed/missing provenance failure",
+    "deterministic rebuild and Text-Fabric load/query smoke"
+  ]
+}

@@ -7,7 +7,16 @@ def test_every_emitted_feature_has_nonempty_description():
     graph = corpus._Graph()
     graph.slot_feature(1, form="a")
     node = graph.node("document", {1})
-    graph.feature(node, cf="x", gw="g", sense="s", norm="n", epos="N", sig="sig")
+    graph.feature(
+        node,
+        document="Q1",
+        cf="x",
+        gw="g",
+        sense="s",
+        norm="n",
+        epos="N",
+        sig="sig",
+    )
     materialised = graph.materialise(1)
     for name, meta in materialised.meta_data.items():
         if name in {"", "otext", "otype", "oslots"}:

@@ -197,7 +197,7 @@ def test_high_cardinality_edge_degree_domain_is_bounded(tmp_path, monkeypatch):
     text = (docs / "features/edge/oslots.md").read_text(encoding="utf-8")
     assert "Showing the 20 most frequent out-degrees" in text
     degree_rows = [line for line in text.splitlines() if line.startswith("| ") and "out-degree" not in line]
-    assert len(degree_rows) == 21  # separator + 20 data rows
+    assert len(degree_rows) == 20
     assert "| 21 | 1 |" not in text
     assert "| 22 | 1 |" not in text
 

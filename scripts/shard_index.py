@@ -71,7 +71,7 @@ def dump(obj, path):
 
 
 class _JsonStream:
-    """Incremental JSON reader around ``JSONDecoder.raw_decode``."""
+    """Incremental JSON reader that buffers at most one complete JSON value."""
 
     def __init__(self, fp, *, chunk_chars=STREAM_CHUNK_CHARS):
         self.fp = fp
@@ -117,27 +117,98 @@ class _JsonStream:
             raise IndexFormatError(f"expected {wanted!r}, got {got!r}")
         self.pos += 1
 
+    def _need_char(self, index):
+        while index >= len(self.buf):
+            if not self._fill():
+                return False
+        return True
+
     def value(self):
+        """Read one complete JSON value without accepting a partial primitive."""
         self.skip_ws()
-        while True:
-            if not self._ensure():
-                raise IndexFormatError("unexpected end of JSON input")
-            try:
-                value, end = self.decoder.raw_decode(self.buf, self.pos)
-            except json.JSONDecodeError as exc:
-                incomplete = (
-                    exc.pos >= len(self.buf) - 1
-                    or exc.msg.startswith("Unterminated string")
-                    or exc.msg.startswith("Invalid \\uXXXX escape")
-                )
-                if self.eof or not incomplete:
-                    raise IndexFormatError(
-                        f"invalid JSON near character {exc.pos}: {exc.msg}"
-                    ) from exc
-                self._fill()
-                continue
-            self.pos = end
-            return value
+        if not self._ensure():
+            raise IndexFormatError("unexpected end of JSON input")
+
+        # Drop already-consumed input before scanning. Keeping self.pos at zero
+        # prevents _fill() from compacting a value while the scanner holds
+        # indices into it; memory therefore grows only with this one JSON value.
+        if self.pos:
+            self.buf = self.buf[self.pos :]
+            self.pos = 0
+
+        first = self.buf[0]
+        if first == '"':
+            i = 1
+            escaped = False
+            while True:
+                if not self._need_char(i):
+                    raise IndexFormatError("unterminated JSON string")
+                ch = self.buf[i]
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    end = i + 1
+                    break
+                i += 1
+        elif first in "[{":
+            stack = [first]
+            i = 1
+            in_string = False
+            escaped = False
+            while stack:
+                if not self._need_char(i):
+                    raise IndexFormatError("unexpected end of nested JSON value")
+                ch = self.buf[i]
+                if in_string:
+                    if escaped:
+                        escaped = False
+                    elif ch == "\\":
+                        escaped = True
+                    elif ch == '"':
+                        in_string = False
+                elif ch == '"':
+                    in_string = True
+                elif ch in "[{":
+                    stack.append(ch)
+                elif ch in "]}":
+                    wanted = "[" if ch == "]" else "{"
+                    if stack[-1] != wanted:
+                        raise IndexFormatError(
+                            f"mismatched JSON delimiter: {stack[-1]!r} closed by {ch!r}"
+                        )
+                    stack.pop()
+                i += 1
+            end = i
+        else:
+            # JSON numbers and true/false/null are complete only at a structural
+            # delimiter or whitespace. This avoids raw_decode accepting the
+            # prefix `1` when a chunk currently ends in `123...`.
+            i = 0
+            while True:
+                if i >= len(self.buf):
+                    if self._fill():
+                        continue
+                    end = i
+                    break
+                ch = self.buf[i]
+                if ch.isspace() or ch in ",]}":
+                    end = i
+                    break
+                i += 1
+            if end == 0:
+                raise IndexFormatError("expected JSON value")
+
+        token = self.buf[:end]
+        try:
+            value = json.loads(token)
+        except json.JSONDecodeError as exc:
+            raise IndexFormatError(
+                f"invalid JSON value near character {exc.pos}: {exc.msg}"
+            ) from exc
+        self.pos = end
+        return value
 
     def array(self, callback):
         self.consume("[")

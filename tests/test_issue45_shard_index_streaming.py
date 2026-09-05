@@ -1,6 +1,7 @@
 """Issue #45: bounded-memory and fail-closed shard_index contracts."""
 
 from importlib.util import module_from_spec, spec_from_file_location
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -68,6 +69,33 @@ def test_split_streams_source_instead_of_json_loading_whole_document(tmp_path, m
     assert module.verify(outdir) == 0
 
 
+def test_tiny_parser_chunks_preserve_escaped_unicode_and_nested_values(tmp_path, monkeypatch):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    joined = tmp_path / "joined.json"
+    original = write_index(
+        src,
+        keys=[
+            {
+                "key": "ša𒀭",
+                "count": "1",
+                "instances": ['quoted " value \\ tail 😀'],
+                "nested": {"list": [1, {"deep": "value"}]},
+            }
+        ],
+        mapping_marker={"𒀭": 'DINGIR "quoted"'},
+        metadata={"nested": {"unicode": "ṭuppu", "list": [1, 2, 3]}},
+    )
+    monkeypatch.setattr(module, "STREAM_CHUNK_CHARS", 7, raising=False)
+    _forbid_large_json_load(monkeypatch, [src])
+
+    module.split(src, outdir, max_mb=1)
+    assert module.verify(outdir, against=src) == 0
+    assert module.join(outdir, joined) == 0
+    got = json.loads(joined.read_text(encoding="utf-8"))
+    assert got == original
+
+
 def test_verify_and_join_stream_shard_payloads(tmp_path, monkeypatch):
     src = tmp_path / "index.json"
     outdir = tmp_path / "shards"
@@ -104,6 +132,20 @@ def test_explicit_empty_map_round_trips_and_verifies(tmp_path):
     assert got["map"] == {}
 
 
+def test_absent_map_stays_absent_and_empty_keys_are_supported(tmp_path):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    joined = tmp_path / "joined.json"
+    write_index(src, keys=[], mapping_marker="absent")
+
+    module.split(src, outdir, max_mb=1)
+    assert module.verify(outdir) == 0
+    assert module.join(outdir, joined) == 0
+    got = json.loads(joined.read_text(encoding="utf-8"))
+    assert got["keys"] == []
+    assert "map" not in got
+
+
 def test_single_entry_larger_than_limit_fails_without_publishing_partial_output(tmp_path):
     src = tmp_path / "index.json"
     outdir = tmp_path / "shards"
@@ -127,6 +169,35 @@ def test_duplicate_map_keys_fail_closed(tmp_path):
     )
 
     with pytest.raises(Exception, match="(?i)duplicate.*map"):
+        module.split(src, outdir, max_mb=1)
+
+    assert not outdir.exists()
+
+
+def test_duplicate_top_level_fields_fail_closed(tmp_path):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    src.write_text(
+        '{"type":"index","type":"second",'
+        '"keys":[{"key":"a","count":"1","instances":[]}]}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(Exception, match="(?i)duplicate.*(top|field|type)"):
+        module.split(src, outdir, max_mb=1)
+
+    assert not outdir.exists()
+
+
+def test_truncated_json_fails_without_partial_output(tmp_path):
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    src.write_text(
+        '{"type":"index","keys":[{"key":"a","instances":["unterminated',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(Exception):
         module.split(src, outdir, max_mb=1)
 
     assert not outdir.exists()
@@ -168,6 +239,25 @@ def test_split_output_is_byte_deterministic(tmp_path):
     assert left_files == right_files
     for name in left_files:
         assert (left / name).read_bytes() == (right / name).read_bytes()
+
+
+def test_v1_digest_semantics_are_preserved_exactly():
+    entries = sample_keys()
+    mapping = {"z": "last", "a": "first", "𒀭": "DINGIR"}
+
+    legacy_entry_hashes = sorted(
+        hashlib.sha1(
+            json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest()
+        for entry in entries
+    )
+    legacy_keys_digest = hashlib.sha1("".join(legacy_entry_hashes).encode()).hexdigest()
+    legacy_map_digest = hashlib.sha1(
+        json.dumps(mapping, sort_keys=True, ensure_ascii=False).encode()
+    ).hexdigest()
+
+    assert module.digest_keys(entries) == legacy_keys_digest
+    assert module.digest_map(mapping) == legacy_map_digest
 
 
 def test_replace_never_deletes_source_when_split_cannot_meet_size_limit(tmp_path, monkeypatch):

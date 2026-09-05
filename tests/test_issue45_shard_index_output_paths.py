@@ -92,3 +92,22 @@ def test_dry_run_does_not_create_missing_output_parent(tmp_path, capsys):
 
     assert "dry run, nothing written" in capsys.readouterr().out
     assert not outdir.parent.exists()
+
+
+def test_join_rejects_managed_shard_as_destination_without_mutation(tmp_path):
+    """Joining must never be able to overwrite a file it is reading."""
+    src = tmp_path / "index.json"
+    outdir = tmp_path / "shards"
+    _write_source(src)
+    module.split(src, outdir, max_mb=1)
+
+    manifest = json.loads((outdir / module.MANIFEST).read_text(encoding="utf-8"))
+    label = manifest["split"]["shards"][0]
+    managed = outdir / f"{module.KEYS_PREFIX}{label}.json"
+    original = managed.read_bytes()
+
+    with pytest.raises(Exception, match="(?i)(output|destination|shard|input|path)"):
+        module.join(outdir, managed)
+
+    assert managed.read_bytes() == original
+    assert module.verify(outdir, quiet=True) == 0

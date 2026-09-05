@@ -8,9 +8,13 @@ ordinary corpus build network-independent.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import xml.etree.ElementTree as ET
+import zipfile
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 
 
 XML_ID = "{http://www.w3.org/XML/1998/namespace}id"
@@ -57,6 +61,22 @@ class TranslationUnit:
     source_license: str | None = None
     source_license_url: str | None = None
     notes: tuple[TranslationNote, ...] = ()
+
+
+@dataclass(frozen=True)
+class TranslationArchive:
+    """One verified TEI archive and its qualified translation-unit index."""
+
+    source_name: str
+    source_sha256: str
+    units_by_document: Mapping[str, tuple[TranslationUnit, ...]]
+    source_url: str | None = None
+    source_license: str | None = None
+    source_license_url: str | None = None
+
+    @property
+    def translation_units(self) -> int:
+        return sum(len(units) for units in self.units_by_document.values())
 
 
 def _local_name(name: str) -> str:
@@ -114,6 +134,37 @@ def _validate_sha256(value: str | None) -> str | None:
     if not _SHA256.fullmatch(value):
         raise TranslationSourceError("translation source_sha256 must be 64 hex digits")
     return value
+
+
+def qualified_key_map(
+    editions: Iterable[object],
+    *,
+    excluded_subprojects: Iterable[str] = (),
+) -> dict[str, str]:
+    """Map a TEI Q-number to one source-qualified ORACC edition key.
+
+    Translation archives align by Q-number, while the joined corpus does not:
+    RINAP5P1 deliberately reuses Q-numbers from RINAP5. Any remaining
+    ambiguity therefore fails closed. A known source gap may be declared by
+    excluding the subproject that is absent from the translation archive.
+    """
+    excluded = set(excluded_subprojects)
+    result: dict[str, str] = {}
+    for edition in editions:
+        subproject = getattr(edition, "subproject", None)
+        text_id = getattr(edition, "text_id", None)
+        key = getattr(edition, "key", None)
+        if not isinstance(subproject, str) or not isinstance(text_id, str) or not isinstance(key, str):
+            raise TranslationSourceError("edition lacks subproject/text_id/key identity")
+        if subproject in excluded:
+            continue
+        previous = result.get(text_id)
+        if previous is not None and previous != key:
+            raise TranslationSourceError(
+                f"ambiguous translation text id {text_id}: {previous!r} vs {key!r}"
+            )
+        result[text_id] = key
+    return result
 
 
 def parse_tei_text(
@@ -252,3 +303,114 @@ def parse_tei_text(
         )
 
     return tuple(units)
+
+
+def _tei_text_id(element: ET.Element) -> str | None:
+    """Return the single text id referenced by translation units in a TEI node."""
+    text_ids: set[str] = set()
+    for descendant in element.iter():
+        if _local_name(descendant.tag) != "div3" or descendant.get("type") != "tr":
+            continue
+        sref = _attribute(descendant, "sref")
+        if not sref:
+            source_id = descendant.get(XML_ID) or "<unknown>"
+            raise TranslationSourceError(f"translation {source_id} is missing sref")
+        text_ids.add(_range_text_id(sref, field="sref"))
+    if not text_ids:
+        return None
+    if len(text_ids) != 1:
+        raise TranslationSourceError(
+            f"one TEI document references multiple translation texts: {sorted(text_ids)!r}"
+        )
+    return next(iter(text_ids))
+
+
+def load_tei_zip(
+    path: Path | str,
+    *,
+    document_keys: Mapping[str, str],
+    source_url: str | None = None,
+    source_license: str | None = None,
+    source_license_url: str | None = None,
+) -> TranslationArchive:
+    """Parse a local TEI ZIP without extracting it or guessing corpus identity."""
+    archive_path = Path(path)
+    digest = hashlib.sha256()
+    try:
+        with archive_path.open("rb") as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(block)
+    except OSError as exc:
+        raise TranslationSourceError(f"cannot read translation archive {archive_path}: {exc}") from exc
+    source_sha256 = digest.hexdigest()
+
+    units_by_document: dict[str, list[TranslationUnit]] = {}
+    seen_source_ids: dict[str, set[str]] = {}
+    try:
+        with zipfile.ZipFile(archive_path) as archive:
+            infos = sorted(
+                (
+                    info
+                    for info in archive.infolist()
+                    if not info.is_dir() and Path(info.filename).suffix.lower() in {".xml", ".tei"}
+                ),
+                key=lambda info: info.filename,
+            )
+            if not infos:
+                raise TranslationSourceError(f"translation archive {archive_path} contains no TEI/XML files")
+
+            for info in infos:
+                try:
+                    with archive.open(info) as handle:
+                        root = ET.parse(handle).getroot()
+                except (ET.ParseError, OSError) as exc:
+                    raise TranslationSourceError(
+                        f"cannot parse translation XML {info.filename!r}: {exc}"
+                    ) from exc
+
+                candidates = (
+                    [root]
+                    if _local_name(root.tag) == "TEI"
+                    else [node for node in root.iter() if _local_name(node.tag) == "TEI"]
+                )
+                for tei in candidates:
+                    text_id = _tei_text_id(tei)
+                    if text_id is None:
+                        continue
+                    document_key = document_keys.get(text_id)
+                    if document_key is None:
+                        raise TranslationSourceError(
+                            f"unmapped translation text {text_id} in {info.filename!r}"
+                        )
+                    units = parse_tei_text(
+                        ET.tostring(tei, encoding="unicode"),
+                        document_key=document_key,
+                        source_name=archive_path.name,
+                        source_sha256=source_sha256,
+                        source_url=source_url,
+                        source_license=source_license,
+                        source_license_url=source_license_url,
+                    )
+                    source_ids = seen_source_ids.setdefault(document_key, set())
+                    duplicate = next((unit.source_id for unit in units if unit.source_id in source_ids), None)
+                    if duplicate is not None:
+                        raise TranslationSourceError(
+                            f"duplicate translation unit {duplicate!r} for {document_key}"
+                        )
+                    source_ids.update(unit.source_id for unit in units)
+                    units_by_document.setdefault(document_key, []).extend(units)
+    except zipfile.BadZipFile as exc:
+        raise TranslationSourceError(f"invalid translation ZIP {archive_path}: {exc}") from exc
+
+    frozen = {
+        key: tuple(units)
+        for key, units in sorted(units_by_document.items())
+    }
+    return TranslationArchive(
+        source_name=archive_path.name,
+        source_sha256=source_sha256,
+        units_by_document=frozen,
+        source_url=source_url,
+        source_license=source_license,
+        source_license_url=source_license_url,
+    )

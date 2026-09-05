@@ -18,6 +18,10 @@ def _tei(text_id: str) -> str:
     return f"""\
 <TEI xmlns:xtr="{XTR}" xml:id="{text_id}_project-en">
   <text><body>
+    <div type="transliteration">
+      <w xml:id="{text_id}.l00001">a</w>
+      <w xml:id="{text_id}.l00002">b</w>
+    </div>
     <div3 type="tr" subtype="tr" xml:id="{text_id}_project-en.0"
           xtr:sref="{text_id}.1" xtr:eref="{text_id}.1" xtr:rows="1">
       Translation for {text_id}.
@@ -87,6 +91,27 @@ def test_load_tei_zip_computes_archive_identity_and_propagates_explicit_provenan
     first = archive.units_by_document["riao/ria1:Q001801"][0]
     assert first.source_sha256 == expected_sha
     assert first.source_license == "CC BY-SA 3.0"
+
+
+def test_load_tei_zip_preserves_transliteration_word_ids_for_source_reconciliation(tmp_path):
+    archive_path = tmp_path / "riao-teiCorpus-20241202.zip"
+    _archive(archive_path)
+    archive = translations.load_tei_zip(
+        archive_path,
+        document_keys={
+            "Q001801": "riao/ria1:Q001801",
+            "Q003840": "rinap/rinap5:Q003840",
+        },
+    )
+
+    assert archive.word_ids_by_document["riao/ria1:Q001801"] == (
+        "Q001801.l00001",
+        "Q001801.l00002",
+    )
+    assert archive.word_ids_by_document["rinap/rinap5:Q003840"] == (
+        "Q003840.l00001",
+        "Q003840.l00002",
+    )
 
 
 def test_load_tei_zip_rejects_translation_for_unmapped_text(tmp_path):

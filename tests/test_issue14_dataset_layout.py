@@ -116,6 +116,17 @@ def test_registered_builder_rejects_unregistered_dataset(tmp_path):
         publishing.build_registered_tf(tmp_path, "not-registered", tf_version=TF_VERSION)
 
 
+def test_registered_builder_cannot_mislabel_the_converter_schema(tmp_path, monkeypatch):
+    def should_not_build(*args, **kwargs):
+        raise AssertionError("builder must not run for a mismatched TF schema version")
+
+    monkeypatch.setattr(corpus, "build_full_tf", should_not_build)
+    with pytest.raises(ValueError, match="TF version"):
+        publishing.build_registered_tf(
+            tmp_path, "assyrian-royal-inscriptions", tf_version="0.3.0"
+        )
+
+
 def test_version_root_is_standalone_loadable_and_owns_sidecar(tmp_path):
     root = paths.publishable_tf_root(tmp_path, "assyrian-royal-inscriptions", TF_VERSION)
     corpus.build_tf(root, editions=[_edition()], metadata_index={})

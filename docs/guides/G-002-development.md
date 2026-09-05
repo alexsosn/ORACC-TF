@@ -5,7 +5,7 @@ type: guide
 status: active
 priority: P1
 depends_on: []
-updated: 2026-08-29
+updated: 2026-09-05
 ---
 
 # Development setup and conventions
@@ -33,6 +33,46 @@ docs/                   research, plans, guides; see docs/README.md
 
 `scripts/` stays dependency-free so it runs against a bare Python; anything
 needing the package lives in `programs/`.
+
+### Publishable Text-Fabric dataset roots
+
+A publishable dataset root has exactly this grammar:
+
+```text
+<output-base>/<dataset>/tf/<tf_version>/
+```
+
+`dataset` is the stable dataset identity from `datasets.toml`. `tf_version` is
+the Text-Fabric schema version (`oracc_tf.TF_VERSION`) and is a SemVer value.
+Upstream ORACC dates, archive hashes, and release source-state digests do **not**
+appear in this path; they belong to release/provenance metadata and tags. This
+keeps dataset identity stable when source bytes change without a schema change
+and lets multiple schema versions coexist without collision.
+
+The version directory is the independently loadable Text-Fabric root. It must
+contain the TF warp (`otype.tf`, `oslots.tf`, `otext.tf`) and coordinated
+sidecars such as `zero-span.json`. Consumers and packaging code must resolve
+this root through the shared layout helper rather than duplicating string path
+logic. Dataset and version identifiers are validated before any path is
+constructed; absolute paths, separators, traversal components, and ambiguous
+identifiers are rejected.
+
+This `/tf/` boundary is an ORACC-TF repository contract. It is also compatible
+with Agora Context-Fabric discovery, but downstream compatibility is evidence,
+not the reason for the invariant.
+
+Architecture/TDD evidence for issue #14: the initial test-only RED run
+`33982968272` failed 21 new layout assertions because the canonical-root and
+registered-builder APIs did not exist, while 80 pre-existing fast tests passed
+and 1 skipped. Review then found a schema-identity hole: a caller could request
+a different `tf_version` and relabel the current converter bytes. After fixing
+an unrelated test-fixture error, clean RED run `33983503132` failed exactly
+that one regression while 101 other fast tests passed and 1 skipped. The guard
+landed at `cd9db297a4b5ed7e2d272258af3a22043072c3c9`; exact-head GREEN runs were
+`33983685262` (standard fast + whole-corpus), `33983685320` (real-corpus
+generated-reference/drift), and `33983685383` (retained M8 cross-validation).
+No immutable publishable TF release using a conflicting repository layout
+existed when this contract was adopted, so no migration shim is required.
 
 ## Tests
 

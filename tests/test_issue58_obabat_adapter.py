@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from oracc_tf import loader, obabat, words
+from oracc_tf import corpus, loader, obabat, words
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,6 +64,45 @@ def test_overlap_provenance_fails_closed_on_source_revision_drift(tmp_path):
         obabat.load_overlap_provenance(DATA, changed)
 
 
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        ("schema_version", 2),
+        ("research_issue", 999),
+        ("match_key", "normalized_transliteration"),
+    ],
+)
+def test_overlap_provenance_fails_closed_on_manifest_semantics_drift(
+    tmp_path, field, bad_value
+):
+    manifest = json.loads(OVERLAP.read_text(encoding="utf-8"))
+    manifest[field] = bad_value
+    changed = tmp_path / "overlap.json"
+    changed.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(obabat.OBABATProvenanceError, match="manifest|match|issue|schema"):
+        obabat.load_overlap_provenance(DATA, changed)
+
+
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        ("nino_documents", 1284),
+        ("reference_only_documents", 1198),
+    ],
+)
+def test_overlap_provenance_fails_closed_on_reference_count_drift(
+    tmp_path, field, bad_value
+):
+    manifest = json.loads(OVERLAP.read_text(encoding="utf-8"))
+    manifest["counts"][field] = bad_value
+    changed = tmp_path / "overlap.json"
+    changed.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(obabat.OBABATProvenanceError, match=field):
+        obabat.load_overlap_provenance(DATA, changed)
+
+
 def test_overlap_provenance_missing_or_malformed_fails_closed(tmp_path):
     with pytest.raises(obabat.OBABATProvenanceError):
         obabat.load_overlap_provenance(DATA, tmp_path / "missing.json")
@@ -116,3 +155,18 @@ def test_unlemmatised_obabat_word_is_retained_by_existing_word_layer():
     assert witness.lemmaknown == 0
     projected = obabat.project_word_features(witness)
     assert "props_json" in projected or "discourse" in projected
+
+
+@pytest.mark.parametrize("warp_name", ["otype", "oslots", "otext"])
+def test_dataset_projectors_cannot_override_text_fabric_warp_features(warp_name):
+    graph = corpus._Graph()
+    node = graph.node("word", {1})
+
+    with pytest.raises(corpus.CorpusBuildError, match=warp_name):
+        corpus._add_projected_features(
+            graph,
+            node,
+            {warp_name: "corrupt"},
+            reserved=corpus._WORD_CORE_FEATURES,
+            context="fixture-word",
+        )

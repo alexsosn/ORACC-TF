@@ -527,6 +527,19 @@
       "status": "done",
       "issue": 43,
       "evidence_file": "docs/task-state/P-004.PH0.json"
+    },
+    {
+      "id": "P-005.PH0",
+      "title": "Local distribution contract and benchmark harness",
+      "plan": "P-005",
+      "spec": "§PH0",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M6"
+      ],
+      "status": "todo",
+      "issue": 60,
+      "evidence_file": "docs/task-state/P-005.PH0.json"
     }
   ],
   "selection_rule": "enumerate every dependency-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; losing sessions reselect unrelated ready work",

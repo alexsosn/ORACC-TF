@@ -111,10 +111,16 @@ def _validate_source(source: Path) -> tuple[Path, ...]:
 
 
 def _validate_loadable(source: Path) -> None:
+    """Validate TF semantics without letting Text-Fabric mutate publishable bytes."""
+    temp_root = Path(tempfile.mkdtemp(prefix=".oracc-tf-load-check-"))
+    probe = temp_root / "tf"
     try:
-        corpus.load_tf(source)
+        shutil.copytree(source, probe)
+        corpus.load_tf(probe)
     except Exception as exc:
         raise InvalidDistribution(f"TF source is not loadable: {source}") from exc
+    finally:
+        shutil.rmtree(temp_root, ignore_errors=True)
 
 
 def _tree_digest(source: Path, files: tuple[Path, ...]) -> str:

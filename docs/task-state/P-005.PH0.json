@@ -1,0 +1,65 @@
+{
+  "task": "P-005.PH0",
+  "issue": 60,
+  "pr": 62,
+  "status": "done",
+  "research": {
+    "document": "docs/research/R-005-distribution-architecture.md",
+    "issue_comments": [5554966145, 5555160559, 5555179630],
+    "agora_commit": "302178da1f85c6097950d1bb4c0986bd10c3c141"
+  },
+  "design": {
+    "document": "docs/plans/P-005-distribution-publishing.md",
+    "decision": "one generated lightweight distribution repository per registered semantic dataset; dataset identity, TF schema version, immutable release identity, and upstream source state remain distinct"
+  },
+  "tdd": {
+    "initial_red": 34037626181,
+    "registered_dataset_red": 34041770218,
+    "release_identity_red": 34042618163,
+    "adversarial_regression_red": 34047893297,
+    "adversarial_regression_red_result": "3 failed, 186 passed, 1 skipped; failures were loadability-before-visibility, forbidden payload leakage, and corrupted-current-tree replay",
+    "validator_side_effect_red": 34048100518,
+    "validator_side_effect_red_result": "5 failed because Text-Fabric validation mutated the directory being digested; fixed by validating an isolated copy"
+  },
+  "review": {
+    "blocking_review": 5126035218,
+    "blocking_head": "a9642d42aafb01c10e65727c5f8e5c8a5e9e335b",
+    "resolution_head": "3dd9910eaa963dbfae88e41db0baded4fe27f2e2",
+    "resolution": "publisher now rejects structurally complete but unloadable TF, rejects raw/build/research payload directories, verifies current visible release integrity before replay, and performs TF load validation on an isolated copy so validation cannot alter publishable bytes"
+  },
+  "verification": {
+    "head": "3dd9910eaa963dbfae88e41db0baded4fe27f2e2",
+    "standard_tests": 34049623911,
+    "generated_reference": 34049623914,
+    "m8_cross_validation": 34049623913,
+    "agora_benchmark": 34049623895,
+    "agora_benchmark_artifact": 9994278279,
+    "agora_benchmark_artifact_digest": "sha256:c476c56031e6509d2e1678c296f18c3b3fbf6ccbfc603c0c98ee11b98338da6e"
+  },
+  "benchmark": {
+    "method": "pinned Agora GitStore via loopback git daemon with /proc/net/dev RX+TX byte deltas",
+    "full_snapshot_bytes": 410830616,
+    "full_max_slot": 792651,
+    "central_full_total_network_bytes": 1375862844,
+    "minimal_full_total_network_bytes": 72329670,
+    "central_full_metadata_cache_bytes": 1247485,
+    "minimal_full_metadata_cache_bytes": 33450,
+    "central_full_materialize_seconds": 35.652131,
+    "minimal_full_materialize_seconds": 22.71726,
+    "central_full_load_seconds": 51.682328,
+    "minimal_full_load_seconds": 52.258842,
+    "central_full_warm_network_bytes": 6232,
+    "minimal_full_warm_network_bytes": 6024,
+    "small_snapshot_bytes": 965,
+    "central_small_total_network_bytes": 1303686688,
+    "minimal_small_total_network_bytes": 27218,
+    "result": "equivalent TF payloads load at exact immutable revisions; the generated minimal repository sharply reduces cold Git transfer and metadata/tree coupling while warm/no-change cost remains small"
+  },
+  "coordination": {
+    "implementation_session": "gpt56sol-20260906-1652-60",
+    "expired_claim": 5560221808,
+    "recovery": 5561044763,
+    "fresh_claim": 5561045939
+  },
+  "result": "PH0 establishes and tests a fail-closed local distribution contract with immutable release ledger, registered semantic dataset identity, load-before-visibility validation, current-tree tamper detection, minimal repository boundary, and measured compatibility with Agora's existing repository acquisition model. External repository mutation remains deferred to a separately reviewed phase."
+}

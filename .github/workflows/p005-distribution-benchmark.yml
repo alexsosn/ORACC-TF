@@ -1,0 +1,196 @@
+name: p005-distribution-benchmark
+
+on:
+  pull_request:
+    paths:
+      - programs/oracc_tf/distribution.py
+      - scripts/benchmark_p005_agora.py
+      - tests/test_p005_distribution.py
+      - docs/research/R-005-distribution-architecture.md
+      - docs/plans/P-005-distribution-publishing.md
+      - datasets.toml
+      - .github/workflows/p005-distribution-benchmark.yml
+  workflow_dispatch:
+
+jobs:
+  agora-acquisition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+
+      - name: Install pinned Agora Context-Fabric
+        run: |
+          git init -q /tmp/agora
+          git -C /tmp/agora remote add origin https://github.com/alexsosn/Agora.git
+          git -C /tmp/agora fetch --quiet --depth 1 origin 302178da1f85c6097950d1bb4c0986bd10c3c141
+          git -C /tmp/agora checkout --quiet FETCH_HEAD
+          pip install -e /tmp/agora/plugins/context-fabric
+
+      - name: Prepare equivalent small and whole-corpus repositories
+        shell: bash
+        run: |
+          set -euo pipefail
+          TF_VERSION=$(python -c 'from oracc_tf import TF_VERSION; print(TF_VERSION)')
+          export TF_VERSION
+          git config user.name p005-benchmark
+          git config user.email p005-benchmark@example.invalid
+
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from oracc_tf import distribution
+
+          root = Path('/tmp/small-source')
+          root.mkdir()
+          (root / 'otype.tf').write_text(
+              '@node\n@valueType=str\n\n1\tword\n2\tline\n', encoding='utf-8'
+          )
+          (root / 'oslots.tf').write_text(
+              '@edge\n@valueType=str\n\n1\n', encoding='utf-8'
+          )
+          (root / 'otext.tf').write_text(
+              '@config\n@sectionTypes=line\n@sectionFeatures=label\n', encoding='utf-8'
+          )
+          (root / 'label.tf').write_text(
+              '@node\n@valueType=str\n\n2\t1\n', encoding='utf-8'
+          )
+          (root / 'zero-span.json').write_text('{}\n', encoding='utf-8')
+          (root / 'form.tf').write_text('@node\n@valueType=str\n\n1\ta\n', encoding='utf-8')
+          distribution.stage_distribution(
+              root,
+              Path('/tmp/minimal-small'),
+              dataset='assyrian-royal-inscriptions',
+              release_id='benchmark-small',
+              tf_version=os.environ['TF_VERSION'],
+              builder_commit='a' * 40,
+              source_state=None,
+          )
+          PY
+
+          rm -rf assyrian-royal-inscriptions
+          mkdir -p "assyrian-royal-inscriptions/tf/$TF_VERSION"
+          cp -a /tmp/small-source/. "assyrian-royal-inscriptions/tf/$TF_VERSION/"
+          git add -f assyrian-royal-inscriptions
+          git commit -q -m 'benchmark: add small TF payload'
+          CENTRAL_SMALL=$(git rev-parse HEAD)
+          git clone -q --bare . /tmp/central-small.git
+
+          git -C /tmp/minimal-small init -q
+          git -C /tmp/minimal-small config user.name p005-benchmark
+          git -C /tmp/minimal-small config user.email p005-benchmark@example.invalid
+          git -C /tmp/minimal-small add .
+          git -C /tmp/minimal-small commit -q -m 'benchmark: minimal small distribution'
+          MINIMAL_SMALL=$(git -C /tmp/minimal-small rev-parse HEAD)
+          git clone -q --bare /tmp/minimal-small /tmp/minimal-small.git
+
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from oracc_tf import distribution, publishing
+
+          base = Path('/tmp/full-build')
+          root, _ = publishing.build_registered_tf(
+              base,
+              'assyrian-royal-inscriptions',
+              tf_version=os.environ['TF_VERSION'],
+          )
+          distribution.stage_distribution(
+              root,
+              Path('/tmp/minimal-full'),
+              dataset='assyrian-royal-inscriptions',
+              release_id='benchmark-full',
+              tf_version=os.environ['TF_VERSION'],
+              builder_commit='b' * 40,
+              source_state=None,
+          )
+          PY
+
+          rm -rf assyrian-royal-inscriptions
+          cp -a /tmp/full-build/assyrian-royal-inscriptions ./
+          git add -A assyrian-royal-inscriptions
+          git commit -q -m 'benchmark: replace with whole-corpus TF payload'
+          CENTRAL_FULL=$(git rev-parse HEAD)
+          git clone -q --bare . /tmp/central-full.git
+
+          git -C /tmp/minimal-full init -q
+          git -C /tmp/minimal-full config user.name p005-benchmark
+          git -C /tmp/minimal-full config user.email p005-benchmark@example.invalid
+          git -C /tmp/minimal-full add .
+          git -C /tmp/minimal-full commit -q -m 'benchmark: minimal whole-corpus distribution'
+          MINIMAL_FULL=$(git -C /tmp/minimal-full rev-parse HEAD)
+          git clone -q --bare /tmp/minimal-full /tmp/minimal-full.git
+
+          for repo in /tmp/central-small.git /tmp/minimal-small.git /tmp/central-full.git /tmp/minimal-full.git; do
+            git -C "$repo" config uploadpack.allowFilter true
+            touch "$repo/git-daemon-export-ok"
+          done
+
+          cat > /tmp/p005-benchmark.env <<EOF
+          TF_VERSION=$TF_VERSION
+          CENTRAL_SMALL=$CENTRAL_SMALL
+          MINIMAL_SMALL=$MINIMAL_SMALL
+          CENTRAL_FULL=$CENTRAL_FULL
+          MINIMAL_FULL=$MINIMAL_FULL
+          EOF
+
+      - name: Run actual Agora GitStore over loopback Git protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /tmp/p005-benchmark.env
+          git daemon --reuseaddr --export-all --base-path=/tmp --listen=127.0.0.1 --port=9419 /tmp >/tmp/git-daemon.log 2>&1 &
+          DAEMON_PID=$!
+          trap 'kill $DAEMON_PID || true' EXIT
+          sleep 1
+          mkdir -p /tmp/p005-results
+          TF_PATH="assyrian-royal-inscriptions/tf/$TF_VERSION"
+
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/central-small.git --ref "$CENTRAL_SMALL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-central-small --cache-key central-small --label central-small --output /tmp/p005-results/central-small.json
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/minimal-small.git --ref "$MINIMAL_SMALL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-minimal-small --cache-key minimal-small --label minimal-small --output /tmp/p005-results/minimal-small.json
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/central-full.git --ref "$CENTRAL_FULL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-central-full --cache-key central-full --label central-full --output /tmp/p005-results/central-full.json
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/minimal-full.git --ref "$MINIMAL_FULL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-minimal-full --cache-key minimal-full --label minimal-full --output /tmp/p005-results/minimal-full.json
+
+      - name: Validate equivalent payloads and summarize
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/p005-results')
+          rows = {p.stem: json.loads(p.read_text()) for p in root.glob('*.json')}
+          for size in ('small', 'full'):
+              central = rows[f'central-{size}']
+              minimal = rows[f'minimal-{size}']
+              assert central['snapshot_bytes'] == minimal['snapshot_bytes']
+              assert central['max_slot'] == minimal['max_slot']
+          summary = {
+              'schema_version': 1,
+              'method': 'Agora GitStore via loopback git daemon; /proc/net/dev lo RX+TX byte deltas',
+              'agora_commit': '302178da1f85c6097950d1bb4c0986bd10c3c141',
+              'results': rows,
+              'comparisons': {
+                  size: {
+                      'central_total_network_bytes': rows[f'central-{size}']['total_network_bytes'],
+                      'minimal_total_network_bytes': rows[f'minimal-{size}']['total_network_bytes'],
+                      'central_metadata_cache_bytes': rows[f'central-{size}']['metadata_cache_bytes'],
+                      'minimal_metadata_cache_bytes': rows[f'minimal-{size}']['metadata_cache_bytes'],
+                      'central_discovered_roots': rows[f'central-{size}']['discovered_roots'],
+                      'minimal_discovered_roots': rows[f'minimal-{size}']['discovered_roots'],
+                  }
+                  for size in ('small', 'full')
+              },
+          }
+          (root / 'summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary['comparisons'], indent=2, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p005-agora-acquisition-benchmark
+          path: /tmp/p005-results
+          if-no-files-found: error

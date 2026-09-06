@@ -11,11 +11,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from . import TF_VERSION, corpus, paths, releases
+from . import TF_VERSION, corpus, obabat, paths, releases
 
 
-_DATASET_BUILDERS: dict[str, str] = {
-    "assyrian-royal-inscriptions": "build_full_tf",
+_DATASET_BUILDERS: dict[str, Callable[..., Any]] = {
+    "assyrian-royal-inscriptions": corpus.build_full_tf,
+    "obabat-atletters": obabat.build_tf,
 }
 
 
@@ -42,11 +43,10 @@ def build_registered_tf(
             f"TF version {tf_version!r} does not match converter schema {TF_VERSION!r}"
         )
 
-    builder_name = _DATASET_BUILDERS.get(dataset)
-    if builder_name is None:
+    builder = _DATASET_BUILDERS.get(dataset)
+    if builder is None:
         raise RuntimeError(f"registered dataset has no publishable builder: {dataset!r}")
 
     root = paths.publishable_tf_root(output_base, dataset, tf_version)
-    builder: Callable[..., Any] = getattr(corpus, builder_name)
     report = builder(root, data=Path(data))
     return root, report

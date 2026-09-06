@@ -84,7 +84,7 @@ def test_p510527_lexical_and_source_properties_are_projected_without_fabrication
     assert extra["props_json"] == json.dumps(
         ana.source["props"], ensure_ascii=False, separators=(",", ":"), sort_keys=True
     )
-    assert extra["discourse"] == "D"
+    assert extra["discourse"] == "body"
     assert extra.get("base") is None
     assert extra.get("morph") is None
     assert extra.get("morph2") is None

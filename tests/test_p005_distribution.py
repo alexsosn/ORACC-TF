@@ -13,12 +13,36 @@ DATASETS = Path(__file__).parents[1] / "datasets.toml"
 
 def _minimal_tf(root: Path, *, marker: str = "one") -> Path:
     root.mkdir(parents=True)
-    (root / "otype.tf").write_text("@node\n@valueType=str\n\nword\n", encoding="utf-8")
-    (root / "oslots.tf").write_text("@edge\n\n1\t1\n", encoding="utf-8")
-    (root / "otext.tf").write_text("@config\n@sectionTypes=word\n\n", encoding="utf-8")
+    (root / "otype.tf").write_text(
+        "@node\n@valueType=str\n\n1\tword\n2\tline\n", encoding="utf-8"
+    )
+    (root / "oslots.tf").write_text(
+        "@edge\n@valueType=str\n\n1\n", encoding="utf-8"
+    )
+    (root / "otext.tf").write_text(
+        "@config\n@sectionTypes=line\n@sectionFeatures=label\n", encoding="utf-8"
+    )
+    (root / "label.tf").write_text(
+        "@node\n@valueType=str\n\n2\t1\n", encoding="utf-8"
+    )
     (root / "zero-span.json").write_text("{}\n", encoding="utf-8")
-    (root / "feature.tf").write_text(f"@node\n\n{marker}\n", encoding="utf-8")
+    (root / "feature.tf").write_text(
+        f"@node\n@valueType=str\n\n1\t{marker}\n", encoding="utf-8"
+    )
     return root
+
+
+def _stage(root: Path, stage: Path, *, release_id: str = "release-a", marker: str = "one"):
+    source = _minimal_tf(root, marker=marker)
+    return distribution.stage_distribution(
+        source,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id=release_id,
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "b" * 64,
+    )
 
 
 def test_registered_aggregate_dataset_maps_to_one_distribution_identity() -> None:
@@ -152,6 +176,77 @@ def test_new_release_can_update_same_tf_version_without_rewriting_old_release(tm
             tf_version="0.2.0",
             builder_commit="a" * 40,
             source_state="sha256:" + "1" * 64,
+        )
+
+
+def test_structurally_complete_but_unloadable_tf_never_becomes_visible(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    (source / "oslots.tf").write_text("@edge\n@valueType=str\n\nnot-a-node-spec\n", encoding="utf-8")
+    stage = tmp_path / "stage"
+    with pytest.raises(distribution.InvalidDistribution, match="loadable"):
+        distribution.stage_distribution(
+            source,
+            stage,
+            dataset="assyrian-royal-inscriptions",
+            release_id="release-a",
+            tf_version="0.2.0",
+            builder_commit="a" * 40,
+            source_state=None,
+        )
+    assert not (stage / "manifest.json").exists()
+
+
+def test_raw_build_or_research_directories_are_rejected(tmp_path: Path) -> None:
+    for forbidden in ("data", "programs", "docs"):
+        source = _minimal_tf(tmp_path / f"source-{forbidden}")
+        leaked = source / forbidden
+        leaked.mkdir()
+        (leaked / "should-not-publish.txt").write_text("secret\n", encoding="utf-8")
+        with pytest.raises(distribution.InvalidDistribution, match="distribution payload"):
+            distribution.stage_distribution(
+                source,
+                tmp_path / f"stage-{forbidden}",
+                dataset="assyrian-royal-inscriptions",
+                release_id=f"release-{forbidden}",
+                tf_version="0.2.0",
+                builder_commit="a" * 40,
+                source_state=None,
+            )
+
+
+def test_replaying_old_release_detects_corrupted_current_visible_tree(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    first = _minimal_tf(tmp_path / "first", marker="one")
+    second = _minimal_tf(tmp_path / "second", marker="two")
+    common = dict(dataset="assyrian-royal-inscriptions", tf_version="0.2.0")
+    distribution.stage_distribution(
+        first,
+        stage,
+        release_id="release-a",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+        **common,
+    )
+    current = distribution.stage_distribution(
+        second,
+        stage,
+        release_id="release-b",
+        builder_commit="b" * 40,
+        source_state="sha256:" + "2" * 64,
+        **common,
+    )
+    (stage / current["tf_root"] / "feature.tf").write_text(
+        "@node\n@valueType=str\n\n1\tcorrupted\n", encoding="utf-8"
+    )
+
+    with pytest.raises(distribution.ImmutableDistributionConflict, match="current"):
+        distribution.stage_distribution(
+            first,
+            stage,
+            release_id="release-a",
+            builder_commit="a" * 40,
+            source_state="sha256:" + "1" * 64,
+            **common,
         )
 
 

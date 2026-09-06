@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -33,6 +33,7 @@ ZERO_SPAN_REASON = (
     "zero-span ORACC source entities are preserved here rather than assigned "
     "fabricated or borrowed slots."
 )
+DEFAULT_DATASET_NAME = "ORACC-TF RIAO + RINAP"
 
 
 class CorpusBuildError(RuntimeError):
@@ -232,7 +233,12 @@ class _Graph:
                 actual += 1
         return remap
 
-    def materialise(self, max_slot: int) -> _MaterialisedGraph:
+    def materialise(
+        self,
+        max_slot: int,
+        *,
+        dataset_name: str = DEFAULT_DATASET_NAME,
+    ) -> _MaterialisedGraph:
         all_nodes = set(self.non_slot_otype)
         included = {
             node for node in all_nodes
@@ -326,7 +332,7 @@ class _Graph:
 
         meta_data: dict[str, dict[str, object]] = {
             "": {
-                "name": "ORACC-TF RIAO + RINAP",
+                "name": dataset_name,
                 "converter": "oracc-tf",
                 "version": TF_VERSION,
             },
@@ -405,6 +411,58 @@ _CATALOGUE_FEATURES = (
     "collection",
 )
 
+_DOCUMENT_CORE_FEATURES = frozenset({
+    "document",
+    "document_key",
+    "source_id",
+    "text_id",
+    "subproject",
+    "populated",
+    "catalogue_present",
+    "catalogue_json",
+    "license",
+    "license_url",
+    "license_type",
+    *_CATALOGUE_FEATURES,
+})
+
+_WORD_CORE_FEATURES = frozenset({
+    "source_id",
+    "document_key",
+    "ref",
+    "frag",
+    "form",
+    "lang",
+    "cf",
+    "gw",
+    "sense",
+    "norm",
+    "pos",
+    "epos",
+    "inst",
+    "sig",
+    "lemmaknown",
+    "gdl_json",
+})
+
+
+def _add_projected_features(
+    graph: _Graph,
+    node: int,
+    projected: Mapping[str, object],
+    *,
+    reserved: frozenset[str],
+    context: str,
+) -> None:
+    if not isinstance(projected, Mapping):
+        raise CorpusBuildError(f"{context}: feature projector must return a mapping")
+    collisions = sorted(set(projected) & reserved)
+    if collisions:
+        raise CorpusBuildError(
+            f"{context}: feature projector may not override core features: {', '.join(collisions)}"
+        )
+    graph.feature(node, **dict(projected))
+
 
 def _add_section_features(
     graph: _Graph,
@@ -453,8 +511,16 @@ def build_tf(
     *,
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
+    word_feature_projector: Callable[[words.WordRecord], Mapping[str, object]] | None = None,
+    document_feature_projector: Callable[[loader.Edition], Mapping[str, object]] | None = None,
+    dataset_name: str = DEFAULT_DATASET_NAME,
 ) -> CorpusBuildReport:
-    """Build one joined TF dataset plus the lossless zero-span sidecar."""
+    """Build one joined TF dataset plus the lossless zero-span sidecar.
+
+    Optional projectors add dataset-specific source features without changing
+    the default RIAO/RINAP schema. They may only add feature names; overriding
+    core identity/lexical fields fails closed.
+    """
     graph = _Graph()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -538,6 +604,14 @@ def build_tf(
             graph.feature(
                 document_node,
                 **{name: _catalogue_feature_value(joined.catalogue.get(name))},
+            )
+        if document_feature_projector is not None:
+            _add_projected_features(
+                graph,
+                document_node,
+                document_feature_projector(edition),
+                reserved=_DOCUMENT_CORE_FEATURES,
+                context=edition.key,
             )
 
         face_nodes: dict[str, int] = {}
@@ -641,6 +715,14 @@ def build_tf(
                 lemmaknown=word.lemmaknown,
                 gdl_json=_source_gdl(word),
             )
+            if word_feature_projector is not None:
+                _add_projected_features(
+                    graph,
+                    word_node,
+                    word_feature_projector(word),
+                    reserved=_WORD_CORE_FEATURES,
+                    context=word.source_id,
+                )
 
             line_id = section_words.get(word.source_id)
             if line_id is not None and line_id in line_nodes:
@@ -684,7 +766,7 @@ def build_tf(
             "Text-Fabric warp cannot be emitted without at least one sign slot"
         )
 
-    materialised = graph.materialise(max_slot)
+    materialised = graph.materialise(max_slot, dataset_name=dataset_name)
     tf = Fabric(locations=str(out_dir), silent="deep")
     if not tf.save(
         nodeFeatures=materialised.node_features,

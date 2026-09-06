@@ -3,7 +3,7 @@
 - kind: `node`
 - scope: `document`
 - value type: `int`
-- populated values: `1842`
+- populated values: `2078`
 - distinct values: `2`
 - description: Integer flag: 1 when catalogue metadata was joined for the document, otherwise 0.
 
@@ -11,8 +11,8 @@
 
 | value | count |
 |---|---:|
-| `1` | 1841 |
-| `0` | 1 |
+| `1` | 2075 |
+| `0` | 3 |
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

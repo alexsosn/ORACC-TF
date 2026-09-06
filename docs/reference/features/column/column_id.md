@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `column`
 - value type: `str`
-- populated values: `723`
-- distinct values: `602`
+- populated values: `758`
+- distinct values: `636`
 - description: Source ORACC column identifier.
 
 ## Value frequencies

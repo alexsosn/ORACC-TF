@@ -13,7 +13,9 @@ The walk is deliberately source-faithful:
 * words encountered before required section markers are retained under
   explicitly synthetic ancestors and every recovery is reported;
 * object/surface/column transitions reset downstream state rather than letting
-  words leak into a previous physical section.
+  words leak into a previous physical section;
+* section records carry internal source-order bounds so later TF planning can
+  insert technical empty slots without inventing a second CDL state machine.
 """
 
 from __future__ import annotations
@@ -47,7 +49,12 @@ class UnknownMarkerType(InvalidSectionSource):
 
 @dataclass(frozen=True)
 class SectionNode:
-    """One intermediate section/chunk node destined for Text-Fabric."""
+    """One intermediate section/chunk node destined for Text-Fabric.
+
+    ``source_start``/``source_end`` are inclusive preorder event ordinals in
+    the source CDL walk. They are converter-internal positional facts used to
+    plan TF anchors; they are not emitted as corpus features.
+    """
 
     otype: str
     source_id: str
@@ -60,6 +67,8 @@ class SectionNode:
     chunk_subtype: str | None = None
     implicit: str | None = None
     word_ids: tuple[str, ...] = ()
+    source_start: int = 0
+    source_end: int = 0
 
 
 @dataclass(frozen=True)
@@ -81,9 +90,11 @@ class SectionWalk:
     chunks: tuple[SectionNode, ...]
     phrases: tuple[SectionNode, ...]
     word_to_line: Mapping[str, str]
+    word_order: Mapping[str, int]
     anomalies: tuple[Anomaly, ...]
     source_lines: int
     source_words: int
+    source_events: int
 
     @property
     def nodes(self) -> tuple[SectionNode, ...]:
@@ -140,8 +151,11 @@ class _Builder:
     chunk_subtype: str | None = None
     implicit: str | None = None
     word_ids: list[str] | None = None
+    source_start: int = 0
+    source_end: int | None = None
 
     def freeze(self) -> SectionNode:
+        end = self.source_end if self.source_end is not None else self.source_start
         return SectionNode(
             otype=self.otype,
             source_id=self.source_id,
@@ -154,6 +168,8 @@ class _Builder:
             chunk_subtype=self.chunk_subtype,
             implicit=self.implicit,
             word_ids=tuple(self.word_ids or ()),
+            source_start=self.source_start,
+            source_end=end,
         )
 
 
@@ -210,6 +226,7 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
     anomalies: list[Anomaly] = []
     words_seen: list[str] = []
     word_to_line: dict[str, str] = {}
+    word_order: dict[str, int] = {}
 
     current_face: _Builder | None = None
     current_column: _Builder | None = None
@@ -220,12 +237,30 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
     column_seq = 0
     line_seq = 0
     chunk_seq = 0
+    event_seq = 0
 
     def anomaly(kind: str, at: str) -> None:
         anomalies.append(Anomaly(kind=kind, at=at))
 
+    def close_line(end: int) -> None:
+        if current_line is not None and current_line.source_end is None:
+            current_line.source_end = max(current_line.source_start, end)
+
+    def close_column(end: int) -> None:
+        if current_column is not None and current_column.source_end is None:
+            current_column.source_end = max(current_column.source_start, end)
+
+    def close_face(end: int) -> None:
+        if current_face is not None and current_face.source_end is None:
+            current_face.source_end = max(current_face.source_start, end)
+
     def new_face(
-        *, label: str = "", ref: str | None = None, synthetic: int = 0, at: str
+        *,
+        label: str = "",
+        ref: str | None = None,
+        synthetic: int = 0,
+        at: str,
+        source_order: int,
     ) -> _Builder:
         nonlocal face_seq, current_face, current_column, current_line
         face_seq += 1
@@ -233,8 +268,12 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
         if synthetic:
             source_id = f"{text_id}.synthetic.face.{face_seq}"
         face = _Builder(
-            otype="face", source_id=source_id, label=label, ref=ref,
+            otype="face",
+            source_id=source_id,
+            label=label,
+            ref=ref,
             synthetic=synthetic,
+            source_start=source_order,
         )
         faces.append(face)
         current_face = face
@@ -244,25 +283,37 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
             anomaly("synthetic_face", at)
         return face
 
-    def ensure_face(*, at: str, cause: str) -> _Builder:
+    def ensure_face(*, at: str, cause: str, source_order: int) -> _Builder:
         nonlocal current_face
         if current_face is None:
             anomaly(cause, at)
-            return new_face(synthetic=1, at=at)
+            return new_face(synthetic=1, at=at, source_order=source_order)
         return current_face
 
     def new_column(
-        *, label: str = "", ref: str | None = None, synthetic: int = 0, at: str
+        *,
+        label: str = "",
+        ref: str | None = None,
+        synthetic: int = 0,
+        at: str,
+        source_order: int,
     ) -> _Builder:
         nonlocal column_seq, current_column, current_line
-        face = ensure_face(at=at, cause="column_before_surface")
+        face = ensure_face(
+            at=at, cause="column_before_surface", source_order=source_order
+        )
         column_seq += 1
         source_id = f"{text_id}.column.{column_seq}"
         if synthetic:
             source_id = f"{text_id}.synthetic.column.{column_seq}"
         column = _Builder(
-            otype="column", source_id=source_id, label=label, ref=ref,
-            synthetic=synthetic, face_id=face.source_id,
+            otype="column",
+            source_id=source_id,
+            label=label,
+            ref=ref,
+            synthetic=synthetic,
+            face_id=face.source_id,
+            source_start=source_order,
         )
         columns.append(column)
         current_column = column
@@ -272,10 +323,17 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
         return column
 
     def new_line(
-        *, label: str = "", ref: str | None = None, synthetic: int = 0, at: str
+        *,
+        label: str = "",
+        ref: str | None = None,
+        synthetic: int = 0,
+        at: str,
+        source_order: int,
     ) -> _Builder:
         nonlocal line_seq, current_line
-        face = ensure_face(at=at, cause="line_before_surface")
+        face = ensure_face(
+            at=at, cause="line_before_surface", source_order=source_order
+        )
         line_seq += 1
         if not synthetic and ref:
             source_id = ref
@@ -284,10 +342,15 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
         if synthetic:
             source_id = f"{text_id}.synthetic.line.{line_seq}"
         line = _Builder(
-            otype="line", source_id=source_id, label=label, ref=ref,
-            synthetic=synthetic, face_id=face.source_id,
+            otype="line",
+            source_id=source_id,
+            label=label,
+            ref=ref,
+            synthetic=synthetic,
+            face_id=face.source_id,
             column_id=current_column.source_id if current_column else None,
             word_ids=[],
+            source_start=source_order,
         )
         lines.append(line)
         current_line = line
@@ -295,22 +358,21 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
             anomaly("synthetic_line", at)
         return line
 
-    def ensure_line(*, at: str) -> _Builder:
+    def ensure_line(*, at: str, source_order: int) -> _Builder:
         nonlocal current_line
         if current_line is None:
             anomaly("word_before_line", at)
-            # A missing face is a consequence of the same incomplete source
-            # state; record the synthetic ancestor, but do not mislabel this
-            # as a literal line marker appearing before a surface marker.
             if current_face is None:
-                new_face(synthetic=1, at=at)
-            return new_line(synthetic=1, at=at)
+                new_face(synthetic=1, at=at, source_order=source_order)
+            return new_line(synthetic=1, at=at, source_order=source_order)
         return current_line
 
     def walk(node: Mapping[str, object], *, where: str) -> None:
         nonlocal current_face, current_column, current_line
-        nonlocal source_line_count, chunk_seq
+        nonlocal source_line_count, chunk_seq, event_seq
 
+        event_seq += 1
+        source_order = event_seq
         kind = node.get("node")
 
         if kind == "c":
@@ -327,6 +389,7 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
             for index, child in enumerate(_children(node, where=where)):
                 walk(child, where=f"{where}/cdl[{index}]")
             chunk_words = list(words_seen[before:])
+            source_end = event_seq
             chunk = _Builder(
                 otype="chunk",
                 source_id=source_id,
@@ -335,6 +398,8 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
                 chunk_subtype=_optional_str(node, "subtype", where=where),
                 implicit=_optional_str(node, "implicit", where=where),
                 word_ids=chunk_words,
+                source_start=source_order,
+                source_end=source_end,
             )
             chunks.append(chunk)
             if chunk_type == "phrase":
@@ -343,6 +408,8 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
                     source_id=source_id,
                     label=chunk.label,
                     word_ids=list(chunk_words),
+                    source_start=source_order,
+                    source_end=source_end,
                 ))
             return
 
@@ -354,26 +421,40 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
                 )
             label = _optional_str(node, "label", where=where, empty="") or ""
             ref = _optional_str(node, "ref", where=where)
+            prior_end = source_order - 1
 
             if marker == "object":
+                close_line(prior_end)
+                close_column(prior_end)
+                close_face(prior_end)
                 current_face = None
                 current_column = None
                 current_line = None
             elif marker == "surface":
-                new_face(label=label, ref=ref, at=where)
+                close_line(prior_end)
+                close_column(prior_end)
+                close_face(prior_end)
+                new_face(
+                    label=label, ref=ref, at=where, source_order=source_order
+                )
             elif marker == "column":
+                close_line(prior_end)
+                close_column(prior_end)
                 if current_face is None:
                     anomaly("column_before_surface", where)
-                    new_face(synthetic=1, at=where)
-                # Avoid reporting column_before_surface twice: new_column sees
-                # the face we just materialised.
-                new_column(label=label, ref=ref, at=where)
+                    new_face(synthetic=1, at=where, source_order=source_order)
+                new_column(
+                    label=label, ref=ref, at=where, source_order=source_order
+                )
             elif marker == "line-start":
+                close_line(prior_end)
                 source_line_count += 1
                 if current_face is None:
                     anomaly("line_before_surface", where)
-                    new_face(synthetic=1, at=where)
-                new_line(label=label, ref=ref, at=where)
+                    new_face(synthetic=1, at=where, source_order=source_order)
+                new_line(
+                    label=label, ref=ref, at=where, source_order=source_order
+                )
             # nonw/nonx are textual markers, not section transitions.
             return
 
@@ -385,16 +466,15 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
                 raise InvalidSectionSource(
                     f"{where}: duplicate word id {word_id!r} would make line membership ambiguous"
                 )
-            line = ensure_line(at=where)
+            line = ensure_line(at=where, source_order=source_order)
             assert line.word_ids is not None
             line.word_ids.append(word_id)
             words_seen.append(word_id)
             word_to_line[word_id] = line.source_id
+            word_order[word_id] = source_order
             return
 
         if kind is None:
-            # The top-level corpusjson object has no CDL node kind; recurse
-            # through its cdl list exactly once.
             for index, child in enumerate(_children(node, where=where)):
                 walk(child, where=f"{where}/cdl[{index}]")
             return
@@ -402,6 +482,9 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
         raise InvalidSectionSource(f"{where}: unknown CDL node kind {kind!r}")
 
     walk(doc, where=text_id)
+    close_line(event_seq)
+    close_column(event_seq)
+    close_face(event_seq)
 
     return SectionWalk(
         text_id=text_id,
@@ -411,9 +494,11 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
         chunks=tuple(item.freeze() for item in chunks),
         phrases=tuple(item.freeze() for item in phrases),
         word_to_line=dict(word_to_line),
+        word_order=dict(word_order),
         anomalies=tuple(anomalies),
         source_lines=source_line_count,
         source_words=len(words_seen),
+        source_events=event_seq,
     )
 
 
@@ -437,8 +522,6 @@ def census(data: Path = paths.DATA) -> SectionCensus:
         assigned = len(result.word_to_line)
         words_assigned_once += assigned
         unassigned_words += max(0, edition.word_count - assigned)
-        # Duplicate word ids fail inside walk_document, so a successful walk
-        # cannot silently multiply-assign a source word.
         multiply_assigned_words += 0
         anomaly_counts.update(item.kind for item in result.anomalies)
 

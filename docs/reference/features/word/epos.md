@@ -3,7 +3,7 @@
 - kind: `node`
 - scope: `word`
 - value type: `str`
-- populated values: `289203`
+- populated values: `289205`
 - distinct values: `33`
 - description: ORACC effective/contextual part-of-speech value for the word occurrence.
 
@@ -20,7 +20,7 @@ Showing the 20 most frequent values.
 | `DN` | 10684 |
 | `GN` | 9946 |
 | `SN` | 8253 |
-| `RN` | 8006 |
+| `RN` | 8007 |
 | `REL` | 6440 |
 | `CNJ` | 6372 |
 | `DET` | 6243 |
@@ -29,7 +29,7 @@ Showing the 20 most frequent values.
 | `EN` | 2626 |
 | `IP` | 2614 |
 | `NU` | 1948 |
-| `PN` | 1046 |
+| `PN` | 1047 |
 | `TN` | 917 |
 | `WN` | 820 |
 | `XP` | 381 |

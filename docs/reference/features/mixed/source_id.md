@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `mixed`
 - value type: `str`
-- populated values: `399252`
-- distinct values: `348246`
+- populated values: `401181`
+- distinct values: `349478`
 - description: Source ORACC node identifier preserved from the input data.
 
 ## Value frequencies

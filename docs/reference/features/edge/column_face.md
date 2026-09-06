@@ -3,9 +3,9 @@
 - kind: `edge`
 - scope: `edge`
 - value type: `str`
-- populated values: `723`
-- populated sources: `723`
-- links: `723`
+- populated values: `758`
+- populated sources: `758`
+- links: `758`
 - source node types: `column`
 - target node types: `face`
 - description: Edge from a column node to its containing face node.
@@ -14,7 +14,7 @@
 
 | out-degree | sources |
 |---:|---:|
-| 1 | 723 |
+| 1 | 758 |
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

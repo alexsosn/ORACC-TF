@@ -127,12 +127,12 @@ def test_registered_builder_cannot_mislabel_the_converter_schema(tmp_path, monke
         )
 
 
-def test_version_root_is_standalone_loadable_and_owns_sidecar(tmp_path):
+def test_version_root_is_standalone_loadable_without_sidecar(tmp_path):
     root = paths.publishable_tf_root(tmp_path, "assyrian-royal-inscriptions", TF_VERSION)
     corpus.build_tf(root, editions=[_edition()], metadata_index=metadata.MetadataIndex.empty())
 
-    assert {"otype.tf", "oslots.tf", "otext.tf", "zero-span.json"} <= {
-        path.name for path in root.iterdir()
-    }
+    files = {path.name for path in root.iterdir()}
+    assert {"otype.tf", "oslots.tf", "otext.tf"} <= files
+    assert corpus.ZERO_SPAN_FILENAME not in files
     api = corpus.load_tf(root)
     assert api.F.otype.maxSlot == 1

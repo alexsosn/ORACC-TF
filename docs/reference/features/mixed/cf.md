@@ -3,7 +3,7 @@
 - kind: `node`
 - scope: `mixed`
 - value type: `str`
-- populated values: `297226`
+- populated values: `297230`
 - distinct values: `7329`
 - description: ORACC citation form (lemma) attached to the word or lexeme.
 

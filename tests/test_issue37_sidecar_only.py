@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -65,6 +66,14 @@ def _build_sidecar_only(target: Path, *, monkeypatch=None):
     )
 
 
+def _write_json(path: Path, value: object) -> bytes:
+    payload = (
+        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+    path.write_bytes(payload)
+    return payload
+
+
 def test_zero_sign_build_remains_opt_in(tmp_path):
     with pytest.raises(
         corpus.CorpusBuildError,
@@ -83,6 +92,7 @@ def test_sidecar_only_preserves_every_node_relation_without_tf(tmp_path, monkeyp
     assert report.signs == 0
     assert report.tf_node_counts == {"sign": 0}
     assert report.zero_span_counts == {
+        "chunk": 1,
         "document": 1,
         "face": 1,
         "lex": 1,
@@ -96,7 +106,7 @@ def test_sidecar_only_preserves_every_node_relation_without_tf(tmp_path, monkeyp
     node_keys = {node["key"] for node in sidecar["nodes"]}
     assert {
         node["otype"] for node in sidecar["nodes"]
-    } == {"document", "face", "line", "word", "lex"}
+    } == {"document", "face", "line", "chunk", "word", "lex"}
     assert "document:test/unit:QZERO" in node_keys
     assert "word:test/unit:QZERO:QZERO.l1" in node_keys
 
@@ -129,6 +139,33 @@ def test_sidecar_only_manifest_is_hash_bound_and_explicit(tmp_path):
 
     (tmp_path / corpus.ZERO_SPAN_FILENAME).write_text("{}\n", encoding="utf-8")
     with pytest.raises(corpus.CorpusBuildError, match="sidecar SHA-256 mismatch"):
+        corpus.load_artifact_manifest(tmp_path)
+
+
+def test_manifest_rejects_document_identity_drift(tmp_path):
+    _build_sidecar_only(tmp_path)
+    manifest_path = tmp_path / corpus.ARTIFACT_MANIFEST_FILENAME
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["documents"] = ["test/unit:OTHER"]
+    _write_json(manifest_path, manifest)
+
+    with pytest.raises(corpus.CorpusBuildError, match="document identities.*sidecar"):
+        corpus.load_artifact_manifest(tmp_path)
+
+
+def test_manifest_rejects_dangling_sidecar_relation(tmp_path):
+    _build_sidecar_only(tmp_path)
+    sidecar_path = tmp_path / corpus.ZERO_SPAN_FILENAME
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["edges"][0]["targets"].append("word:test/unit:QZERO:missing")
+    sidecar_bytes = _write_json(sidecar_path, sidecar)
+
+    manifest_path = tmp_path / corpus.ARTIFACT_MANIFEST_FILENAME
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["sidecar"]["sha256"] = hashlib.sha256(sidecar_bytes).hexdigest()
+    _write_json(manifest_path, manifest)
+
+    with pytest.raises(corpus.CorpusBuildError, match="dangling sidecar relation"):
         corpus.load_artifact_manifest(tmp_path)
 
 

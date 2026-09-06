@@ -108,11 +108,12 @@ def test_release_identity_rejects_ambiguous_or_invalid_inputs():
         )
 
 
-def test_dataset_config_tracks_only_the_eleven_riao_rinap_archives():
+def test_dataset_config_preserves_assyrian_inputs_and_tracks_obabat():
     config = releases.load_datasets(Path("datasets.toml"))
-    dataset = config["assyrian-royal-inscriptions"]
+    assyrian = config["assyrian-royal-inscriptions"]
+    obabat = config["obabat-atletters"]
 
-    assert dataset.archives == (
+    assert assyrian.archives == (
         "riao-ria1",
         "riao-ria2",
         "riao-ria3",
@@ -125,6 +126,10 @@ def test_dataset_config_tracks_only_the_eleven_riao_rinap_archives():
         "rinap-rinap5",
         "rinap-rinap5p1",
     )
-    assert dataset.tei == ("riao-teiCorpus",)
-    assert releases.tracked_archives(config) == frozenset(dataset.archives)
-    assert len(releases.tracked_archives(config)) == 11
+    assert assyrian.tei == ("riao-teiCorpus",)
+    assert obabat.archives == ("obabat-atletters",)
+    assert obabat.tei == ()
+    assert releases.tracked_archives(config) == frozenset(
+        (*assyrian.archives, *obabat.archives)
+    )
+    assert len(releases.tracked_archives(config)) == 12

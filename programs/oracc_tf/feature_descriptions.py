@@ -54,6 +54,7 @@ DESCRIPTIONS: dict[str, str] = {
     "pleiades_coord": "ORACC catalogue Pleiades coordinate value preserved as text.",
     "cdli_id": "ORACC catalogue CDLI identifier value preserved as text.",
     "collection": "ORACC catalogue collection value preserved as text.",
+    "nino_overlap_status": "OBABAT comparison status against the exact pinned Nino Old Babylonian corpus; unmatched does not mean independently clean.",
     # Structural layer
     "synthetic": "Integer flag marking a section node synthesized by ORACC-TF to preserve source hierarchy.",
     "implicit": "Source section implicit marker preserved from ORACC.",
@@ -77,6 +78,11 @@ DESCRIPTIONS: dict[str, str] = {
     "sig": "ORACC occurrence analysis signature preserved verbatim; not a stable ORACC-TF lexeme identifier.",
     "lemmaknown": "Integer ORACC lexical-analysis flag indicating whether the word has a known lemma analysis.",
     "lexeme": "Canonical JSON tuple [lang, cf, gw, pos] used by ORACC-TF as the lexeme key.",
+    "props_json": "Canonical JSON serialization of the source ORACC word-level props payload.",
+    "discourse": "ORACC discourse property value supplied on the word occurrence.",
+    "base": "ORACC morphological base value supplied on the word occurrence, when present.",
+    "morph": "ORACC morphological segmentation value supplied on the word occurrence, when present.",
+    "morph2": "ORACC secondary/glossed morphological segmentation value supplied on the word occurrence, when present.",
     # Semantic/structural edges
     "face_document": "Edge from a face node to its containing document node.",
     "column_face": "Edge from a column node to its containing face node.",

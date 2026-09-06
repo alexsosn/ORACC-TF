@@ -4,13 +4,13 @@ M0--M5 deliberately keep source interpretation in small independently tested
 modules. M6 is the first place where those views are joined into an actual
 Text-Fabric graph. ``sign`` is the TF slot type.
 
-Text-Fabric 13.1 has a hard warp invariant: every non-slot node in ``oslots``
-must map to at least one slot. ORACC legitimately contains source entities with
-zero sign extent (notably 295 words and 233 metadata-only documents in this
-snapshot). Inventing or borrowing a sign would corrupt the source model, so
-zero-span entities are omitted from the TF warp and written losslessly to a
-deterministic sidecar together with any relation edges crossing that boundary.
-Source cardinalities in :class:`CorpusBuildReport` always include both layers.
+Text-Fabric requires every non-slot warp node to map to at least one slot.
+ORACC legitimately contains textual entities with no semantic sign extent.
+Following the accepted project-family architecture, those textual positions
+remain inside TF through explicit synthetic empty ``sign`` slots.  Synthetic
+slots are technical positional anchors, never fabricated cuneiform signs.
+Semantic/source sign cardinality is therefore tracked separately from total TF
+slot cardinality.
 """
 
 from __future__ import annotations
@@ -23,15 +23,26 @@ from pathlib import Path
 
 from tf.fabric import Fabric
 
-from . import TF_VERSION, feature_descriptions, lexemes, loader, metadata, paths, sections, words
+from . import (
+    TF_VERSION,
+    feature_descriptions,
+    lexemes,
+    loader,
+    metadata,
+    paths,
+    sections,
+    slotplan,
+    words,
+)
 
 
+# Legacy reader contract.  Current builds do not emit a zero-span sidecar;
+# these names remain public so older artifacts can still be inspected.
 ZERO_SPAN_SCHEMA = "oracc-tf-zero-span-v1"
 ZERO_SPAN_FILENAME = "zero-span.json"
 ZERO_SPAN_REASON = (
-    "Text-Fabric warp requires every non-slot node to map to at least one sign slot; "
-    "zero-span ORACC source entities are preserved here rather than assigned "
-    "fabricated or borrowed slots."
+    "Legacy ORACC-TF zero-span sidecar retained for reading older artifacts; "
+    "current textual zero-span entities use explicit synthetic TF slots."
 )
 
 
@@ -50,6 +61,8 @@ class CorpusBuildReport:
     document_key_collisions: int
     words: int
     signs: int
+    synthetic_slots: int
+    tf_slots: int
     unicode_signs: int
     slotless_words: int
     lines: int
@@ -59,6 +72,11 @@ class CorpusBuildReport:
     section_path_errors: int
     tf_node_counts: dict[str, int]
     zero_span_counts: dict[str, int]
+
+    @property
+    def semantic_signs(self) -> int:
+        """Explicit name for the backwards-compatible ``signs`` measurement."""
+        return self.signs
 
     @property
     def unicode_coverage(self) -> float:
@@ -106,16 +124,18 @@ class CorpusBuildReport:
             f"unique document keys       : {self.unique_document_keys:>8,}",
             f"document key collisions    : {self.document_key_collisions:>8,}",
             f"words                      : {self.words:>8,}",
-            f"signs                      : {self.signs:>8,}",
+            f"semantic/source signs      : {self.signs:>8,}",
+            f"synthetic empty slots      : {self.synthetic_slots:>8,}",
+            f"total TF slots             : {self.tf_slots:>8,}",
             f"unicode signs              : {self.unicode_signs:>8,} ({self.unicode_coverage:.4%})",
-            f"slotless words             : {self.slotless_words:>8,}",
+            f"slotless source words      : {self.slotless_words:>8,}",
             f"lines                      : {self.lines:>8,}",
             f"lexemes                    : {self.lexemes:>8,}",
             f"sign→word errors           : {self.sign_word_membership_errors:>8,}",
             f"word→line errors           : {self.word_line_membership_errors:>8,}",
             f"section path errors        : {self.section_path_errors:>8,}",
             f"TF node counts             : {tf_counts}",
-            f"zero-span sidecar counts   : {zero_counts}",
+            f"unanchored node counts     : {zero_counts}",
         ))
 
 
@@ -124,7 +144,6 @@ class _MaterialisedGraph:
     node_features: dict[str, dict[int, str | int]]
     edge_features: dict[str, dict[int, set[int]]]
     meta_data: dict[str, dict[str, object]]
-    sidecar: dict[str, object]
     tf_node_counts: dict[str, int]
     zero_span_counts: dict[str, int]
 
@@ -184,36 +203,6 @@ class _Graph:
     def add_oslots(self, node: int, slots: Iterable[int]) -> None:
         self.non_slot_oslots[node].update(slots)
 
-    def _node_features(self, node: int) -> dict[str, str | int]:
-        return {
-            name: data[node]
-            for name, data in self.node_features.items()
-            if node in data
-        }
-
-    def _stable_key(self, node: int) -> str:
-        """Return a deterministic source-facing identity for sidecar relations."""
-        otype = self.non_slot_otype[node]
-        features = self._node_features(node)
-        if otype == "document":
-            identity = features.get("document") or features.get("document_key")
-            if not identity:
-                raise CorpusBuildError("zero-span document lacks a stable document key")
-            return f"document:{identity}"
-        if otype == "lex":
-            identity = features.get("lexeme")
-            if not identity:
-                raise CorpusBuildError("zero-span lexeme lacks a stable lexeme key")
-            return f"lex:{identity}"
-
-        source_id = features.get("source_id")
-        document_key = features.get("document_key")
-        if not source_id or not document_key:
-            raise CorpusBuildError(
-                f"zero-span {otype} node lacks source_id/document_key for stable identity"
-            )
-        return f"{otype}:{document_key}:{source_id}"
-
     def _node_remap(self, max_slot: int, included: set[int]) -> dict[int, int]:
         """Put every included non-slot otype in one contiguous TF interval."""
         groups: dict[str, list[int]] = defaultdict(list)
@@ -234,24 +223,24 @@ class _Graph:
 
     def materialise(self, max_slot: int) -> _MaterialisedGraph:
         all_nodes = set(self.non_slot_otype)
-        included = {
+        omitted = {
             node for node in all_nodes
-            if self.non_slot_oslots.get(node)
+            if not self.non_slot_oslots.get(node)
         }
-        omitted = all_nodes - included
-        remap = self._node_remap(max_slot, included)
+        zero_counts = Counter(self.non_slot_otype[node] for node in omitted)
+        if omitted:
+            detail = ", ".join(
+                f"{otype}={count}" for otype, count in sorted(zero_counts.items())
+            )
+            raise CorpusBuildError(
+                "empty-slot planning left unanchored TF nodes; classify them "
+                f"explicitly instead of falling back to a sidecar: {detail}"
+            )
 
+        included = all_nodes
+        remap = self._node_remap(max_slot, included)
         tf_counts = Counter(self.non_slot_otype[node] for node in included)
         tf_counts["sign"] = max_slot
-        zero_counts = Counter(self.non_slot_otype[node] for node in omitted)
-
-        stable_keys = {node: self._stable_key(node) for node in all_nodes}
-        if len(set(stable_keys.values())) != len(stable_keys):
-            duplicates = Counter(stable_keys.values())
-            repeated = sorted(key for key, count in duplicates.items() if count > 1)
-            raise CorpusBuildError(
-                f"non-unique stable node keys: {repeated[:5]!r}"
-            )
 
         otype: dict[int, str] = {slot: "sign" for slot in range(1, max_slot + 1)}
         otype.update({
@@ -278,51 +267,22 @@ class _Graph:
                 for node in included
             }
         }
-        side_edges: list[dict[str, object]] = []
         for name, data in self.edges.items():
             tf_data: dict[int, set[int]] = {}
             for source, targets in data.items():
-                included_targets = {target for target in targets if target in included}
-                if source in included and included_targets:
-                    tf_data[remap[source]] = {
-                        remap[target] for target in included_targets
-                    }
-
-                boundary_targets = (
-                    set(targets)
-                    if source in omitted
-                    else {target for target in targets if target in omitted}
-                )
-                if boundary_targets:
-                    side_edges.append({
-                        "feature": name,
-                        "source": stable_keys[source],
-                        "targets": sorted(stable_keys[target] for target in boundary_targets),
-                    })
+                if source not in included:
+                    raise CorpusBuildError(
+                        f"edge feature {name!r} has unanchored source node {source}"
+                    )
+                missing = set(targets) - included
+                if missing:
+                    raise CorpusBuildError(
+                        f"edge feature {name!r} targets unanchored nodes {sorted(missing)[:5]!r}"
+                    )
+                if targets:
+                    tf_data[remap[source]] = {remap[target] for target in targets}
             if tf_data:
                 edge_features[name] = tf_data
-
-        side_nodes = [
-            {
-                "key": stable_keys[node],
-                "otype": self.non_slot_otype[node],
-                "features": dict(sorted(self._node_features(node).items())),
-            }
-            for node in sorted(omitted, key=lambda item: stable_keys[item])
-        ]
-        side_edges.sort(
-            key=lambda edge: (
-                str(edge["feature"]),
-                str(edge["source"]),
-                tuple(edge["targets"]),
-            )
-        )
-        sidecar: dict[str, object] = {
-            "schema": ZERO_SPAN_SCHEMA,
-            "reason": ZERO_SPAN_REASON,
-            "nodes": side_nodes,
-            "edges": side_edges,
-        }
 
         meta_data: dict[str, dict[str, object]] = {
             "": {
@@ -359,9 +319,8 @@ class _Graph:
             node_features=node_features,
             edge_features=edge_features,
             meta_data=meta_data,
-            sidecar=sidecar,
             tf_node_counts=dict(sorted(tf_counts.items())),
-            zero_span_counts=dict(sorted(zero_counts.items())),
+            zero_span_counts={},
         )
 
 
@@ -426,16 +385,8 @@ def _add_section_features(
     )
 
 
-def _write_zero_span(out_dir: Path, sidecar: dict[str, object]) -> None:
-    path = out_dir / ZERO_SPAN_FILENAME
-    path.write_text(
-        json.dumps(sidecar, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-
-
 def load_zero_span(out_dir: Path | str) -> dict[str, object]:
-    """Load and minimally validate the deterministic zero-span sidecar."""
+    """Load and minimally validate a legacy deterministic zero-span sidecar."""
     path = Path(out_dir) / ZERO_SPAN_FILENAME
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -454,12 +405,14 @@ def build_tf(
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
 ) -> CorpusBuildReport:
-    """Build one joined TF dataset plus the lossless zero-span sidecar."""
+    """Build one joined TF dataset with explicit empty positional anchors."""
     graph = _Graph()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    next_slot = 1
+    next_semantic_slot = 1
+    next_tf_slot = 1
+    synthetic_slots = 0
     document_count = 0
     populated_count = 0
     stub_count = 0
@@ -482,7 +435,9 @@ def build_tf(
             stub_count += 1
 
         section_view = sections.walk_document(edition.doc)
-        source_words = list(words.iter_words(edition.doc, start_slot=next_slot))
+        source_words = list(
+            words.iter_words(edition.doc, start_slot=next_semantic_slot)
+        )
         if len(source_words) != edition.word_count:
             raise CorpusBuildError(
                 f"{edition.key}: loader says {edition.word_count} words "
@@ -493,33 +448,59 @@ def build_tf(
         if len(by_word) != len(source_words):
             raise CorpusBuildError(f"{edition.key}: duplicate source word ids")
 
-        document_slots: set[int] = set()
         for word in source_words:
-            slots = set(word.slot_ids)
-            document_slots.update(slots)
-            if not slots:
+            if not word.signs:
                 slotless_words += 1
-            for slot, sign in zip(word.slot_ids, word.signs, strict=True):
-                sign_word_memberships[slot] += 1
+            for semantic_slot, sign in zip(word.slot_ids, word.signs, strict=True):
+                sign_word_memberships[semantic_slot] += 1
                 utf8 = sign.value.get("utf8")
                 if isinstance(utf8, str) and utf8:
                     unicode_signs += 1
+            next_semantic_slot = word.slot_end
+
+        try:
+            slot_plan = slotplan.build_slot_plan(
+                text_id=edition.text_id,
+                source_words=source_words,
+                section_view=section_view,
+                start_tf_slot=next_tf_slot,
+            )
+        except slotplan.SlotPlanError as exc:
+            raise CorpusBuildError(f"{edition.key}: {exc}") from exc
+        synthetic_slots += slot_plan.synthetic_slots
+        next_tf_slot = slot_plan.next_tf_slot
+
+        for event in slot_plan.events:
+            if event.synthetic:
                 graph.slot_feature(
-                    slot,
+                    event.slot,
                     document_key=edition.key,
-                    word_id=word.source_id,
-                    src_path=sign.src_path,
-                    utf8=utf8 if isinstance(utf8, str) else None,
-                    readingu=utf8 if isinstance(utf8, str) else None,
-                    sign_json=_json(sign.value),
-                    gdl_id=sign.value.get("id"),
-                    gdl_form=sign.value.get("form"),
-                    gdl_sexified=sign.value.get("sexified"),
+                    source_id=event.source_id,
+                    word_id=event.word_id,
+                    synthetic=1,
                 )
-            next_slot = word.slot_end
+                continue
+            sign = event.sign
+            if sign is None or event.word_id is None:
+                raise CorpusBuildError(
+                    f"{edition.key}: semantic TF slot {event.slot} lacks source sign ownership"
+                )
+            utf8 = sign.value.get("utf8")
+            graph.slot_feature(
+                event.slot,
+                document_key=edition.key,
+                word_id=event.word_id,
+                src_path=sign.src_path,
+                utf8=utf8 if isinstance(utf8, str) else None,
+                readingu=utf8 if isinstance(utf8, str) else None,
+                sign_json=_json(sign.value),
+                gdl_id=sign.value.get("id"),
+                gdl_form=sign.value.get("form"),
+                gdl_sexified=sign.value.get("sexified"),
+            )
 
         joined = metadata.join_edition(edition, metadata_index)
-        document_node = graph.node("document", document_slots)
+        document_node = graph.node("document", slot_plan.document_slots)
         graph.feature(
             document_node,
             document=edition.key,
@@ -548,7 +529,7 @@ def build_tf(
         for face in section_view.faces:
             if face.source_id in face_nodes:
                 raise CorpusBuildError(f"{edition.key}: duplicate face id {face.source_id!r}")
-            node = graph.node("face")
+            node = graph.node("face", slot_plan.section_slots[face])
             face_nodes[face.source_id] = node
             _add_section_features(graph, node, face, document_key=edition.key)
             graph.feature(node, face=face.source_id)
@@ -559,7 +540,7 @@ def build_tf(
                 raise CorpusBuildError(
                     f"{edition.key}: duplicate column id {column.source_id!r}"
                 )
-            node = graph.node("column")
+            node = graph.node("column", slot_plan.section_slots[column])
             column_nodes[column.source_id] = node
             _add_section_features(graph, node, column, document_key=edition.key)
             graph.feature(node, column_id=column.source_id)
@@ -573,12 +554,7 @@ def build_tf(
             line_count += 1
             if line.source_id in line_nodes:
                 raise CorpusBuildError(f"{edition.key}: duplicate line id {line.source_id!r}")
-            slots = {
-                slot
-                for word_id in line.word_ids
-                for slot in by_word[word_id].slot_ids
-            }
-            node = graph.node("line", slots)
+            node = graph.node("line", slot_plan.section_slots[line])
             line_nodes[line.source_id] = node
             _add_section_features(graph, node, line, document_key=edition.key)
             graph.feature(node, line=line.source_id, lnno=line.label)
@@ -587,32 +563,20 @@ def build_tf(
                 if edition.populated:
                     section_path_errors += 1
             else:
-                graph.add_oslots(face_nodes[line.face_id], slots)
                 graph.edge("line_face", node, face_nodes[line.face_id])
             if line.column_id is not None:
                 if line.column_id not in column_nodes:
                     if edition.populated:
                         section_path_errors += 1
                 else:
-                    graph.add_oslots(column_nodes[line.column_id], slots)
                     graph.edge("line_column", node, column_nodes[line.column_id])
 
         for chunk in section_view.chunks:
-            slots = {
-                slot
-                for word_id in chunk.word_ids
-                for slot in by_word[word_id].slot_ids
-            }
-            node = graph.node("chunk", slots)
+            node = graph.node("chunk", slot_plan.section_slots[chunk])
             _add_section_features(graph, node, chunk, document_key=edition.key)
 
         for phrase in section_view.phrases:
-            slots = {
-                slot
-                for word_id in phrase.word_ids
-                for slot in by_word[word_id].slot_ids
-            }
-            node = graph.node("phrase", slots)
+            node = graph.node("phrase", slot_plan.section_slots[phrase])
             _add_section_features(graph, node, phrase, document_key=edition.key)
 
         section_words = section_view.word_to_line
@@ -620,7 +584,7 @@ def build_tf(
 
         for word in source_words:
             word_count += 1
-            slots = set(word.slot_ids)
+            slots = set(slot_plan.word_slots[word.source_id])
             word_node = graph.node("word", slots)
             graph.feature(
                 word_node,
@@ -667,11 +631,12 @@ def build_tf(
                 graph.add_oslots(lex_node, slots)
                 graph.edge("word_lex", word_node, lex_node)
 
-    max_slot = next_slot - 1
+    semantic_signs = next_semantic_slot - 1
+    max_tf_slot = next_tf_slot - 1
     collision_count = sum(count - 1 for count in key_counts.values() if count > 1)
     membership_errors = (
         sum(count != 1 for count in sign_word_memberships.values())
-        + max_slot
+        + semantic_signs
         - len(sign_word_memberships)
     )
 
@@ -679,12 +644,10 @@ def build_tf(
         raise CorpusBuildError(
             f"qualified document keys are not unique: {collision_count} collisions"
         )
-    if max_slot == 0:
-        raise CorpusBuildError(
-            "Text-Fabric warp cannot be emitted without at least one sign slot"
-        )
+    if document_count == 0 or max_tf_slot == 0:
+        raise CorpusBuildError("cannot emit a Text-Fabric corpus with no documents")
 
-    materialised = graph.materialise(max_slot)
+    materialised = graph.materialise(max_tf_slot)
     tf = Fabric(locations=str(out_dir), silent="deep")
     if not tf.save(
         nodeFeatures=materialised.node_features,
@@ -693,7 +656,10 @@ def build_tf(
         silent="deep",
     ):
         raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
-    _write_zero_span(out_dir, materialised.sidecar)
+
+    # A successful current-format build is self-contained in TF.  Remove a
+    # stale sidecar only after the replacement TF graph has saved successfully.
+    (out_dir / ZERO_SPAN_FILENAME).unlink(missing_ok=True)
 
     return CorpusBuildReport(
         documents=document_count,
@@ -702,7 +668,9 @@ def build_tf(
         unique_document_keys=len(key_counts),
         document_key_collisions=collision_count,
         words=word_count,
-        signs=max_slot,
+        signs=semantic_signs,
+        synthetic_slots=synthetic_slots,
+        tf_slots=max_tf_slot,
         unicode_signs=unicode_signs,
         slotless_words=slotless_words,
         lines=line_count,

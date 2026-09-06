@@ -1,0 +1,62 @@
+name: p005-registry-once
+
+on:
+  push:
+    branches: [codex/issue60-distribution-architecture]
+    paths: [.github/workflows/p005-registry-once.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/issue60-distribution-architecture
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Insert R-005 and P-005 registry documents
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('docs/registry.json')
+          reg = json.loads(path.read_text(encoding='utf-8'))
+          additions = {
+              'R-005': {
+                  'id': 'R-005',
+                  'title': 'Distribution architecture for installable ORACC-TF datasets',
+                  'type': 'research',
+                  'status': 'active',
+                  'priority': 'P0',
+                  'path': 'docs/research/R-005-distribution-architecture.md',
+                  'depends_on': ['P-001'],
+              },
+              'P-005': {
+                  'id': 'P-005',
+                  'title': 'Publish semantic TF datasets to lightweight distribution repositories',
+                  'type': 'plan',
+                  'status': 'draft',
+                  'priority': 'P0',
+                  'path': 'docs/plans/P-005-distribution-publishing.md',
+                  'depends_on': ['R-005', 'P-001'],
+              },
+          }
+          docs = {d['id']: d for d in reg['documents']}
+          docs.update(additions)
+          reg['documents'] = [docs[key] for key in sorted(docs)]
+          reg['updated'] = '2026-09-06'
+          path.write_text(json.dumps(reg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+      - name: Commit registry synchronization
+        run: |
+          git config user.name 'oracc-tf-bot'
+          git config user.email 'oracc-tf-bot@users.noreply.github.com'
+          git add docs/registry.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'docs(P-005): register distribution research and plan'
+          git push origin HEAD:codex/issue60-distribution-architecture

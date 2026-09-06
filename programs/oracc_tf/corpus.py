@@ -11,10 +11,17 @@ snapshot). Inventing or borrowing a sign would corrupt the source model, so
 zero-span entities are omitted from the TF warp and written losslessly to a
 deterministic sidecar together with any relation edges crossing that boundary.
 Source cardinalities in :class:`CorpusBuildReport` always include both layers.
+
+A corpus with zero semantic sign slots cannot be represented as an ordinary TF
+warp without fabricating a slot. ``build_tf()`` therefore keeps rejecting that
+case by default. Callers may explicitly opt into a sidecar-only artifact, which
+contains the complete zero-span graph plus a hash-bound manifest and no TF
+feature files.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import Counter, defaultdict
 from collections.abc import Iterable
@@ -33,6 +40,8 @@ ZERO_SPAN_REASON = (
     "zero-span ORACC source entities are preserved here rather than assigned "
     "fabricated or borrowed slots."
 )
+ARTIFACT_MANIFEST_SCHEMA = "oracc-tf-artifact-v1"
+ARTIFACT_MANIFEST_FILENAME = "oracc-tf-artifact.json"
 
 
 class CorpusBuildError(RuntimeError):
@@ -369,6 +378,12 @@ def _json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
 
+def _pretty_json_bytes(value: object) -> bytes:
+    return (
+        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+
+
 def _source_gdl(word: words.WordRecord) -> str | None:
     if "gdl" not in word.features:
         return None
@@ -426,12 +441,10 @@ def _add_section_features(
     )
 
 
-def _write_zero_span(out_dir: Path, sidecar: dict[str, object]) -> None:
-    path = out_dir / ZERO_SPAN_FILENAME
-    path.write_text(
-        json.dumps(sidecar, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+def _write_zero_span(out_dir: Path, sidecar: dict[str, object]) -> bytes:
+    payload = _pretty_json_bytes(sidecar)
+    (out_dir / ZERO_SPAN_FILENAME).write_bytes(payload)
+    return payload
 
 
 def load_zero_span(out_dir: Path | str) -> dict[str, object]:
@@ -448,13 +461,105 @@ def load_zero_span(out_dir: Path | str) -> dict[str, object]:
     return data
 
 
+def _write_sidecar_only_artifact(
+    out_dir: Path,
+    materialised: _MaterialisedGraph,
+    *,
+    document_keys: Iterable[str],
+) -> None:
+    stale = sorted(path.name for path in out_dir.glob("*.tf"))
+    if (out_dir / ".tf").exists():
+        stale.append(".tf")
+    if stale:
+        raise CorpusBuildError(
+            "sidecar-only build refuses target containing Text-Fabric artifacts: "
+            + ", ".join(stale)
+        )
+
+    sidecar_bytes = _write_zero_span(out_dir, materialised.sidecar)
+    manifest = {
+        "schema": ARTIFACT_MANIFEST_SCHEMA,
+        "kind": "sidecar-only",
+        "tf_loadable": False,
+        "tf_version": TF_VERSION,
+        "slot_type": "sign",
+        "slot_count": 0,
+        "documents": sorted(document_keys),
+        "sidecar": {
+            "path": ZERO_SPAN_FILENAME,
+            "schema": ZERO_SPAN_SCHEMA,
+            "sha256": hashlib.sha256(sidecar_bytes).hexdigest(),
+        },
+    }
+    (out_dir / ARTIFACT_MANIFEST_FILENAME).write_bytes(_pretty_json_bytes(manifest))
+
+
+def load_artifact_manifest(out_dir: Path | str) -> dict[str, object]:
+    """Load and validate a sidecar-only artifact manifest and its bound sidecar."""
+    out_dir = Path(out_dir)
+    path = out_dir / ARTIFACT_MANIFEST_FILENAME
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CorpusBuildError(f"cannot read artifact manifest {path}: {exc}") from exc
+
+    if not isinstance(data, dict) or data.get("schema") != ARTIFACT_MANIFEST_SCHEMA:
+        raise CorpusBuildError(f"unsupported artifact manifest schema in {path}")
+    if data.get("kind") != "sidecar-only" or data.get("tf_loadable") is not False:
+        raise CorpusBuildError(f"invalid sidecar-only artifact marker in {path}")
+    if data.get("slot_type") != "sign" or data.get("slot_count") != 0:
+        raise CorpusBuildError(f"invalid sidecar-only slot declaration in {path}")
+
+    documents = data.get("documents")
+    if (
+        not isinstance(documents, list)
+        or any(not isinstance(item, str) or not item for item in documents)
+        or documents != sorted(set(documents))
+    ):
+        raise CorpusBuildError(f"invalid sidecar-only document identities in {path}")
+
+    sidecar = data.get("sidecar")
+    if not isinstance(sidecar, dict):
+        raise CorpusBuildError(f"invalid sidecar descriptor in {path}")
+    if (
+        sidecar.get("path") != ZERO_SPAN_FILENAME
+        or sidecar.get("schema") != ZERO_SPAN_SCHEMA
+    ):
+        raise CorpusBuildError(f"invalid sidecar descriptor in {path}")
+    expected_hash = sidecar.get("sha256")
+    if (
+        not isinstance(expected_hash, str)
+        or len(expected_hash) != 64
+        or any(char not in "0123456789abcdef" for char in expected_hash)
+    ):
+        raise CorpusBuildError(f"invalid sidecar SHA-256 in {path}")
+
+    sidecar_path = out_dir / ZERO_SPAN_FILENAME
+    try:
+        sidecar_bytes = sidecar_path.read_bytes()
+    except OSError as exc:
+        raise CorpusBuildError(f"cannot read zero-span sidecar {sidecar_path}: {exc}") from exc
+    actual_hash = hashlib.sha256(sidecar_bytes).hexdigest()
+    if actual_hash != expected_hash:
+        raise CorpusBuildError(f"sidecar SHA-256 mismatch for {sidecar_path}")
+    load_zero_span(out_dir)
+    return data
+
+
 def build_tf(
     out_dir: Path | str,
     *,
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
+    allow_sidecar_only: bool = False,
 ) -> CorpusBuildReport:
-    """Build one joined TF dataset plus the lossless zero-span sidecar."""
+    """Build one joined TF dataset plus the lossless zero-span sidecar.
+
+    When ``allow_sidecar_only`` is true, a corpus with zero semantic sign slots
+    is emitted as an explicitly marked sidecar-only artifact. The default stays
+    fail-closed so callers requesting Text-Fabric cannot silently receive a
+    different artifact kind.
+    """
     graph = _Graph()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -679,21 +784,36 @@ def build_tf(
         raise CorpusBuildError(
             f"qualified document keys are not unique: {collision_count} collisions"
         )
-    if max_slot == 0:
+    if max_slot == 0 and not allow_sidecar_only:
         raise CorpusBuildError(
             "Text-Fabric warp cannot be emitted without at least one sign slot"
         )
 
     materialised = graph.materialise(max_slot)
-    tf = Fabric(locations=str(out_dir), silent="deep")
-    if not tf.save(
-        nodeFeatures=materialised.node_features,
-        edgeFeatures=materialised.edge_features,
-        metaData=materialised.meta_data,
-        silent="deep",
-    ):
-        raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
-    _write_zero_span(out_dir, materialised.sidecar)
+    if max_slot == 0:
+        _write_sidecar_only_artifact(
+            out_dir,
+            materialised,
+            document_keys=key_counts,
+        )
+    else:
+        tf = Fabric(locations=str(out_dir), silent="deep")
+        if not tf.save(
+            nodeFeatures=materialised.node_features,
+            edgeFeatures=materialised.edge_features,
+            metaData=materialised.meta_data,
+            silent="deep",
+        ):
+            raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
+        _write_zero_span(out_dir, materialised.sidecar)
+        manifest_path = out_dir / ARTIFACT_MANIFEST_FILENAME
+        if manifest_path.exists():
+            try:
+                manifest_path.unlink()
+            except OSError as exc:
+                raise CorpusBuildError(
+                    f"cannot remove stale sidecar-only manifest {manifest_path}: {exc}"
+                ) from exc
 
     return CorpusBuildReport(
         documents=document_count,
@@ -729,7 +849,16 @@ def build_full_tf(
 
 def load_tf(out_dir: Path | str):
     """Load a generated dataset with the real Text-Fabric API."""
-    tf = Fabric(locations=str(Path(out_dir)), silent="deep")
+    out_dir = Path(out_dir)
+    manifest_path = out_dir / ARTIFACT_MANIFEST_FILENAME
+    if manifest_path.exists():
+        manifest = load_artifact_manifest(out_dir)
+        if manifest["kind"] == "sidecar-only":
+            raise CorpusBuildError(
+                f"sidecar-only artifact in {out_dir} is not loadable as Text-Fabric"
+            )
+
+    tf = Fabric(locations=str(out_dir), silent="deep")
     good = tf.loadAll(silent="deep")
     if not good or tf.api is None:
         raise CorpusBuildError(f"Text-Fabric could not load generated graph in {out_dir}")

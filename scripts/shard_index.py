@@ -1,47 +1,51 @@
 #!/usr/bin/env python3
-"""Split oversized ORACC index JSON files into GitHub-safe shards, and rejoin them.
+"""Split oversized ORACC index JSON files with bounded memory, and rejoin them.
 
-ORACC index files (index-cat.json, index-lem.json, index-txt.json, ...) are a
-single JSON object shaped like:
-
-    {
-      <metadata: type, project, source, license, UTC-timestamp, name, ...>,
-      "keys": [ {"key": ..., "count": ..., "instances": [...]}, ... ],
-      "map":  { "<raw form>": "<normalised form>", ... }        # optional
-    }
-
-`cdli/index-cat.json` is 545 MB, which GitHub refuses to accept (hard limit is
-100 MB per file). This tool shards the "keys" array by the first character of
-each key, so a consumer can still resolve a key to exactly one shard without
-scanning: key "p137994" always lives in keys-p.json.
-
-Each shard is standalone valid JSON and carries the original metadata header,
-so no shard is meaningless on its own.
-
-    split   index-cat.json -o index-cat/     # 1 file  -> N shards
-    join    index-cat/ -o index-cat.json     # N shards -> 1 file
-    verify  index-cat/                       # check shards against manifest
-
-Note on ordering: ORACC emits "keys" in hash order, which carries no meaning.
-Sharding groups by prefix, so `join` produces a semantically identical file
-whose keys are grouped by shard rather than in the original arbitrary order.
-Integrity is therefore checked with an order-independent digest (see below).
-
-Memory: loads the whole file (~6x the file size in RAM; 545 MB needs ~3.5 GB).
+Source/shard payloads are parsed incrementally. A temporary stdlib SQLite spool
+provides disk-backed ordering, duplicate detection, and digest sorting, so heap
+usage depends on parser buffers, retained top-level metadata, and the largest
+single JSON value rather than on total corpus size.
 """
+
+from __future__ import annotations
 
 import argparse
 import hashlib
 import json
 import os
 import shutil
+import sqlite3
 import sys
-from collections import defaultdict
+import tempfile
+from pathlib import Path
 
 MANIFEST = "_index.json"
 KEYS_PREFIX = "keys-"
 MAP_FILE = "map.json"
-DEFAULT_MAX_MB = 90  # GitHub hard-blocks at 100 MB; leave headroom
+DEFAULT_MAX_MB = 90
+STREAM_CHUNK_CHARS = 1 << 20
+
+
+class ShardIndexError(ValueError):
+    pass
+
+
+class IndexFormatError(ShardIndexError):
+    pass
+
+
+class ShardSizeError(ShardIndexError):
+    pass
+
+
+def _unique_object(pairs):
+    """Build a JSON object while rejecting duplicate keys recursively."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise IndexFormatError(f"duplicate JSON object key: {key}")
+        result[key] = value
+    return result
 
 
 def canon(obj):
@@ -49,194 +53,872 @@ def canon(obj):
 
 
 def digest_keys(entries):
-    """Order-independent digest of the keys array."""
-    h = sorted(hashlib.sha1(canon(e).encode()).hexdigest() for e in entries)
-    return hashlib.sha1("".join(h).encode()).hexdigest()
+    """Legacy v1 order-independent digest of a materialized keys iterable."""
+    parts = sorted(hashlib.sha1(canon(e).encode()).hexdigest() for e in entries)
+    return hashlib.sha1("".join(parts).encode()).hexdigest()
 
 
 def digest_map(mapping):
+    """Legacy v1 canonical map digest."""
     return hashlib.sha1(canon(mapping).encode()).hexdigest()
 
 
 def bucket_of(key, depth=1):
-    """Shard label for a key: lowercased ASCII-alphanumeric prefix, else 'other'."""
+    """Lowercased ASCII-alphanumeric prefix, else ``other``."""
     if not key:
         return "other"
-    label = ""
+    out = ""
     for ch in key[:depth].lower():
         if not (ch.isascii() and ch.isalnum()):
             return "other"
-        label += ch
-    return label or "other"
+        out += ch
+    return out or "other"
 
 
 def dump(obj, path):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(obj, f, indent=2, ensure_ascii=False)
+    with open(path, "w", encoding="utf-8") as fp:
+        json.dump(obj, fp, indent=2, ensure_ascii=False)
+
+
+class _JsonStream:
+    """Incremental JSON reader that buffers at most one complete JSON value."""
+
+    def __init__(self, fp, *, chunk_chars=STREAM_CHUNK_CHARS):
+        self.fp = fp
+        self.chunk_chars = max(4, int(chunk_chars))
+        self.decoder = json.JSONDecoder()
+        self.buf = ""
+        self.pos = 0
+        self.eof = False
+
+    def _fill(self):
+        if self.eof:
+            return False
+        if self.pos and (self.pos >= self.chunk_chars or self.pos > len(self.buf) // 2):
+            self.buf = self.buf[self.pos :]
+            self.pos = 0
+        chunk = self.fp.read(self.chunk_chars)
+        if chunk:
+            self.buf += chunk
+            return True
+        self.eof = True
+        return False
+
+    def _ensure(self):
+        while self.pos >= len(self.buf):
+            if not self._fill():
+                return False
+        return True
+
+    def skip_ws(self):
+        while True:
+            while self.pos < len(self.buf) and self.buf[self.pos].isspace():
+                self.pos += 1
+            if self.pos < len(self.buf) or not self._fill():
+                return
+
+    def peek(self):
+        self.skip_ws()
+        return self.buf[self.pos] if self._ensure() else None
+
+    def consume(self, wanted):
+        got = self.peek()
+        if got != wanted:
+            raise IndexFormatError(f"expected {wanted!r}, got {got!r}")
+        self.pos += 1
+
+    def _need_char(self, index):
+        while index >= len(self.buf):
+            if not self._fill():
+                return False
+        return True
+
+    def value(self):
+        """Read one complete JSON value without accepting a partial primitive."""
+        self.skip_ws()
+        if not self._ensure():
+            raise IndexFormatError("unexpected end of JSON input")
+
+        # Drop already-consumed input before scanning. Keeping self.pos at zero
+        # prevents _fill() from compacting a value while the scanner holds
+        # indices into it; memory therefore grows only with this one JSON value.
+        if self.pos:
+            self.buf = self.buf[self.pos :]
+            self.pos = 0
+
+        first = self.buf[0]
+        if first == '"':
+            i = 1
+            escaped = False
+            while True:
+                if not self._need_char(i):
+                    raise IndexFormatError("unterminated JSON string")
+                ch = self.buf[i]
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    end = i + 1
+                    break
+                i += 1
+        elif first in "[{":
+            stack = [first]
+            i = 1
+            in_string = False
+            escaped = False
+            while stack:
+                if not self._need_char(i):
+                    raise IndexFormatError("unexpected end of nested JSON value")
+                ch = self.buf[i]
+                if in_string:
+                    if escaped:
+                        escaped = False
+                    elif ch == "\\":
+                        escaped = True
+                    elif ch == '"':
+                        in_string = False
+                elif ch == '"':
+                    in_string = True
+                elif ch in "[{":
+                    stack.append(ch)
+                elif ch in "]}":
+                    wanted = "[" if ch == "]" else "{"
+                    if stack[-1] != wanted:
+                        raise IndexFormatError(
+                            f"mismatched JSON delimiter: {stack[-1]!r} closed by {ch!r}"
+                        )
+                    stack.pop()
+                i += 1
+            end = i
+        else:
+            # JSON numbers and true/false/null are complete only at a structural
+            # delimiter or whitespace. This avoids accepting the prefix `1`
+            # when a chunk currently ends in `123...`.
+            i = 0
+            while True:
+                if i >= len(self.buf):
+                    if self._fill():
+                        continue
+                    end = i
+                    break
+                ch = self.buf[i]
+                if ch.isspace() or ch in ",]}":
+                    end = i
+                    break
+                i += 1
+            if end == 0:
+                raise IndexFormatError("expected JSON value")
+
+        token = self.buf[:end]
+        try:
+            value = json.loads(token, object_pairs_hook=_unique_object)
+        except json.JSONDecodeError as exc:
+            raise IndexFormatError(
+                f"invalid JSON value near character {exc.pos}: {exc.msg}"
+            ) from exc
+        self.pos = end
+        return value
+
+    def array(self, callback):
+        self.consume("[")
+        if self.peek() == "]":
+            self.pos += 1
+            return
+        while True:
+            callback(self.value())
+            got = self.peek()
+            if got == ",":
+                self.pos += 1
+            elif got == "]":
+                self.pos += 1
+                return
+            else:
+                raise IndexFormatError(f"expected ',' or ']' in array, got {got!r}")
+
+    def obj(self, callback):
+        self.consume("{")
+        if self.peek() == "}":
+            self.pos += 1
+            return
+        while True:
+            key = self.value()
+            if not isinstance(key, str):
+                raise IndexFormatError("JSON object key must be a string")
+            self.consume(":")
+            callback(key, self.value())
+            got = self.peek()
+            if got == ",":
+                self.pos += 1
+            elif got == "}":
+                self.pos += 1
+                return
+            else:
+                raise IndexFormatError(f"expected ',' or '}}' in object, got {got!r}")
+
+    def finish(self):
+        self.skip_ws()
+        if self._ensure():
+            raise IndexFormatError("trailing data after top-level JSON object")
+
+
+def _stream_index(path, on_key=None, on_map=None, *, require_keys=True):
+    """Stream top-level ``keys``/``map`` while retaining ordinary metadata."""
+    meta = {}
+    seen = set()
+    saw_keys = False
+    has_map = False
+    with open(path, encoding="utf-8") as fp:
+        r = _JsonStream(fp)
+        r.consume("{")
+        if r.peek() == "}":
+            r.pos += 1
+        else:
+            while True:
+                field = r.value()
+                if not isinstance(field, str):
+                    raise IndexFormatError("top-level JSON key must be a string")
+                if field in seen:
+                    raise IndexFormatError(f"duplicate top-level field: {field}")
+                seen.add(field)
+                r.consume(":")
+                if field == "keys":
+                    saw_keys = True
+                    r.array(on_key or (lambda _x: None))
+                elif field == "map":
+                    has_map = True
+                    r.obj(on_map or (lambda _k, _v: None))
+                else:
+                    meta[field] = r.value()
+                got = r.peek()
+                if got == ",":
+                    r.pos += 1
+                elif got == "}":
+                    r.pos += 1
+                    break
+                else:
+                    raise IndexFormatError(
+                        f"expected ',' or '}}' at top level, got {got!r}"
+                    )
+        r.finish()
+    if require_keys and not saw_keys:
+        raise IndexFormatError(f"{path}: no top-level 'keys' array")
+    return meta, saw_keys, has_map
+
+
+class _Spool:
+    """Disk-backed state; payload storage is optional for verify/join."""
+
+    def __init__(self, path, *, keep_payload=False):
+        self.keep_payload = keep_payload
+        self.conn = sqlite3.connect(path)
+        self.conn.execute("PRAGMA journal_mode=OFF")
+        self.conn.execute("PRAGMA synchronous=OFF")
+        self.conn.execute("PRAGMA temp_store=FILE")
+        self.conn.execute("PRAGMA cache_size=-8192")
+        self.conn.execute(
+            "CREATE TABLE keys (seq INTEGER PRIMARY KEY, payload TEXT, digest TEXT NOT NULL, "
+            "b1 TEXT, b2 TEXT, final_label TEXT)"
+        )
+        self.conn.execute(
+            "CREATE TABLE map (seq INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE, "
+            "value_json TEXT NOT NULL)"
+        )
+        self.key_count = 0
+        self.map_count = 0
+
+    def add_key(self, entry, *, route=False):
+        if not isinstance(entry, dict):
+            raise IndexFormatError("keys array entries must be JSON objects")
+        key = entry.get("key", "")
+        if not isinstance(key, str):
+            raise IndexFormatError("keys[].key must be a string when present")
+        payload = canon(entry)
+        self.key_count += 1
+        self.conn.execute(
+            "INSERT INTO keys(seq,payload,digest,b1,b2) VALUES(?,?,?,?,?)",
+            (
+                self.key_count,
+                payload if self.keep_payload else None,
+                hashlib.sha1(payload.encode()).hexdigest(),
+                bucket_of(key) if route else None,
+                bucket_of(key, 2) if route else None,
+            ),
+        )
+
+    def add_map(self, key, value):
+        self.map_count += 1
+        try:
+            self.conn.execute(
+                "INSERT INTO map(seq,key,value_json) VALUES(?,?,?)",
+                (self.map_count, key, canon(value)),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise IndexFormatError(f"duplicate map key: {key}") from exc
+
+    def finish(self):
+        self.conn.commit()
+
+    def keys_digest(self):
+        h = hashlib.sha1()
+        for (part,) in self.conn.execute("SELECT digest FROM keys ORDER BY digest"):
+            h.update(part.encode("ascii"))
+        return h.hexdigest()
+
+    def map_digest(self):
+        h = hashlib.sha1(b"{")
+        first = True
+        for key, value in self.conn.execute(
+            "SELECT key,value_json FROM map ORDER BY key COLLATE BINARY"
+        ):
+            if not first:
+                h.update(b", ")
+            h.update(canon(key).encode())
+            h.update(b": ")
+            h.update(value.encode())
+            first = False
+        h.update(b"}")
+        return h.hexdigest()
+
+    def state(self, has_map):
+        self.finish()
+        return (
+            self.key_count,
+            self.keys_digest(),
+            self.map_count if has_map else 0,
+            self.map_digest() if has_map else None,
+        )
+
+    def close(self):
+        self.conn.close()
+
+
+def _field_size(key, value):
+    return len(
+        (
+            json.dumps(key, ensure_ascii=False, separators=(",", ":"))
+            + ":"
+            + json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+        ).encode()
+    )
+
+
+def _shard_size(meta, label, payload_bytes, count):
+    fields = list(meta.items()) + [("section", "keys"), ("shard", label)]
+    size = 2 + len(b'"keys":[]') + payload_bytes + max(0, count - 1)
+    if fields:
+        size += sum(_field_size(k, v) for k, v in fields) + len(fields)
+    return size
+
+
+def _plan_shards(spool, meta, limit):
+    groups = spool.conn.execute(
+        "SELECT b1,COUNT(*),COALESCE(SUM(LENGTH(CAST(payload AS BLOB))),0) "
+        "FROM keys GROUP BY b1 ORDER BY b1"
+    ).fetchall()
+    for b1, count, payload_bytes in groups:
+        if _shard_size(meta, b1, payload_bytes, count) <= limit:
+            spool.conn.execute("UPDATE keys SET final_label=? WHERE b1=?", (b1, b1))
+            continue
+        if b1 == "other":
+            raise ShardSizeError(f"keys-other.json exceeds shard size limit {limit} bytes")
+        subgroups = spool.conn.execute(
+            "SELECT b2,COUNT(*),COALESCE(SUM(LENGTH(CAST(payload AS BLOB))),0) "
+            "FROM keys WHERE b1=? GROUP BY b2 ORDER BY b2",
+            (b1,),
+        ).fetchall()
+        for b2, sub_count, sub_bytes in subgroups:
+            actual = _shard_size(meta, b2, sub_bytes, sub_count)
+            if actual > limit:
+                raise ShardSizeError(
+                    f"keys-{b2}.json would be {actual} bytes, exceeding shard size "
+                    f"limit {limit} bytes"
+                )
+        spool.conn.execute("UPDATE keys SET final_label=b2 WHERE b1=?", (b1,))
+    spool.conn.commit()
+    return [
+        x[0]
+        for x in spool.conn.execute(
+            "SELECT DISTINCT final_label FROM keys ORDER BY final_label"
+        )
+    ]
+
+
+def _write_fields(fp, fields):
+    first = True
+    for key, value in fields:
+        if not first:
+            fp.write(",")
+        fp.write(json.dumps(key, ensure_ascii=False, separators=(",", ":")))
+        fp.write(":")
+        fp.write(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
+        first = False
+    return first
+
+
+def _write_key_shard(path, meta, label, spool):
+    with open(path, "w", encoding="utf-8") as fp:
+        fp.write("{")
+        empty = _write_fields(fp, [*meta.items(), ("section", "keys"), ("shard", label)])
+        if not empty:
+            fp.write(",")
+        fp.write('"keys":[')
+        first = True
+        for (payload,) in spool.conn.execute(
+            "SELECT payload FROM keys WHERE final_label=? ORDER BY seq", (label,)
+        ):
+            if not first:
+                fp.write(",")
+            fp.write(payload)
+            first = False
+        fp.write("]}")
+
+
+def _write_map_shard(path, meta, spool):
+    with open(path, "w", encoding="utf-8") as fp:
+        fp.write("{")
+        empty = _write_fields(fp, [*meta.items(), ("section", "map")])
+        if not empty:
+            fp.write(",")
+        fp.write('"map":{')
+        first = True
+        for key, value in spool.conn.execute(
+            "SELECT key,value_json FROM map ORDER BY seq"
+        ):
+            if not first:
+                fp.write(",")
+            fp.write(json.dumps(key, ensure_ascii=False, separators=(",", ":")))
+            fp.write(":")
+            fp.write(value)
+            first = False
+        fp.write("}}")
+
+
+def _managed_output_name(name):
+    return name in {MANIFEST, MAP_FILE} or (
+        name.startswith(KEYS_PREFIX) and name.endswith(".json")
+    )
+
+
+def _seed_publish_dir(outdir, publish):
+    """Create staged output while retaining unrelated existing directory data."""
+    publish.mkdir()
+    if not outdir.exists():
+        return
+    for child in outdir.iterdir():
+        if _managed_output_name(child.name):
+            continue
+        dest = publish / child.name
+        if child.is_symlink():
+            os.symlink(os.readlink(child), dest, target_is_directory=child.is_dir())
+        elif child.is_dir():
+            shutil.copytree(child, dest, symlinks=True)
+        else:
+            shutil.copy2(child, dest)
+
+
+def _publish_dir(staged, outdir):
+    """Replace a completed directory, restoring the old one on publication failure."""
+    staged = Path(staged)
+    outdir = Path(outdir)
+    if not outdir.exists():
+        os.replace(staged, outdir)
+        return
+
+    backup = Path(
+        tempfile.mkdtemp(prefix=f".{outdir.name}.backup-", dir=outdir.parent)
+    )
+    backup.rmdir()
+    os.replace(outdir, backup)
+    try:
+        os.replace(staged, outdir)
+    except Exception:
+        os.replace(backup, outdir)
+        raise
+    else:
+        shutil.rmtree(backup, ignore_errors=True)
+
+
+def _manifest(indir):
+    with open(Path(indir) / MANIFEST, encoding="utf-8") as fp:
+        result = json.load(fp, object_pairs_hook=_unique_object)
+    split_spec = result.get("split")
+    if not isinstance(split_spec, dict):
+        raise IndexFormatError(f"{indir}: invalid shard manifest")
+
+    shards = split_spec.get("shards")
+    if not isinstance(shards, list):
+        raise IndexFormatError(f"{indir}: manifest split.shards must be a list")
+    if len(shards) != len(set(shards)):
+        raise IndexFormatError(f"{indir}: duplicate shard label in manifest")
+    for label in shards:
+        if not isinstance(label, str):
+            raise IndexFormatError(f"{indir}: shard labels must be strings")
+        valid = label == "other" or (
+            1 <= len(label) <= 2
+            and label.isascii()
+            and label.isalnum()
+            and label == label.lower()
+        )
+        if not valid:
+            raise IndexFormatError(f"{indir}: invalid shard label {label!r}")
+
+    if not isinstance(split_spec.get("has_map"), bool):
+        raise IndexFormatError(f"{indir}: manifest split.has_map must be boolean")
+    return result
+
+
+def _validate_split_paths(src, outdir, *, dry_run):
+    """Reject output choices that could replace source or unrelated files."""
+    if dry_run:
+        return
+    if outdir.exists() and (outdir.is_symlink() or not outdir.is_dir()):
+        raise ShardIndexError(f"output path must be a directory: {outdir}")
+    src_resolved = src.resolve()
+    out_resolved = outdir.resolve()
+    if src_resolved == out_resolved or src_resolved.is_relative_to(out_resolved):
+        raise ShardIndexError(
+            f"output directory must not be the source or contain the source: {outdir}"
+        )
+
+
+def _validate_join_path(indir, out, spec):
+    """Reject a destination that aliases a shard or manifest read by join."""
+    inputs = [Path(indir) / MANIFEST]
+    inputs.extend(
+        Path(indir) / f"{KEYS_PREFIX}{label}.json"
+        for label in spec.get("shards", [])
+    )
+    if spec.get("has_map"):
+        inputs.append(Path(indir) / MAP_FILE)
+    out_resolved = Path(out).resolve()
+    if any(out_resolved == path.resolve() for path in inputs):
+        raise ShardIndexError(
+            f"output destination must not overwrite a shard input: {out}"
+        )
 
 
 def split(src, outdir, max_mb=DEFAULT_MAX_MB, dry_run=False):
-    with open(src, encoding="utf-8") as f:
-        doc = json.load(f)
-
-    if "keys" not in doc:
-        sys.exit(f"{src}: no top-level 'keys' array - not an ORACC index file")
-
-    entries = doc["keys"]
-    mapping = doc.get("map")
-    meta = {k: v for k, v in doc.items() if k not in ("keys", "map")}
-    limit = max_mb * 1024 * 1024
-
-    # Pass 1: one-character buckets, measured by serialised size.
-    buckets = defaultdict(list)
-    sizes = defaultdict(int)
-    for e in entries:
-        b = bucket_of(e.get("key", ""))
-        buckets[b].append(e)
-        sizes[b] += len(canon(e))
-
-    # Pass 2: subdivide any bucket that would still exceed the limit.
-    final = {}
-    for b, ents in buckets.items():
-        if sizes[b] <= limit or b == "other":
-            final[b] = ents
-            continue
-        for e in ents:
-            final.setdefault(bucket_of(e.get("key", ""), depth=2), []).append(e)
-
-    shards = sorted(final)
-    manifest = dict(meta)
-    manifest["split"] = {
-        "tool": "scripts/shard_index.py",
-        "scheme": "keys[] sharded by lowercased alphanumeric key prefix; 'other' = non-alphanumeric or empty key",
-        "source_file": os.path.basename(src),
-        "shards": shards,
-        "has_map": mapping is not None,
-        "note": "join reorders keys by shard; ORACC's original order is hash order and carries no meaning",
-        "verify": {
-            "keys_count": len(entries),
-            "keys_digest": digest_keys(entries),
-            "map_count": len(mapping) if mapping is not None else 0,
-            "map_digest": digest_map(mapping) if mapping is not None else None,
-        },
-    }
+    src = Path(src)
+    outdir = Path(outdir)
+    if max_mb <= 0:
+        raise ShardSizeError("max_mb must be positive")
+    limit = int(max_mb * 1024 * 1024)
+    _validate_split_paths(src, outdir, dry_run=dry_run)
 
     if dry_run:
-        print(f"{len(shards)} shards (dry run, nothing written)")
-        for b in shards:
-            print(f"  {KEYS_PREFIX}{b}.json  {sum(len(canon(e)) for e in final[b])/1048576:7.1f} MB  {len(final[b]):>9,} entries")
-        return
+        temp_context = tempfile.TemporaryDirectory(prefix=".shard-index-")
+    else:
+        outdir.parent.mkdir(parents=True, exist_ok=True)
+        temp_context = tempfile.TemporaryDirectory(
+            prefix=".shard-index-", dir=outdir.parent
+        )
 
-    os.makedirs(outdir, exist_ok=True)
-    dump(manifest, os.path.join(outdir, MANIFEST))
-    if mapping is not None:
-        dump({**meta, "section": "map", "map": mapping}, os.path.join(outdir, MAP_FILE))
-    for b in shards:
-        dump({**meta, "section": "keys", "shard": b, "keys": final[b]},
-             os.path.join(outdir, f"{KEYS_PREFIX}{b}.json"))
+    with temp_context as td:
+        work = Path(td)
+        spool = _Spool(work / "spool.sqlite", keep_payload=True)
+        try:
+            meta, _saw_keys, has_map = _stream_index(
+                src,
+                lambda e: spool.add_key(e, route=True),
+                spool.add_map,
+            )
+            spool.finish()
+            shards = _plan_shards(spool, meta, limit)
+            manifest = {
+                **meta,
+                "split": {
+                    "tool": "scripts/shard_index.py",
+                    "scheme": "keys[] sharded by lowercased alphanumeric key prefix; 'other' = non-alphanumeric or empty key",
+                    "source_file": src.name,
+                    "shards": shards,
+                    "has_map": has_map,
+                    "note": "join reorders keys by shard; ORACC's original order is hash order and carries no meaning",
+                    "verify": {
+                        "keys_count": spool.key_count,
+                        "keys_digest": spool.keys_digest(),
+                        "map_count": spool.map_count if has_map else 0,
+                        "map_digest": spool.map_digest() if has_map else None,
+                    },
+                },
+            }
+            if dry_run:
+                print(f"{len(shards)} shards (dry run, nothing written)")
+                for label in shards:
+                    count, size = spool.conn.execute(
+                        "SELECT COUNT(*),COALESCE(SUM(LENGTH(CAST(payload AS BLOB))),0) "
+                        "FROM keys WHERE final_label=?",
+                        (label,),
+                    ).fetchone()
+                    print(
+                        f"  {KEYS_PREFIX}{label}.json  "
+                        f"{_shard_size(meta,label,size,count)/1048576:7.1f} MB  "
+                        f"{count:>9,} entries"
+                    )
+                return
 
-    total = sum(os.path.getsize(os.path.join(outdir, p)) for p in os.listdir(outdir))
-    biggest = max(os.listdir(outdir), key=lambda p: os.path.getsize(os.path.join(outdir, p)))
+            publish = work / "publish"
+            _seed_publish_dir(outdir, publish)
+            dump(manifest, publish / MANIFEST)
+            if has_map:
+                _write_map_shard(publish / MAP_FILE, meta, spool)
+            for label in shards:
+                _write_key_shard(
+                    publish / f"{KEYS_PREFIX}{label}.json", meta, label, spool
+                )
+            managed_files = [
+                p for p in publish.iterdir() if _managed_output_name(p.name)
+            ]
+            oversized = [p.name for p in managed_files if p.stat().st_size > limit]
+            if oversized:
+                raise ShardSizeError(
+                    f"output exceeds shard size limit {limit} bytes: {', '.join(oversized)}"
+                )
+        finally:
+            spool.close()
+
+        if verify(publish, quiet=True):
+            raise ShardIndexError("staged shards failed manifest verification")
+        total = sum(p.stat().st_size for p in managed_files)
+        biggest_path = max(managed_files, key=lambda p: p.stat().st_size)
+        biggest = biggest_path.name
+        biggest_size = biggest_path.stat().st_size
+        _publish_dir(publish, outdir)
+
     print(f"split {src} -> {outdir}")
-    print(f"  {len(shards)} key shards{' + map.json' if mapping is not None else ''} + {MANIFEST}")
-    print(f"  {os.path.getsize(src)/1048576:.1f} MB -> {total/1048576:.1f} MB in {len(os.listdir(outdir))} files")
-    print(f"  largest: {biggest} ({os.path.getsize(os.path.join(outdir, biggest))/1048576:.1f} MB)")
+    print(f"  {len(shards)} key shards{' + map.json' if has_map else ''} + {MANIFEST}")
+    print(
+        f"  {src.stat().st_size/1048576:.1f} MB -> {total/1048576:.1f} MB "
+        f"in {len(managed_files)} managed files"
+    )
+    print(f"  largest: {biggest} ({biggest_size/1048576:.1f} MB)")
 
 
-def load_shards(indir):
-    with open(os.path.join(indir, MANIFEST), encoding="utf-8") as f:
-        manifest = json.load(f)
+def _source_metadata(meta):
+    """Strip shard-only routing fields, leaving source metadata."""
+    return {k: v for k, v in meta.items() if k not in {"section", "shard"}}
+
+
+def _check_metadata(path, meta, expected_meta):
+    if expected_meta is not None and _source_metadata(meta) != expected_meta:
+        raise IndexFormatError(f"{path}: shard metadata does not match manifest")
+
+
+def _stream_key_shard(path, label, callback, expected_meta=None):
+    meta, saw_keys, has_map = _stream_index(path, callback, require_keys=True)
+    if has_map or meta.get("section") != "keys" or meta.get("shard") != label:
+        raise IndexFormatError(f"{path}: key shard metadata does not match {label!r}")
+    _check_metadata(path, meta, expected_meta)
+    return saw_keys
+
+
+def _stream_map_shard(path, callback, expected_meta=None):
+    meta, saw_keys, has_map = _stream_index(
+        path, on_map=callback, require_keys=False
+    )
+    if saw_keys or not has_map or meta.get("section") != "map":
+        raise IndexFormatError(f"{path}: invalid map shard")
+    _check_metadata(path, meta, expected_meta)
+
+
+def _shard_state(indir, spec, db_path, expected_meta=None):
+    spool = _Spool(db_path)
+    try:
+        for label in spec.get("shards", []):
+            _stream_key_shard(
+                Path(indir) / f"{KEYS_PREFIX}{label}.json",
+                label,
+                spool.add_key,
+                expected_meta,
+            )
+        has_map = bool(spec.get("has_map"))
+        if has_map:
+            _stream_map_shard(
+                Path(indir) / MAP_FILE, spool.add_map, expected_meta
+            )
+        return spool.state(has_map)
+    finally:
+        spool.close()
+
+
+def _source_state(path, db_path):
+    spool = _Spool(db_path)
+    try:
+        meta, _saw_keys, has_map = _stream_index(path, spool.add_key, spool.add_map)
+        return meta, spool.state(has_map)
+    finally:
+        spool.close()
+
+
+def verify(indir, against=None, *, quiet=False):
+    indir = Path(indir)
+    manifest = _manifest(indir)
     spec = manifest["split"]
-    entries = []
-    for b in spec["shards"]:
-        with open(os.path.join(indir, f"{KEYS_PREFIX}{b}.json"), encoding="utf-8") as f:
-            entries.extend(json.load(f)["keys"])
-    mapping = None
-    if spec.get("has_map"):
-        with open(os.path.join(indir, MAP_FILE), encoding="utf-8") as f:
-            mapping = json.load(f)["map"]
-    return manifest, spec, entries, mapping
-
-
-def verify(indir, against=None):
-    manifest, spec, entries, mapping = load_shards(indir)
-    want = spec["verify"]
-    ok = True
-    for label, got, exp in (
-        ("keys count ", len(entries), want["keys_count"]),
-        ("keys digest", digest_keys(entries), want["keys_digest"]),
-        ("map count  ", len(mapping) if mapping else 0, want["map_count"]),
-        ("map digest ", digest_map(mapping) if mapping else None, want["map_digest"]),
-    ):
-        mark = "ok  " if got == exp else "FAIL"
-        if got != exp:
-            ok = False
-        shown = got if not isinstance(got, int) else f"{got:,}"
-        print(f"  [{mark}] {label}  {shown}")
-
-    if against:
-        with open(against, encoding="utf-8") as f:
-            orig = json.load(f)
-        same_keys = digest_keys(orig["keys"]) == digest_keys(entries)
-        same_map = digest_map(orig.get("map") or {}) == digest_map(mapping or {})
-        print(f"  [{'ok  ' if same_keys else 'FAIL'}] keys match {against}")
-        print(f"  [{'ok  ' if same_map else 'FAIL'}] map  match {against}")
-        ok = ok and same_keys and same_map
-
-    print("VERIFIED" if ok else "VERIFICATION FAILED")
+    meta = {k: v for k, v in manifest.items() if k != "split"}
+    want = spec.get("verify", {})
+    expected = (
+        want.get("keys_count"),
+        want.get("keys_digest"),
+        want.get("map_count"),
+        want.get("map_digest"),
+    )
+    with tempfile.TemporaryDirectory(prefix=".shard-verify-", dir=indir.parent) as td:
+        got = _shard_state(indir, spec, Path(td) / "shards.sqlite", meta)
+        if against:
+            original_meta, original = _source_state(
+                against, Path(td) / "source.sqlite"
+            )
+        else:
+            original_meta, original = None, None
+    labels = ("keys count ", "keys digest", "map count  ", "map digest ")
+    ok = got == expected
+    if not quiet:
+        for label, actual, exp in zip(labels, got, expected):
+            shown = f"{actual:,}" if isinstance(actual, int) else actual
+            print(f"  [{'ok  ' if actual == exp else 'FAIL'}] {label}  {shown}")
+    if original is not None:
+        same_keys, same_map = original[:2] == got[:2], original[2:] == got[2:]
+        same_meta = original_meta == meta
+        ok = ok and same_keys and same_map and same_meta
+        if not quiet:
+            print(f"  [{'ok  ' if same_keys else 'FAIL'}] keys match {against}")
+            print(f"  [{'ok  ' if same_map else 'FAIL'}] map  match {against}")
+            print(f"  [{'ok  ' if same_meta else 'FAIL'}] metadata match {against}")
+    if not quiet:
+        print("VERIFIED" if ok else "VERIFICATION FAILED")
     return 0 if ok else 1
 
 
 def join(indir, out):
-    manifest, spec, entries, mapping = load_shards(indir)
+    indir = Path(indir)
+    out = Path(out)
+    manifest = _manifest(indir)
+    spec = manifest["split"]
+    _validate_join_path(indir, out, spec)
+    want = spec.get("verify", {})
+    expected = (
+        want.get("keys_count"), want.get("keys_digest"),
+        want.get("map_count"), want.get("map_digest"),
+    )
     meta = {k: v for k, v in manifest.items() if k != "split"}
-    doc = dict(meta)
-    doc["keys"] = entries
-    if mapping is not None:
-        doc["map"] = mapping
-    dump(doc, out)
-    want = spec["verify"]
-    ok = len(entries) == want["keys_count"] and digest_keys(entries) == want["keys_digest"]
-    print(f"join {indir} -> {out}  ({len(entries):,} keys, {os.path.getsize(out)/1048576:.1f} MB)")
-    print("VERIFIED against manifest" if ok else "WARNING: digest mismatch")
-    return 0 if ok else 1
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".shard-join-", dir=out.parent) as td:
+        work = Path(td)
+        tmp = work / "joined.json"
+        spool = _Spool(work / "state.sqlite")
+        try:
+            with open(tmp, "w", encoding="utf-8") as fp:
+                fp.write("{")
+                empty = _write_fields(fp, meta.items())
+                if not empty:
+                    fp.write(",")
+                fp.write('"keys":[')
+                first = True
+
+                def emit_key(entry):
+                    nonlocal first
+                    if not first:
+                        fp.write(",")
+                    fp.write(json.dumps(entry, ensure_ascii=False, separators=(",", ":")))
+                    first = False
+                    spool.add_key(entry)
+
+                for label in spec.get("shards", []):
+                    _stream_key_shard(
+                        indir / f"{KEYS_PREFIX}{label}.json",
+                        label,
+                        emit_key,
+                        meta,
+                    )
+                fp.write("]")
+                has_map = bool(spec.get("has_map"))
+                if has_map:
+                    fp.write(',"map":{')
+                    first_map = True
+
+                    def emit_map(key, value):
+                        nonlocal first_map
+                        if not first_map:
+                            fp.write(",")
+                        fp.write(json.dumps(key, ensure_ascii=False, separators=(",", ":")))
+                        fp.write(":")
+                        fp.write(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
+                        first_map = False
+                        spool.add_map(key, value)
+
+                    _stream_map_shard(indir / MAP_FILE, emit_map, meta)
+                    fp.write("}")
+                fp.write("}")
+            got = spool.state(has_map)
+        finally:
+            spool.close()
+        if got != expected:
+            print(f"join {indir} -> {out}  ({got[0]:,} keys, staged digest mismatch)")
+            print("WARNING: digest mismatch")
+            return 1
+        size = tmp.stat().st_size
+        os.replace(tmp, out)
+    print(f"join {indir} -> {out}  ({got[0]:,} keys, {size/1048576:.1f} MB)")
+    print("VERIFIED against manifest")
+    return 0
+
+
+def load_shards(indir):
+    """Compatibility helper; unlike CLI operations this intentionally materializes."""
+    indir = Path(indir)
+    manifest = _manifest(indir)
+    spec = manifest["split"]
+    meta = {k: v for k, v in manifest.items() if k != "split"}
+    entries = []
+    for label in spec.get("shards", []):
+        _stream_key_shard(
+            indir / f"{KEYS_PREFIX}{label}.json", label, entries.append, meta
+        )
+    mapping = None
+    if spec.get("has_map"):
+        mapping = {}
+
+        def add_map(key, value):
+            if key in mapping:
+                raise IndexFormatError(f"duplicate map key: {key}")
+            mapping[key] = value
+
+        _stream_map_shard(indir / MAP_FILE, add_map, meta)
+    return manifest, spec, entries, mapping
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
-
-    s = sub.add_parser("split", help="shard a large ORACC index file")
+    s = sub.add_parser("split")
     s.add_argument("input")
-    s.add_argument("-o", "--outdir", help="default: input path without .json")
+    s.add_argument("-o", "--outdir")
     s.add_argument("--max-mb", type=float, default=DEFAULT_MAX_MB)
     s.add_argument("--dry-run", action="store_true")
-    s.add_argument("--replace", action="store_true",
-                   help="delete the source file once the shards verify")
-
-    j = sub.add_parser("join", help="reassemble shards into one file")
+    s.add_argument("--replace", action="store_true")
+    j = sub.add_parser("join")
     j.add_argument("indir")
     j.add_argument("-o", "--output", required=True)
-
-    v = sub.add_parser("verify", help="check shards against their manifest")
+    v = sub.add_parser("verify")
     v.add_argument("indir")
-    v.add_argument("--against", help="also compare against an original index file")
-
-    a = ap.parse_args()
-    if a.cmd == "split":
-        default = a.input[:-5] if a.input.endswith(".json") else a.input + ".shards"
-        outdir = a.outdir or default
-        split(a.input, outdir, a.max_mb, a.dry_run)
-        if a.replace and not a.dry_run:
-            if verify(outdir) == 0:
-                os.remove(a.input)
-                print(f"removed {a.input}")
-            else:
-                sys.exit("shards did not verify; source file left in place")
-        return 0
-    if a.cmd == "join":
-        return join(a.indir, a.output)
-    return verify(a.indir, a.against)
+    v.add_argument("--against")
+    args = ap.parse_args()
+    try:
+        if args.cmd == "split":
+            default = args.input[:-5] if args.input.endswith(".json") else args.input + ".shards"
+            outdir = args.outdir or default
+            split(args.input, outdir, args.max_mb, args.dry_run)
+            if args.replace and not args.dry_run:
+                if verify(outdir):
+                    raise ShardIndexError("shards did not verify; source file left in place")
+                os.remove(args.input)
+                print(f"removed {args.input}")
+            return 0
+        if args.cmd == "join":
+            return join(args.indir, args.output)
+        return verify(args.indir, args.against)
+    except ShardIndexError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 if __name__ == "__main__":

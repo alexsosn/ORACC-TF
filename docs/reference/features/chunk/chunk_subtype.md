@@ -3,7 +3,7 @@
 - kind: `node`
 - scope: `chunk`
 - value type: `str`
-- populated values: `1842`
+- populated values: `1846`
 - distinct values: `1`
 - description: ORACC chunk subtype preserved from the source structure.
 
@@ -11,7 +11,7 @@
 
 | value | count |
 |---|---:|
-| `body` | 1842 |
+| `body` | 1846 |
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

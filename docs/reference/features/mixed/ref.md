@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `mixed`
 - value type: `str`
-- populated values: `379509`
-- distinct values: `326906`
+- populated values: `380257`
+- distinct values: `327403`
 - description: Source reference string preserved from ORACC.
 
 ## Value frequencies
@@ -13,7 +13,7 @@ Showing the 20 most frequent values.
 
 | value | count |
 |---|---:|
-| `` | 1602 |
+| `` | 1828 |
 | `Q009276.4.2` | 14 |
 | `Q004738.230.7` | 7 |
 | `Q003701.160.2` | 4 |

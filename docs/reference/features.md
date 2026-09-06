@@ -58,7 +58,7 @@ Generated from TF metadata; do not hand-edit generated fields.
 - [`subgenre`](features/document/subgenre.md) — ORACC catalogue subgenre value preserved as text.
 - [`subproject`](features/document/subproject.md) — ORACC subproject that supplied the document.
 - [`supergenre`](features/document/supergenre.md) — ORACC catalogue supergenre value preserved as text.
-- [`synthetic`](features/mixed/synthetic.md) — Integer flag marking a section node synthesized by ORACC-TF to preserve source hierarchy.
+- [`synthetic`](features/mixed/synthetic.md) — Integer flag marking ORACC-TF-synthesized section nodes or technical empty sign slots; synthetic slots carry no fabricated cuneiform content.
 - [`text_id`](features/document/text_id.md) — ORACC text identifier without the subproject qualifier.
 - [`utf8`](features/sign/utf8.md) — Unicode cuneiform string supplied by ORACC for this sign, when available.
 - [`word_id`](features/sign/word_id.md) — Source ORACC word identifier containing this sign.

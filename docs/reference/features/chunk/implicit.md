@@ -3,7 +3,7 @@
 - kind: `node`
 - scope: `chunk`
 - value type: `str`
-- populated values: `5205`
+- populated values: `5221`
 - distinct values: `1`
 - description: Source section implicit marker preserved from ORACC.
 
@@ -11,7 +11,7 @@
 
 | value | count |
 |---|---:|
-| `yes` | 5205 |
+| `yes` | 5221 |
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

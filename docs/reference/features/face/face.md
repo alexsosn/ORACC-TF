@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `face`
 - value type: `str`
-- populated values: `2036`
-- distinct values: `1895`
+- populated values: `2312`
+- distinct values: `2168`
 - description: Source face identifier used as the Text-Fabric face section value.
 
 ## Value frequencies

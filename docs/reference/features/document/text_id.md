@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `document`
 - value type: `str`
-- populated values: `1842`
-- distinct values: `1704`
+- populated values: `2078`
+- distinct values: `1938`
 - description: ORACC text identifier without the subproject qualifier.
 
 ## Value frequencies

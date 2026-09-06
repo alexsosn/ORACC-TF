@@ -47,11 +47,20 @@ jobs:
 
           root = Path('/tmp/small-source')
           root.mkdir()
-          (root / 'otype.tf').write_text('@node\n@valueType=str\n\nword\n', encoding='utf-8')
-          (root / 'oslots.tf').write_text('@edge\n\n1\t1\n', encoding='utf-8')
-          (root / 'otext.tf').write_text('@config\n@sectionTypes=word\n\n', encoding='utf-8')
+          (root / 'otype.tf').write_text(
+              '@node\n@valueType=str\n\n1\tword\n2\tline\n', encoding='utf-8'
+          )
+          (root / 'oslots.tf').write_text(
+              '@edge\n@valueType=str\n\n1\n', encoding='utf-8'
+          )
+          (root / 'otext.tf').write_text(
+              '@config\n@sectionTypes=line\n@sectionFeatures=label\n', encoding='utf-8'
+          )
+          (root / 'label.tf').write_text(
+              '@node\n@valueType=str\n\n2\t1\n', encoding='utf-8'
+          )
           (root / 'zero-span.json').write_text('{}\n', encoding='utf-8')
-          (root / 'form.tf').write_text('@node\n@valueType=str\n\na\n', encoding='utf-8')
+          (root / 'form.tf').write_text('@node\n@valueType=str\n\n1\ta\n', encoding='utf-8')
           distribution.stage_distribution(
               root,
               Path('/tmp/minimal-small'),

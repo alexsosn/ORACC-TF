@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Measure Agora GitStore cold acquisition for one pinned TF repository root.
+"""Measure Agora GitStore acquisition for one pinned TF repository root.
 
-The benchmark is transport-agnostic, but the P-005 CI gate serves local bare
-repositories over loopback so Linux /proc/net/dev provides reproducible protocol
-byte accounting without depending on mutable public-network conditions.
+The P-005 CI gate serves local bare repositories over loopback so Linux
+``/proc/net/dev`` provides protocol-byte accounting without mutable public-
+network noise. Cold acquisition and warm/no-change checks are reported
+separately.
 """
 
 from __future__ import annotations
@@ -77,6 +78,15 @@ def benchmark(
     if api.F.otype.maxSlot < 1:
         raise RuntimeError("materialized Text-Fabric dataset has no slots")
 
+    _, warm_metadata_seconds, warm_metadata_network_bytes = elapsed_and_network(
+        lambda: store.ensure_metadata(repository, cache_key=cache_key, ref=ref),
+        interface=interface,
+    )
+    _, warm_materialize_seconds, warm_materialize_network_bytes = elapsed_and_network(
+        lambda: store.materialize(repo, tf_path, ref),
+        interface=interface,
+    )
+
     return {
         "schema_version": 1,
         "label": label,
@@ -88,12 +98,18 @@ def benchmark(
         "metadata_network_bytes": metadata_network_bytes,
         "materialize_network_bytes": materialize_network_bytes,
         "total_network_bytes": metadata_network_bytes + materialize_network_bytes,
+        "warm_metadata_network_bytes": warm_metadata_network_bytes,
+        "warm_materialize_network_bytes": warm_materialize_network_bytes,
+        "warm_total_network_bytes": warm_metadata_network_bytes + warm_materialize_network_bytes,
         "metadata_seconds": round(metadata_seconds, 6),
         "tree_seconds": round(tree_seconds, 6),
         "materialize_seconds": round(materialize_seconds, 6),
         "load_seconds": round(load_seconds, 6),
+        "warm_metadata_seconds": round(warm_metadata_seconds, 6),
+        "warm_materialize_seconds": round(warm_materialize_seconds, 6),
         "metadata_cache_bytes": directory_size(repo),
         "snapshot_bytes": directory_size(snapshot),
+        "total_cache_bytes": directory_size(cache_dir),
         "max_slot": api.F.otype.maxSlot,
     }
 

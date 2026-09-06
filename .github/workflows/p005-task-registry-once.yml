@@ -1,0 +1,51 @@
+name: p005-task-registry-once
+
+on:
+  push:
+    branches: [codex/issue60-distribution-architecture]
+    paths: [.github/workflows/p005-task-registry-once.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/issue60-distribution-architecture
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Register P-005.PH0
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('docs/registry.json')
+          reg = json.loads(p.read_text(encoding='utf-8'))
+          task = {
+              'id': 'P-005.PH0',
+              'title': 'Local distribution contract and benchmark harness',
+              'plan': 'P-005',
+              'spec': '§PH0',
+              'priority': 'P0',
+              'blocked_by': ['P-001.M6'],
+              'status': 'todo',
+              'issue': 60,
+              'evidence_file': 'docs/task-state/P-005.PH0.json',
+          }
+          tasks = {t['id']: t for t in reg['tasks']}
+          tasks[task['id']] = task
+          reg['tasks'] = [tasks[k] for k in sorted(tasks)]
+          p.write_text(json.dumps(reg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+      - name: Commit task registration
+        run: |
+          git config user.name 'oracc-tf-bot'
+          git config user.email 'oracc-tf-bot@users.noreply.github.com'
+          git add docs/registry.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'docs(P-005): register PH0 distribution task'
+          git push origin HEAD:codex/issue60-distribution-architecture

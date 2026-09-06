@@ -2,8 +2,13 @@
 
 ## Text-Fabric zero-span architecture
 
-Before designing or changing Text-Fabric serialization, read `docs/architecture/ADR-0001-empty-slots-not-sidecars.md`.
+Before designing or changing Text-Fabric serialization, read `docs/architecture/ADR-0001-empty-slots-not-sidecars.md`. For implementation/review cases, also use `docs/architecture/agent-checklist.md` and `docs/architecture/precedents.md`.
 
-Normative rule: a source entity that belongs to the textual graph but has no ordinary semantic slot is represented inside Text-Fabric with an explicit empty/synthetic slot. Do not invent a zero-span sidecar as a workaround for the TF `oslots` invariant. Sidecars for textual zero-span nodes require an explicit corpus-specific ADR proving empty-slot anchoring is semantically invalid.
+Normative rule: an **independently positioned source entity in the textual sequence** that has no ordinary semantic slot remains inside Text-Fabric through an explicit empty/synthetic slot. Do not invent a zero-span sidecar merely to work around the TF `oslots` invariant.
 
-Converters and reports must distinguish semantic/source slots, synthetic empty slots, and total TF slots. Never borrow a neighbouring real slot or fabricate visible source content.
+- Ancestors/containers reuse descendant real or empty anchors; do not create one synthetic slot per ancestor.
+- Non-textual graph abstractions anchor through occurrences/loci or a documented technical anchor when required; that anchor is not textual content.
+- Converters and reports distinguish semantic/source slots, synthetic empty slots, and total TF slots.
+- Never borrow a neighbouring real slot for an independently positioned textual entity.
+- Never fabricate visible source content for an empty anchor.
+- Sidecars are for data genuinely outside the TF graph/API contract. A sidecar for textual zero-span nodes requires an explicit corpus-specific ADR proving empty-slot anchoring is semantically invalid and must pass independent review.

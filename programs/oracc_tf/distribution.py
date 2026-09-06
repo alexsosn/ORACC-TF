@@ -1,8 +1,9 @@
 """Deterministic local staging for lightweight ORACC-TF distributions.
 
-P-005 keeps semantic dataset identity separate from upstream archive layout and
-from Text-Fabric schema version. This module deliberately stops at a validated
-local distribution tree; external repository mutation belongs to a later phase.
+P-005 keeps semantic dataset identity separate from upstream archive layout,
+Text-Fabric schema version, and immutable publication release identity. This
+module deliberately stops at a validated local distribution tree; external
+repository mutation belongs to a later phase.
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ class InvalidDistribution(DistributionError):
 
 
 class ImmutableDistributionConflict(DistributionError):
-    """An immutable dataset/version identity already exists with other bytes."""
+    """An immutable release identity already exists with different state."""
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,13 @@ def distribution_root(output_base: Path | str, dataset: str, tf_version: str) ->
     return paths.publishable_tf_root(output_base, dataset, tf_version)
 
 
+def _validate_release_id(release_id: str) -> None:
+    if not isinstance(release_id, str) or not release_id or release_id != release_id.strip():
+        raise ValueError(f"invalid release id: {release_id!r}")
+    if any(ord(char) < 0x20 for char in release_id):
+        raise ValueError(f"invalid release id: {release_id!r}")
+
+
 def _validate_source(source: Path) -> tuple[Path, ...]:
     if not source.is_dir():
         raise InvalidDistribution(f"TF source is not a directory: {source}")
@@ -117,6 +125,24 @@ def _validate_provenance(builder_commit: str, source_state: str | None) -> None:
         raise ValueError(f"invalid source state: {source_state!r}")
 
 
+def _release_record(
+    *,
+    tf_version: str,
+    tf_root: str,
+    builder_commit: str,
+    source_state: str | None,
+    tree_digest: str,
+) -> dict[str, object]:
+    return {
+        "tf_version": tf_version,
+        "tf_root": tf_root,
+        "builder_commit": builder_commit,
+        "source_state": source_state,
+        "provenance_complete": source_state is not None,
+        "tree_digest": tree_digest,
+    }
+
+
 def _manifest_bytes(manifest: dict[str, object]) -> bytes:
     return (json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
@@ -131,7 +157,28 @@ def _read_existing_manifest(stage: Path) -> dict[str, object] | None:
         raise InvalidDistribution(f"existing distribution manifest is unreadable: {path}") from exc
     if not isinstance(value, dict):
         raise InvalidDistribution("existing distribution manifest must be a JSON object")
+    releases_value = value.get("releases")
+    if releases_value is not None and not isinstance(releases_value, dict):
+        raise InvalidDistribution("existing distribution releases ledger must be a JSON object")
     return value
+
+
+def _current_manifest(
+    *,
+    dataset: str,
+    repository: str,
+    release_id: str,
+    record: dict[str, object],
+    ledger: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "schema_version": 2,
+        "dataset": dataset,
+        "repository": repository,
+        "release_id": release_id,
+        **record,
+        "releases": ledger,
+    }
 
 
 def stage_distribution(
@@ -139,17 +186,21 @@ def stage_distribution(
     stage: Path | str,
     *,
     dataset: str,
+    release_id: str,
     tf_version: str,
     builder_commit: str,
     source_state: str | None,
 ) -> dict[str, object]:
-    """Stage one immutable semantic dataset/version into a minimal tree.
+    """Stage one immutable release into a minimal semantic-dataset tree.
 
-    The operation validates all inputs before making a version visible. Repeating
-    the same identity with the same bytes is a no-op; attempting to reuse that
-    identity for different bytes fails closed.
+    ``release_id`` identifies immutable publication state; ``tf_version`` only
+    identifies the TF schema/layout. Replaying an earlier matching release is a
+    no-op even when a newer release is current. A new release may replace bytes
+    at the same TF-version root while the manifest ledger retains immutable
+    digest/provenance evidence for older releases.
     """
     identity = distribution_identity(dataset)
+    _validate_release_id(release_id)
     root_probe = distribution_root(Path("."), dataset, tf_version)
     _validate_provenance(builder_commit, source_state)
 
@@ -158,55 +209,64 @@ def stage_distribution(
     files = _validate_source(source_path)
     tree_digest = _tree_digest(source_path, files)
     tf_root = root_probe.as_posix().removeprefix("./")
-
-    manifest: dict[str, object] = {
-        "schema_version": 1,
-        "dataset": dataset,
-        "repository": identity.repository,
-        "tf_version": tf_version,
-        "tf_root": tf_root,
-        "builder_commit": builder_commit,
-        "source_state": source_state,
-        "provenance_complete": source_state is not None,
-        "tree_digest": tree_digest,
-    }
+    record = _release_record(
+        tf_version=tf_version,
+        tf_root=tf_root,
+        builder_commit=builder_commit,
+        source_state=source_state,
+        tree_digest=tree_digest,
+    )
 
     existing = _read_existing_manifest(stage_path)
+    ledger: dict[str, object] = {}
     if existing is not None:
-        same_identity = (
-            existing.get("dataset") == dataset and existing.get("tf_version") == tf_version
-        )
-        if same_identity:
-            if existing == manifest:
-                existing_root = stage_path / tf_root
-                _validate_source(existing_root)
-                if _tree_digest(existing_root, _validate_source(existing_root)) != tree_digest:
-                    raise ImmutableDistributionConflict(
-                        f"existing immutable distribution {dataset}@{tf_version} has changed bytes"
-                    )
-                return manifest
+        if existing.get("dataset") != dataset or existing.get("repository") != identity.repository:
             raise ImmutableDistributionConflict(
-                f"immutable distribution {dataset}@{tf_version} already exists with different state"
+                f"staging tree already belongs to another distribution: {existing.get('dataset')!r}"
             )
+        raw_ledger = existing.get("releases", {})
+        assert isinstance(raw_ledger, dict)
+        ledger = dict(raw_ledger)
+        old_record = ledger.get(release_id)
+        if old_record is not None:
+            if old_record != record:
+                raise ImmutableDistributionConflict(
+                    f"immutable release {dataset}@{release_id} already exists with different state"
+                )
+            if existing.get("release_id") == release_id:
+                existing_root = stage_path / tf_root
+                existing_files = _validate_source(existing_root)
+                if _tree_digest(existing_root, existing_files) != tree_digest:
+                    raise ImmutableDistributionConflict(
+                        f"current immutable release {dataset}@{release_id} has changed bytes"
+                    )
+            return existing
+
+    ledger[release_id] = record
+    manifest = _current_manifest(
+        dataset=dataset,
+        repository=identity.repository,
+        release_id=release_id,
+        record=record,
+        ledger=ledger,
+    )
 
     stage_path.parent.mkdir(parents=True, exist_ok=True)
     temp = Path(tempfile.mkdtemp(prefix=f".{stage_path.name}.stage-", dir=stage_path.parent))
     try:
         if stage_path.exists():
-            # Preserve already staged version roots while changing only the
-            # top-level current manifest and adding this new version.
             shutil.copytree(stage_path, temp, dirs_exist_ok=True)
+
         target_root = distribution_root(temp, dataset, tf_version)
         if target_root.exists():
-            existing_files = _validate_source(target_root)
-            if _tree_digest(target_root, existing_files) != tree_digest:
-                raise ImmutableDistributionConflict(
-                    f"immutable distribution {dataset}@{tf_version} already exists with different bytes"
-                )
-        else:
-            target_root.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(source_path, target_root)
-        _validate_source(target_root)
+            shutil.rmtree(target_root)
+        target_root.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source_path, target_root)
+
+        target_files = _validate_source(target_root)
+        if _tree_digest(target_root, target_files) != tree_digest:
+            raise InvalidDistribution("staged TF bytes do not match the validated source tree")
+
         (temp / "README.md").write_text(
             f"# {dataset}\n\nGenerated ORACC-TF distribution.\n",
             encoding="utf-8",

@@ -65,6 +65,26 @@ scripts/shard_index.py join data/cdli/index-cat -o data/cdli/index-cat.json
 Before any push, `scripts/check_repo_limits.py` reports anything GitHub would
 reject.
 
+## Zero-sign subsets
+
+Text-Fabric requires at least one real slot, so `oracc_tf.corpus.build_tf()`
+continues to reject an all-zero-sign subset by default. A caller that explicitly
+needs source preservation for such a subset can pass `allow_sidecar_only=True`.
+For a zero-sign input this writes only:
+
+- `zero-span.json` — the complete source-facing node/relation graph;
+- `oracc-tf-artifact.json` — a deterministic manifest with
+  `kind: "sidecar-only"`, `tf_loadable: false`, qualified document identities,
+  and the SHA-256 of the exact sidecar bytes.
+
+No sign slot, `oslots` position, or Text-Fabric feature file is fabricated.
+Sidecar-only output refuses a target containing stale `*.tf` files or a `.tf/`
+cache. `oracc_tf.corpus.load_artifact_manifest()` validates the manifest,
+sidecar hash, document identities, and relation closure;
+`oracc_tf.corpus.load_tf()` rejects the artifact explicitly instead of treating
+it as a loadable TF dataset. Non-zero builds keep the ordinary Text-Fabric
+layout and existing `zero-span.json` behavior.
+
 ## Documentation
 
 All documentation lives under [`docs/`](docs/), organised by type with stable

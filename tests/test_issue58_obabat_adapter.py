@@ -21,6 +21,7 @@ def test_obabat_identity_and_overlap_provenance_are_exact():
 
     assert obabat.SOURCE_DATASET == "obabat/atletters"
     assert obabat.PUBLICATION_SLUG == "obabat-atletters"
+    assert provenance.source_revision == "2406a204c40bb9beec999174ddab2efaa10ff565"
     assert provenance.source_blob == "f3dae9f3e713683ebc4c49075ff8475a44e3b1f8"
     assert provenance.nino_revision == "cd8ffe826a598af4715fd724387d9834ec1300d8"
     assert provenance.nino_blob == "9d9d07d0f5f80f03aadae43e87bedddcc2d05ad1"
@@ -51,6 +52,16 @@ def test_overlap_provenance_fails_closed_on_source_blob_drift(tmp_path):
 
     with pytest.raises(obabat.OBABATProvenanceError, match="blob"):
         obabat.load_overlap_provenance(fake_data, OVERLAP)
+
+
+def test_overlap_provenance_fails_closed_on_source_revision_drift(tmp_path):
+    manifest = json.loads(OVERLAP.read_text(encoding="utf-8"))
+    manifest["sources"]["oracc_tf"]["revision"] = "0" * 40
+    changed = tmp_path / "overlap.json"
+    changed.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(obabat.OBABATProvenanceError, match="revision|source"):
+        obabat.load_overlap_provenance(DATA, changed)
 
 
 def test_overlap_provenance_missing_or_malformed_fails_closed(tmp_path):

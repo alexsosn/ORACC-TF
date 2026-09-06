@@ -38,7 +38,7 @@ def _edition(text_id: str, body: list[dict[str, object]], *, subproject="test/un
             "cdl": body,
         }],
     }
-    words = sum(1 for item in body if item.get("node") == "l")
+
     # Count nested words too for the dedicated nested-container fixture.
     def count_words(node: object) -> int:
         if not isinstance(node, dict):
@@ -47,13 +47,13 @@ def _edition(text_id: str, body: list[dict[str, object]], *, subproject="test/un
             count_words(child) for child in node.get("cdl", [])
         )
 
-    words = sum(count_words(item) for item in body)
+    word_count = sum(count_words(item) for item in body)
     return loader.Edition(
         subproject=subproject,
         text_id=text_id,
         path=Path(f"/{subproject}/corpusjson/{text_id}.json"),
         doc=doc,
-        word_count=words,
+        word_count=word_count,
     )
 
 
@@ -185,7 +185,11 @@ def test_wholly_empty_document_gets_one_invisible_anchor_and_is_tf_loadable(tmp_
     assert api.F.document.v(document) == "test/unit:QEMPTYDOC"
     assert _slots(api, document) == (1,)
     assert api.F.synthetic.v(1) == 1
-    assert api.F.utf8.v(1) is None
+    # In an all-synthetic corpus the strongest no-fabrication guarantee is
+    # that source-text features do not exist at all.
+    assert not hasattr(api.F, "utf8")
+    assert not hasattr(api.F, "readingu")
+    assert not hasattr(api.F, "sign_json")
 
 
 def test_zero_sign_lexeme_uses_occurrence_anchor_without_fabricated_text(tmp_path):
@@ -206,7 +210,7 @@ def test_zero_sign_lexeme_uses_occurrence_anchor_without_fabricated_text(tmp_pat
     lex = next(iter(api.F.otype.s("lex")))
     assert _slots(api, word) == _slots(api, lex) == (1,)
     assert api.F.synthetic.v(1) == 1
-    assert api.F.utf8.v(1) is None
+    assert not hasattr(api.F, "utf8")
 
 
 def test_new_build_does_not_emit_zero_span_sidecar_when_every_node_is_in_tf(tmp_path):

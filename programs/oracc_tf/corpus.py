@@ -7,7 +7,7 @@ Text-Fabric graph. ``sign`` is the TF slot type.
 Text-Fabric requires every non-slot warp node to map to at least one slot.
 ORACC legitimately contains textual entities with no semantic sign extent.
 Following the accepted project-family architecture, those textual positions
-remain inside TF through explicit synthetic empty ``sign`` slots.  Synthetic
+remain inside TF through explicit synthetic empty ``sign`` slots. Synthetic
 slots are technical positional anchors, never fabricated cuneiform signs.
 Semantic/source sign cardinality is therefore tracked separately from total TF
 slot cardinality.
@@ -36,7 +36,7 @@ from . import (
 )
 
 
-# Legacy reader contract.  Current builds do not emit a zero-span sidecar;
+# Legacy reader contract. Current builds do not emit a zero-span sidecar;
 # these names remain public so older artifacts can still be inspected.
 ZERO_SPAN_SCHEMA = "oracc-tf-zero-span-v1"
 ZERO_SPAN_FILENAME = "zero-span.json"
@@ -223,10 +223,7 @@ class _Graph:
 
     def materialise(self, max_slot: int) -> _MaterialisedGraph:
         all_nodes = set(self.non_slot_otype)
-        omitted = {
-            node for node in all_nodes
-            if not self.non_slot_oslots.get(node)
-        }
+        omitted = {node for node in all_nodes if not self.non_slot_oslots.get(node)}
         zero_counts = Counter(self.non_slot_otype[node] for node in omitted)
         if omitted:
             detail = ", ".join(
@@ -243,10 +240,7 @@ class _Graph:
         tf_counts["sign"] = max_slot
 
         otype: dict[int, str] = {slot: "sign" for slot in range(1, max_slot + 1)}
-        otype.update({
-            remap[node]: self.non_slot_otype[node]
-            for node in included
-        })
+        otype.update({remap[node]: self.non_slot_otype[node] for node in included})
 
         node_features: dict[str, dict[int, str | int]] = {"otype": otype}
         all_names = set(self.slot_features) | set(self.node_features)
@@ -284,6 +278,15 @@ class _Graph:
             if tf_data:
                 edge_features[name] = tf_data
 
+        # Text-Fabric eagerly resolves declared section features at load time.
+        # Sparse standalone subsets (notably a metadata-only document) may not
+        # contain face/line nodes, so only declare levels that actually exist.
+        section_levels = [
+            otype for otype in ("document", "face", "line")
+            if tf_counts.get(otype, 0)
+        ]
+        section_spec = ",".join(section_levels)
+
         meta_data: dict[str, dict[str, object]] = {
             "": {
                 "name": "ORACC-TF RIAO + RINAP",
@@ -291,8 +294,8 @@ class _Graph:
                 "version": TF_VERSION,
             },
             "otext": {
-                "sectionTypes": "document,face,line",
-                "sectionFeatures": "document,face,line",
+                "sectionTypes": section_spec,
+                "sectionFeatures": section_spec,
             },
             "otype": {
                 "valueType": "str",
@@ -657,7 +660,7 @@ def build_tf(
     ):
         raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
 
-    # A successful current-format build is self-contained in TF.  Remove a
+    # A successful current-format build is self-contained in TF. Remove a
     # stale sidecar only after the replacement TF graph has saved successfully.
     (out_dir / ZERO_SPAN_FILENAME).unlink(missing_ok=True)
 

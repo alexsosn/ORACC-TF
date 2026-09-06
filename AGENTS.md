@@ -2,7 +2,7 @@
 
 ## Text-Fabric zero-span architecture
 
-Before designing or changing Text-Fabric serialization, read `docs/architecture/ADR-0001-empty-slots-not-sidecars.md`. For implementation/review cases, also use `docs/architecture/agent-checklist.md` and `docs/architecture/precedents.md`.
+Before designing or changing Text-Fabric serialization, read `docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md`.
 
 Normative rule: an **independently positioned source entity in the textual sequence** that has no ordinary semantic slot remains inside Text-Fabric through an explicit empty/synthetic slot. Do not invent a zero-span sidecar merely to work around the TF `oslots` invariant.
 

@@ -24,7 +24,10 @@ OVERLAP_SIDECAR = "overlap-provenance.json"
 DEFAULT_OVERLAP_PATH = paths.DOCS / "research" / "issue-39-obabat-overlap.json"
 DATASET_NAME = "ORACC-TF OBABAT / atletters"
 
+EXPECTED_SOURCE_REPOSITORY = "alexsosn/ORACC-TF"
+EXPECTED_SOURCE_REVISION = "2406a204c40bb9beec999174ddab2efaa10ff565"
 EXPECTED_SOURCE_BLOB = "f3dae9f3e713683ebc4c49075ff8475a44e3b1f8"
+EXPECTED_NINO_REPOSITORY = "Nino-cunei/oldbabylonian"
 EXPECTED_NINO_REVISION = "cd8ffe826a598af4715fd724387d9834ec1300d8"
 EXPECTED_NINO_BLOB = "9d9d07d0f5f80f03aadae43e87bedddcc2d05ad1"
 EXPECTED_DOCUMENTS = 121
@@ -43,6 +46,7 @@ class OBABATProvenanceError(ValueError):
 class OverlapProvenance:
     """Validated immutable source/reference identities and document partition."""
 
+    source_revision: str
     source_blob: str
     nino_revision: str
     nino_blob: str
@@ -121,6 +125,15 @@ def load_overlap_provenance(
     if not isinstance(oracc_source, Mapping) or not isinstance(nino_source, Mapping):
         raise OBABATProvenanceError("overlap manifest is missing frozen source records")
 
+    source_revision = oracc_source.get("revision")
+    if (
+        oracc_source.get("repository") != EXPECTED_SOURCE_REPOSITORY
+        or source_revision != EXPECTED_SOURCE_REVISION
+    ):
+        raise OBABATProvenanceError(
+            "OBABAT source repository/revision does not match the accepted issue #39 pin"
+        )
+
     source_path = data / SOURCE_DATASET / "corpus.json"
     actual_blob = _git_blob_sha(source_path)
     manifest_blob = oracc_source.get("blob_sha")
@@ -133,8 +146,14 @@ def load_overlap_provenance(
 
     nino_revision = nino_source.get("revision")
     nino_blob = nino_source.get("blob_sha")
-    if nino_revision != EXPECTED_NINO_REVISION or nino_blob != EXPECTED_NINO_BLOB:
-        raise OBABATProvenanceError("pinned Nino revision/blob does not match issue #39")
+    if (
+        nino_source.get("repository") != EXPECTED_NINO_REPOSITORY
+        or nino_revision != EXPECTED_NINO_REVISION
+        or nino_blob != EXPECTED_NINO_BLOB
+    ):
+        raise OBABATProvenanceError(
+            "pinned Nino repository/revision/blob does not match issue #39"
+        )
     if nino_source.get("path") != "tf/1.0.6/pnumber.tf":
         raise OBABATProvenanceError("overlap manifest has an unexpected Nino pnumber path")
 
@@ -178,6 +197,7 @@ def load_overlap_provenance(
         raise OBABATProvenanceError("overlap partition cardinality is not the accepted 86/35 split")
 
     return OverlapProvenance(
+        source_revision=str(source_revision),
         source_blob=actual_blob,
         nino_revision=str(nino_revision),
         nino_blob=str(nino_blob),
@@ -232,9 +252,11 @@ def _write_overlap_sidecar(out_dir: Path, provenance: OverlapProvenance) -> None
     payload = {
         "schema_version": 1,
         "source_dataset": SOURCE_DATASET,
+        "source_repository": EXPECTED_SOURCE_REPOSITORY,
+        "source_revision": provenance.source_revision,
         "source_blob": provenance.source_blob,
         "nino_reference": {
-            "repository": "Nino-cunei/oldbabylonian",
+            "repository": EXPECTED_NINO_REPOSITORY,
             "revision": provenance.nino_revision,
             "pnumber_blob": provenance.nino_blob,
         },

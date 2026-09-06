@@ -542,8 +542,29 @@ def _publish_dir(staged, outdir):
 def _manifest(indir):
     with open(Path(indir) / MANIFEST, encoding="utf-8") as fp:
         result = json.load(fp, object_pairs_hook=_unique_object)
-    if not isinstance(result.get("split"), dict):
+    split_spec = result.get("split")
+    if not isinstance(split_spec, dict):
         raise IndexFormatError(f"{indir}: invalid shard manifest")
+
+    shards = split_spec.get("shards")
+    if not isinstance(shards, list):
+        raise IndexFormatError(f"{indir}: manifest split.shards must be a list")
+    if len(shards) != len(set(shards)):
+        raise IndexFormatError(f"{indir}: duplicate shard label in manifest")
+    for label in shards:
+        if not isinstance(label, str):
+            raise IndexFormatError(f"{indir}: shard labels must be strings")
+        valid = label == "other" or (
+            1 <= len(label) <= 2
+            and label.isascii()
+            and label.isalnum()
+            and label == label.lower()
+        )
+        if not valid:
+            raise IndexFormatError(f"{indir}: invalid shard label {label!r}")
+
+    if not isinstance(split_spec.get("has_map"), bool):
+        raise IndexFormatError(f"{indir}: manifest split.has_map must be boolean")
     return result
 
 

@@ -46,11 +46,13 @@ def test_stage_distribution_is_minimal_deterministic_and_provenance_bound(tmp_pa
         source,
         stage,
         dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
         tf_version="0.2.0",
         builder_commit="a" * 40,
         source_state="sha256:" + "b" * 64,
     )
     assert manifest["dataset"] == "assyrian-royal-inscriptions"
+    assert manifest["release_id"] == "release-a"
     assert manifest["tf_version"] == "0.2.0"
     assert manifest["builder_commit"] == "a" * 40
     assert manifest["source_state"] == "sha256:" + "b" * 64
@@ -71,17 +73,19 @@ def test_stage_distribution_rejects_unregistered_semantic_dataset(tmp_path: Path
             source,
             tmp_path / "stage",
             dataset="not-registered",
+            release_id="release-a",
             tf_version="0.2.0",
             builder_commit="a" * 40,
             source_state=None,
         )
 
 
-def test_same_identity_same_bytes_is_idempotent_but_different_bytes_conflict(tmp_path: Path) -> None:
+def test_same_release_same_bytes_is_idempotent_but_different_bytes_conflict(tmp_path: Path) -> None:
     stage = tmp_path / "stage"
     first = _minimal_tf(tmp_path / "first")
     kwargs = dict(
         dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
         tf_version="0.2.0",
         builder_commit="a" * 40,
         source_state="sha256:" + "b" * 64,
@@ -95,6 +99,62 @@ def test_same_identity_same_bytes_is_idempotent_but_different_bytes_conflict(tmp
         distribution.stage_distribution(changed, stage, **kwargs)
 
 
+def test_new_release_can_update_same_tf_version_without_rewriting_old_release(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    first = _minimal_tf(tmp_path / "first", marker="one")
+    second = _minimal_tf(tmp_path / "second", marker="two")
+
+    release_a = distribution.stage_distribution(
+        first,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    release_b = distribution.stage_distribution(
+        second,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-b",
+        tf_version="0.2.0",
+        builder_commit="b" * 40,
+        source_state="sha256:" + "2" * 64,
+    )
+
+    assert release_a["release_id"] == "release-a"
+    assert release_b["release_id"] == "release-b"
+    assert release_b["releases"]["release-a"]["tree_digest"] == release_a["tree_digest"]
+    assert release_b["releases"]["release-b"]["tree_digest"] == release_b["tree_digest"]
+    current_feature = stage / release_b["tf_root"] / "feature.tf"
+    assert current_feature.read_text(encoding="utf-8").endswith("two\n")
+
+    replay = distribution.stage_distribution(
+        first,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    assert replay["release_id"] == "release-b"
+    assert current_feature.read_text(encoding="utf-8").endswith("two\n")
+
+    altered_old = _minimal_tf(tmp_path / "altered-old", marker="tampered")
+    with pytest.raises(distribution.ImmutableDistributionConflict):
+        distribution.stage_distribution(
+            altered_old,
+            stage,
+            dataset="assyrian-royal-inscriptions",
+            release_id="release-a",
+            tf_version="0.2.0",
+            builder_commit="a" * 40,
+            source_state="sha256:" + "1" * 64,
+        )
+
+
 def test_incomplete_warp_never_becomes_visible(tmp_path: Path) -> None:
     source = tmp_path / "source"
     source.mkdir()
@@ -105,6 +165,7 @@ def test_incomplete_warp_never_becomes_visible(tmp_path: Path) -> None:
             source,
             stage,
             dataset="assyrian-royal-inscriptions",
+            release_id="release-a",
             tf_version="0.2.0",
             builder_commit="a" * 40,
             source_state=None,
@@ -118,6 +179,7 @@ def test_unavailable_source_state_is_explicit_not_fabricated(tmp_path: Path) -> 
         source,
         tmp_path / "stage",
         dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
         tf_version="0.2.0",
         builder_commit="a" * 40,
         source_state=None,

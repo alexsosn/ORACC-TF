@@ -64,6 +64,19 @@ def test_stage_distribution_is_minimal_deterministic_and_provenance_bound(tmp_pa
     assert disk == manifest
 
 
+def test_stage_distribution_rejects_unregistered_semantic_dataset(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    with pytest.raises(ValueError, match="unregistered dataset"):
+        distribution.stage_distribution(
+            source,
+            tmp_path / "stage",
+            dataset="not-registered",
+            tf_version="0.2.0",
+            builder_commit="a" * 40,
+            source_state=None,
+        )
+
+
 def test_same_identity_same_bytes_is_idempotent_but_different_bytes_conflict(tmp_path: Path) -> None:
     stage = tmp_path / "stage"
     first = _minimal_tf(tmp_path / "first")

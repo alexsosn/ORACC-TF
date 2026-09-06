@@ -3,13 +3,12 @@
 Acceptance criteria from P-001 §5 M6:
 - 320,975 source words; 2,078 parseable documents / 1,845 populated / 233 stubs;
 - composite document keys are unique;
-- every sign belongs to exactly one word and every word to exactly one line;
+- every semantic sign belongs to exactly one word and every word to exactly one line;
 - every populated document has a valid document/face/line section path;
-- the M1 sign count stays pinned and Unicode coverage is frozen here;
+- the M1 semantic sign count and Unicode coverage remain source-facing invariants;
 - generated ``otype``/``oslots`` load cleanly in Text-Fabric;
-- source entities with zero sign extent remain losslessly queryable in a
-  deterministic sidecar because Text-Fabric warp nodes cannot have empty
-  ``oslots``.
+- source entities with zero semantic sign extent remain losslessly queryable in
+  TF through explicit synthetic empty slots, never a sidecar fallback.
 """
 
 from __future__ import annotations
@@ -64,7 +63,7 @@ def _edition(subproject: str, text_id: str, *, signless: bool = False) -> loader
 
 
 def _mixed_span_edition(subproject: str, text_id: str) -> loader.Edition:
-    """One zero-span line followed by a slotted line on the same face."""
+    """One zero-sign line followed by a semantic-sign line on the same face."""
     doc = {
         "type": "cdl",
         "textid": text_id,
@@ -119,7 +118,18 @@ def _canonical_source_gdl(features: object) -> str | None:
     )
 
 
-def test_slotless_source_word_survives_losslessly_without_fabricated_slot(tmp_path):
+def _nodes_by_source(api, otype: str) -> dict[str, int]:
+    return {
+        api.F.source_id.v(node): node
+        for node in api.F.otype.s(otype)
+    }
+
+
+def _slots(api, node: int) -> tuple[int, ...]:
+    return tuple(api.L.d(node, otype="sign"))
+
+
+def test_slotless_source_word_survives_losslessly_inside_tf(tmp_path):
     edition = _edition("test/unit", "QTEST", signless=True)
     report = corpus.build_tf(
         tmp_path,
@@ -131,42 +141,29 @@ def test_slotless_source_word_survives_losslessly_without_fabricated_slot(tmp_pa
     assert report.populated_documents == 1
     assert report.words == 2
     assert report.signs == 1
+    assert report.synthetic_slots == 1
+    assert report.tf_slots == 2
     assert report.slotless_words == 1
     assert report.sign_word_membership_errors == 0
     assert report.word_line_membership_errors == 0
     assert report.section_path_errors == 0
-
-    # Text-Fabric 13.1 has a hard warp invariant that every non-slot node maps
-    # to at least one slot. The source word with an empty sign span therefore
-    # must not be assigned an invented/borrowed sign just to enter otype/oslots.
-    assert report.tf_words == 1
-    assert report.zero_span_words == 1
+    assert report.tf_words == 2
+    assert report.zero_span_words == 0
 
     api = corpus.load_tf(tmp_path)
-    word_nodes = api.F.otype.s("word")
-    by_source = {api.F.source_id.v(node): node for node in word_nodes}
-    assert set(by_source) == {"QTEST.l1"}
+    by_source = _nodes_by_source(api, "word")
+    assert set(by_source) == {"QTEST.l0", "QTEST.l1"}
+    assert _slots(api, by_source["QTEST.l0"]) == (1,)
+    assert _slots(api, by_source["QTEST.l1"]) == (2,)
+    assert api.F.synthetic.v(1) == 1
+    assert api.F.utf8.v(1) is None
+    assert api.F.utf8.v(2) == "𒀀"
     assert api.T.sectionFromNode(1) == (
         "test/unit:QTEST",
         "QTEST.face.1",
         "QTEST.1",
     )
-
-    zero_span = corpus.load_zero_span(tmp_path)
-    nodes = [node for node in zero_span["nodes"] if node["otype"] == "word"]
-    assert len(nodes) == 1
-    slotless = nodes[0]
-    assert slotless["features"]["source_id"] == "QTEST.l0"
-    assert slotless["features"]["document_key"] == "test/unit:QTEST"
-    assert slotless["features"]["gdl_json"] == "[]"
-
-    relation_edges = [
-        edge for edge in zero_span["edges"]
-        if edge["source"] == slotless["key"] and edge["feature"] == "word_line"
-    ]
-    assert len(relation_edges) == 1
-    assert len(relation_edges[0]["targets"]) == 1
-    assert relation_edges[0]["targets"][0].endswith(":QTEST.1")
+    assert not (tmp_path / corpus.ZERO_SPAN_FILENAME).exists()
 
 
 def test_persisted_gdl_distinguishes_absent_empty_and_null(tmp_path):
@@ -185,19 +182,19 @@ def test_persisted_gdl_distinguishes_absent_empty_and_null(tmp_path):
         metadata_index=metadata.MetadataIndex.empty(),
     )
 
-    zero_span = corpus.load_zero_span(tmp_path)
+    api = corpus.load_tf(tmp_path)
     by_document = {
-        node["features"]["document_key"]: node["features"]
-        for node in zero_span["nodes"]
-        if node["otype"] == "word"
+        api.F.document_key.v(node): api.F.gdl_json.v(node)
+        for node in api.F.otype.s("word")
+        if api.F.source_id.v(node).endswith(".l0")
     }
 
-    assert "gdl_json" not in by_document["test/unit:QABSENT"]
-    assert by_document["test/unit:QEMPTY"]["gdl_json"] == "[]"
-    assert by_document["test/unit:QNULL"]["gdl_json"] == "null"
+    assert by_document["test/unit:QABSENT"] is None
+    assert by_document["test/unit:QEMPTY"] == "[]"
+    assert by_document["test/unit:QNULL"] == "null"
 
 
-def test_zero_span_relation_chain_crosses_sidecar_and_tf_losslessly(tmp_path):
+def test_zero_sign_relation_chain_stays_inside_tf_losslessly(tmp_path):
     edition = _mixed_span_edition("test/unit", "QCHAIN")
     report = corpus.build_tf(
         tmp_path,
@@ -206,38 +203,30 @@ def test_zero_span_relation_chain_crosses_sidecar_and_tf_losslessly(tmp_path):
     )
 
     assert report.signs == 1
-    assert report.zero_span_counts["word"] == 1
-    assert report.zero_span_counts["line"] == 1
+    assert report.synthetic_slots == 1
+    assert report.tf_slots == 2
+    assert report.zero_span_counts == {}
+    assert report.tf_node_counts["word"] == 2
+    assert report.tf_node_counts["line"] == 2
     assert report.tf_node_counts["face"] == 1
 
-    zero_span = corpus.load_zero_span(tmp_path)
-    side_nodes = {node["key"]: node for node in zero_span["nodes"]}
-    word_key = "word:test/unit:QCHAIN:QCHAIN.l0"
-    line_key = "line:test/unit:QCHAIN:QCHAIN.1"
-    face_key = "face:test/unit:QCHAIN:QCHAIN.face.1"
-
-    assert side_nodes[word_key]["features"]["gdl_json"] == "[]"
-    assert side_nodes[line_key]["features"]["source_id"] == "QCHAIN.1"
-
-    side_edges = {
-        (edge["feature"], edge["source"]): tuple(edge["targets"])
-        for edge in zero_span["edges"]
-    }
-    assert side_edges[("word_line", word_key)] == (line_key,)
-    assert side_edges[("line_face", line_key)] == (face_key,)
-
-    # The sidecar target key is reproducibly resolvable back to the slotted TF
-    # face using the same qualified document identity + source id.
     api = corpus.load_tf(tmp_path)
-    tf_faces = [
-        node for node in api.F.otype.s("face")
-        if api.F.document_key.v(node) == "test/unit:QCHAIN"
-        and api.F.source_id.v(node) == "QCHAIN.face.1"
-    ]
-    assert len(tf_faces) == 1
+    words_by_source = _nodes_by_source(api, "word")
+    lines_by_source = _nodes_by_source(api, "line")
+    faces_by_source = _nodes_by_source(api, "face")
+    word = words_by_source["QCHAIN.l0"]
+    line = lines_by_source["QCHAIN.1"]
+    face = faces_by_source["QCHAIN.face.1"]
+
+    assert _slots(api, word) == (1,)
+    assert _slots(api, line) == (1,)
+    assert _slots(api, face) == (1, 2)
+    assert tuple(api.E.word_line.f(word)) == (line,)
+    assert tuple(api.E.line_face.f(line)) == (face,)
+    assert not (tmp_path / corpus.ZERO_SPAN_FILENAME).exists()
 
 
-def test_zero_span_sidecar_is_byte_deterministic(tmp_path):
+def test_empty_slot_tf_is_byte_deterministic(tmp_path):
     edition = _edition("test/unit", "QTEST", signless=True)
     left = tmp_path / "left"
     right = tmp_path / "right"
@@ -248,9 +237,12 @@ def test_zero_span_sidecar_is_byte_deterministic(tmp_path):
             metadata_index=metadata.MetadataIndex.empty(),
         )
 
-    assert (left / corpus.ZERO_SPAN_FILENAME).read_bytes() == (
-        right / corpus.ZERO_SPAN_FILENAME
-    ).read_bytes()
+    left_files = {path.name: path.read_bytes() for path in left.glob("*.tf")}
+    right_files = {path.name: path.read_bytes() for path in right.glob("*.tf")}
+    assert left_files
+    assert left_files == right_files
+    assert not (left / corpus.ZERO_SPAN_FILENAME).exists()
+    assert not (right / corpus.ZERO_SPAN_FILENAME).exists()
 
 
 def test_same_q_number_in_two_subprojects_stays_two_documents(tmp_path):
@@ -294,69 +286,22 @@ def test_joined_corpus_invariants_and_tf_warp_load(tmp_path):
     assert report.sign_word_membership_errors == 0
     assert report.word_line_membership_errors == 0
     assert report.section_path_errors == 0
+    assert report.zero_span_counts == {}
 
-    assert report.tf_node_counts == {
-        "chunk": 13388,
-        "column": 723,
-        "document": 1842,
-        "face": 2036,
-        "lex": 8023,
-        "line": 56084,
-        "phrase": 4499,
-        "sign": 792651,
-        "word": 320680,
-    }
-    assert report.zero_span_counts == {
-        "chunk": 256,
-        "column": 35,
-        "document": 236,
-        "face": 276,
-        "lex": 2,
-        "line": 142,
-        "word": 295,
-    }
-    assert report.zero_span_nodes == 1242
-    assert report.tf_words + report.zero_span_words == report.words
-    assert report.tf_documents + report.zero_span_documents == report.documents
-    assert report.tf_lines + report.zero_span_counts["line"] == report.lines
-    assert report.tf_lexemes + report.zero_span_counts["lex"] == report.lexemes
+    # Measurement gate for ADR-0001 migration.  The next commit pins the exact
+    # corpus-wide synthetic/total slot counts from this diagnostic RED run.
+    assert report.synthetic_slots == -1, report.report()
 
     api = corpus.load_tf(tmp_path)
-    assert api.F.otype.maxSlot == 792651
-    assert len(api.F.otype.s("document")) == 1842
-    assert len(api.F.otype.s("word")) == 320680
-    assert len(api.F.otype.s("line")) == 56084
-    assert len(api.F.otype.s("lex")) == 8023
+    assert len(api.F.otype.s("document")) == report.documents
+    assert len(api.F.otype.s("word")) == report.words
+    assert len(api.F.otype.s("line")) == report.lines
+    assert len(api.F.otype.s("lex")) == report.lexemes
 
-    zero_span = corpus.load_zero_span(tmp_path)
-    assert zero_span["schema"] == "oracc-tf-zero-span-v1"
-    assert len(zero_span["nodes"]) == 1242
-
-    populated_zero_span_documents = sorted(
-        node["features"]["document"]
-        for node in zero_span["nodes"]
-        if node["otype"] == "document" and node["features"].get("populated") == 1
-    )
-    assert populated_zero_span_documents == [
-        "rinap/rinap1:Q003633",
-        "rinap/rinap2:Q006646",
-        "rinap/rinap4:Q003344",
-    ]
-
-    # M7 source-preservation contract: the persisted word domain is the union
-    # of TF warp words and sidecar words, and every stored GDL serialisation
-    # must match the source representation exactly. Bare source ids are not
-    # sufficient because rinap5/rinap5p1 reuse Q-numbers.
     stored_gdl: dict[tuple[str, str], str | None] = {
         (api.F.document_key.v(node), api.F.source_id.v(node)): api.F.gdl_json.v(node)
         for node in api.F.otype.s("word")
     }
-    stored_gdl.update({
-        (node["features"]["document_key"], node["features"]["source_id"]):
-            node["features"].get("gdl_json")
-        for node in zero_span["nodes"]
-        if node["otype"] == "word"
-    })
     assert len(stored_gdl) == report.words
 
     checked = 0

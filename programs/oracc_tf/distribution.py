@@ -149,7 +149,7 @@ def stage_distribution(
     the same identity with the same bytes is a no-op; attempting to reuse that
     identity for different bytes fails closed.
     """
-    repository_name(dataset)
+    identity = distribution_identity(dataset)
     root_probe = distribution_root(Path("."), dataset, tf_version)
     _validate_provenance(builder_commit, source_state)
 
@@ -162,7 +162,7 @@ def stage_distribution(
     manifest: dict[str, object] = {
         "schema_version": 1,
         "dataset": dataset,
-        "repository": repository_name(dataset),
+        "repository": identity.repository,
         "tf_version": tf_version,
         "tf_root": tf_root,
         "builder_commit": builder_commit,

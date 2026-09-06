@@ -461,6 +461,73 @@ def load_zero_span(out_dir: Path | str) -> dict[str, object]:
     return data
 
 
+def _validate_sidecar_only_graph(
+    sidecar: dict[str, object],
+    *,
+    path: Path,
+) -> list[str]:
+    """Validate closure and document identity for a complete sidecar-only graph."""
+    nodes = sidecar["nodes"]
+    edges = sidecar["edges"]
+    assert isinstance(nodes, list)
+    assert isinstance(edges, list)
+
+    node_keys: set[str] = set()
+    document_keys: list[str] = []
+    for node in nodes:
+        if not isinstance(node, dict):
+            raise CorpusBuildError(f"invalid sidecar-only node in {path}")
+        key = node.get("key")
+        otype = node.get("otype")
+        features = node.get("features")
+        if (
+            not isinstance(key, str)
+            or not key
+            or not isinstance(otype, str)
+            or not otype
+            or not isinstance(features, dict)
+        ):
+            raise CorpusBuildError(f"invalid sidecar-only node in {path}")
+        if key in node_keys:
+            raise CorpusBuildError(f"duplicate sidecar-only node key {key!r} in {path}")
+        node_keys.add(key)
+
+        if otype == "document":
+            identity = features.get("document") or features.get("document_key")
+            if not isinstance(identity, str) or not identity:
+                raise CorpusBuildError(f"invalid sidecar-only document identity in {path}")
+            if key != f"document:{identity}":
+                raise CorpusBuildError(
+                    f"sidecar-only document key {key!r} disagrees with identity {identity!r}"
+                )
+            document_keys.append(identity)
+
+    for edge in edges:
+        if not isinstance(edge, dict):
+            raise CorpusBuildError(f"invalid sidecar-only relation in {path}")
+        feature = edge.get("feature")
+        source = edge.get("source")
+        targets = edge.get("targets")
+        if (
+            not isinstance(feature, str)
+            or not feature
+            or not isinstance(source, str)
+            or not source
+            or not isinstance(targets, list)
+            or any(not isinstance(target, str) or not target for target in targets)
+        ):
+            raise CorpusBuildError(f"invalid sidecar-only relation in {path}")
+        missing = sorted(
+            {key for key in (source, *targets) if key not in node_keys}
+        )
+        if missing:
+            raise CorpusBuildError(
+                f"dangling sidecar relation in {path}: {feature!r} references {missing[:5]!r}"
+            )
+
+    return sorted(document_keys)
+
+
 def _write_sidecar_only_artifact(
     out_dir: Path,
     materialised: _MaterialisedGraph,
@@ -542,7 +609,13 @@ def load_artifact_manifest(out_dir: Path | str) -> dict[str, object]:
     actual_hash = hashlib.sha256(sidecar_bytes).hexdigest()
     if actual_hash != expected_hash:
         raise CorpusBuildError(f"sidecar SHA-256 mismatch for {sidecar_path}")
-    load_zero_span(out_dir)
+
+    sidecar_data = load_zero_span(out_dir)
+    sidecar_documents = _validate_sidecar_only_graph(sidecar_data, path=sidecar_path)
+    if documents != sidecar_documents:
+        raise CorpusBuildError(
+            f"sidecar-only document identities do not match sidecar {sidecar_path}"
+        )
     return data
 
 

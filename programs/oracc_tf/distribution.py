@@ -16,13 +16,14 @@ import re
 import shutil
 import tempfile
 
-from . import paths, releases
+from . import corpus, paths, releases
 
 
 _REPOSITORY_DATASET_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SOURCE_STATE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _REQUIRED_FILES = ("otype.tf", "oslots.tf", "otext.tf", "zero-span.json")
+_FORBIDDEN_PAYLOAD_PARTS = frozenset({"data", "programs", "docs"})
 
 
 class DistributionError(ValueError):
@@ -94,6 +95,11 @@ def _validate_source(source: Path) -> tuple[Path, ...]:
 
     files: list[Path] = []
     for path in sorted(source.rglob("*")):
+        relative = path.relative_to(source)
+        if relative.parts and relative.parts[0] in _FORBIDDEN_PAYLOAD_PARTS:
+            raise InvalidDistribution(
+                f"TF source contains forbidden distribution payload path: {relative.as_posix()}"
+            )
         if path.is_symlink():
             raise InvalidDistribution(f"TF source contains a symlink: {path}")
         if path.is_dir():
@@ -102,6 +108,13 @@ def _validate_source(source: Path) -> tuple[Path, ...]:
             raise InvalidDistribution(f"TF source contains unsupported entry: {path}")
         files.append(path)
     return tuple(files)
+
+
+def _validate_loadable(source: Path) -> None:
+    try:
+        corpus.load_tf(source)
+    except Exception as exc:
+        raise InvalidDistribution(f"TF source is not loadable: {source}") from exc
 
 
 def _tree_digest(source: Path, files: tuple[Path, ...]) -> str:
@@ -163,6 +176,33 @@ def _read_existing_manifest(stage: Path) -> dict[str, object] | None:
     return value
 
 
+def _validate_current_visible(stage: Path, manifest: dict[str, object]) -> None:
+    current_id = manifest.get("release_id")
+    ledger = manifest.get("releases")
+    if not isinstance(current_id, str) or not isinstance(ledger, dict):
+        raise InvalidDistribution("existing distribution has no valid current release ledger")
+    record = ledger.get(current_id)
+    if not isinstance(record, dict):
+        raise InvalidDistribution("existing distribution current release is absent from its ledger")
+    tf_root = record.get("tf_root")
+    expected_digest = record.get("tree_digest")
+    if not isinstance(tf_root, str) or not isinstance(expected_digest, str):
+        raise InvalidDistribution("existing distribution current release has invalid integrity metadata")
+    current_root = stage / tf_root
+    try:
+        files = _validate_source(current_root)
+        actual_digest = _tree_digest(current_root, files)
+        _validate_loadable(current_root)
+    except InvalidDistribution as exc:
+        raise ImmutableDistributionConflict(
+            f"current visible release {current_id!r} is invalid"
+        ) from exc
+    if actual_digest != expected_digest:
+        raise ImmutableDistributionConflict(
+            f"current visible release {current_id!r} has changed bytes"
+        )
+
+
 def _current_manifest(
     *,
     dataset: str,
@@ -207,6 +247,7 @@ def stage_distribution(
     source_path = Path(source)
     stage_path = Path(stage)
     files = _validate_source(source_path)
+    _validate_loadable(source_path)
     tree_digest = _tree_digest(source_path, files)
     tf_root = root_probe.as_posix().removeprefix("./")
     record = _release_record(
@@ -224,6 +265,7 @@ def stage_distribution(
             raise ImmutableDistributionConflict(
                 f"staging tree already belongs to another distribution: {existing.get('dataset')!r}"
             )
+        _validate_current_visible(stage_path, existing)
         raw_ledger = existing.get("releases", {})
         assert isinstance(raw_ledger, dict)
         ledger = dict(raw_ledger)
@@ -233,13 +275,6 @@ def stage_distribution(
                 raise ImmutableDistributionConflict(
                     f"immutable release {dataset}@{release_id} already exists with different state"
                 )
-            if existing.get("release_id") == release_id:
-                existing_root = stage_path / tf_root
-                existing_files = _validate_source(existing_root)
-                if _tree_digest(existing_root, existing_files) != tree_digest:
-                    raise ImmutableDistributionConflict(
-                        f"current immutable release {dataset}@{release_id} has changed bytes"
-                    )
             return existing
 
     ledger[release_id] = record
@@ -266,6 +301,7 @@ def stage_distribution(
         target_files = _validate_source(target_root)
         if _tree_digest(target_root, target_files) != tree_digest:
             raise InvalidDistribution("staged TF bytes do not match the validated source tree")
+        _validate_loadable(target_root)
 
         (temp / "README.md").write_text(
             f"# {dataset}\n\nGenerated ORACC-TF distribution.\n",

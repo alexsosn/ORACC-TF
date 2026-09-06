@@ -38,6 +38,7 @@ claim-free skeletons until their generated evidence is available:
 | [`guides/`](guides/) | `G-NNN` — how to operate the repository | maintainers |
 | [`reference/`](reference/) | user-facing corpus documentation | **users** |
 | `reports/` | generated validation evidence | both |
+| `task-state/` | task-specific completion or blocker evidence | agents, maintainers |
 
 Research and plans stay in the repository rather than a GitHub wiki: they must
 be reviewable in pull requests next to the code they describe.
@@ -49,9 +50,11 @@ be reviewable in pull requests next to the code they describe.
 | [R-001](research/R-001-corpus-selection.md) | Which ORACC projects are worth converting | done | P0 | — |
 | [R-002](research/R-002-upstream-automation.md) | Upstream change detection and publication | active | P0 | R-001 |
 | [R-003](research/R-003-documentation.md) | Documentation architecture | active | P1 | R-001, P-001 |
+| [R-004](research/R-004-agent-coordination.md) | Parallel agent coordination and failure modes | done | P0 | — |
 | [P-001](plans/P-001-riao-rinap-tf.md) | Joined RIAO + RINAP TF module (TDD) | draft | P0 | R-001 |
 | [P-002](plans/P-002-upstream-automation.md) | Automate ORACC upstream updates | draft | P0 | R-002, P-001 |
 | [P-003](plans/P-003-documentation.md) | User documentation | draft | P1 | R-003, P-001 |
+| [P-004](plans/P-004-agent-coordination.md) | Parallel-safe research-design-TDD-review loop | active | P0 | R-004 |
 | [G-001](guides/G-001-scripts.md) | Utility scripts | active | P2 | — |
 | [G-002](guides/G-002-development.md) | Development setup and conventions | active | P1 | — |
 
@@ -74,31 +77,49 @@ be reviewable in pull requests next to the code they describe.
 
 An agent works one **task** at a time. Tasks are the phases and milestones of
 the plans, enumerated in [`registry.json`](registry.json) with stable ids
-(`P-001.M1`, `P-002.PH3`, …).
+(`P-001.M1`, `P-002.PH3`, …). The parallel coordination contract is
+[P-004](plans/P-004-agent-coordination.md); `oracc_tf.coordination` is the
+executable reconciler for normalized registry/GitHub snapshots.
 
 **Protocol**
 
-1. **Select.** Read `registry.json`. Take the lowest-numbered task that is
-   `todo`, whose `blocked_by` are all `done`, at the highest available priority.
-   Never start a task whose dependencies are unmet.
-2. **Ground.** Open the `spec` section named by the task. It states the
-   acceptance criteria. If the task requires a fact about the data, **measure
-   it** — do not infer it from another document. R-001's figures have been
-   corrected twice; both corrections came from measuring.
-3. **Test first.** Every plan task names its red tests. Write them, watch them
-   fail, then implement.
-4. **Verify.** Run the task's acceptance criteria. A task is done only when
-   they pass, not when the code exists.
-5. **Record.** Set the task `status`, add `evidence` (the command run and its
-   output location), and update the parent document's front-matter `updated`.
-6. **Report contradictions.** If a measurement contradicts a document, fix the
-   document in the same change and note it in the commit. Do not proceed on a
-   known-false premise.
+1. **Enumerate.** Read `registry.json` and collect **all dependency-ready**
+   `todo` tasks. Priority and task id order the candidate set; they do not give
+   a worker ownership. Never start a task whose dependencies are unmet.
+2. **Reconcile.** For each candidate, read its mapped GitHub issue comments and
+   open implementation PRs and reconcile them with `oracc_tf.coordination`.
+   Only a task whose runtime phase is `ready` may be claimed. `conflict` and
+   unrecovered `stale` states are fail-closed for that task; unrelated ready
+   work remains available.
+3. **Claim.** Post an expiring `oracc-tf:claim` marker, immediately re-read the
+   issue and PR set, and run reconciliation again. Proceed only when
+   `claim_result()` says this session owns the winning claim. A losing claimant
+   selects another ready task. Recover an expired lease only with an explicit
+   `oracc-tf:recover` marker referencing the stale claim.
+4. **Ground and plan.** Open the task's `spec`, measure any required data fact,
+   and record research/design decisions before changing production code. If a
+   measurement contradicts a document, correct the document in the same work.
+5. **Test first.** Commit the task's RED tests and observe the intended failure
+   before implementing production behavior.
+6. **Implement and verify.** Make the smallest implementation that satisfies
+   the planned contract, then run the task acceptance gates and retained
+   regression suites on the exact candidate head.
+7. **Independent review.** Record a review session distinct from the
+   implementation session and bind it to the exact head SHA. Any blocker enters
+   a dev/review sub-loop: add a RED regression where applicable, fix, rerun the
+   exact-head gates, and obtain a fresh independent review. Head movement makes
+   the previous passing review stale.
+8. **Record.** Re-check dependencies, write new durable completion or blocker
+   evidence to the task's `evidence_file`, synchronize registry/issue state, and
+   finalize only when reconciliation and acceptance gates agree. Legacy
+   completed tasks may retain inline registry evidence.
 
-**Stop conditions.** An agent must stop and ask a human when: a gate in
-P-002 §5 fires; a philological judgement is required (the sign ontology, chunk
-semantics); a licence question arises; or a task's acceptance criteria cannot
-be evaluated. Blocked work produces a report, never a silent pass.
+**Stop conditions.** Do not continue a task while reconciliation reports a
+non-race conflict or an unrecovered stale lease. Existing project stop
+conditions also apply: a P-002 §5 gate fires; a philological judgement is
+required (the sign ontology, chunk semantics); a licence question arises; or a
+task's acceptance criteria cannot be evaluated. Blocked work produces durable
+evidence and does not prevent unrelated ready tasks from advancing.
 
 **Invariant.** No task may hand-write a count or percentage into prose. Numbers
 come from a script that can be re-run. See R-003 §4.

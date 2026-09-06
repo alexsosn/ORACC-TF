@@ -1,0 +1,40 @@
+{
+  "task": "P-004.PH0",
+  "issue": 43,
+  "implementation_pr": 49,
+  "status": "done",
+  "research_design": {
+    "issue_comment": 5551956425,
+    "summary": "Git holds normative task/dependency and durable evidence state; GitHub carries lease, implementation, supersession, and exact-head review events. Claims are per-task leases with deterministic comment-id arbitration and explicit stale recovery."
+  },
+  "tdd": {
+    "corrected_red_run": 33967738864,
+    "review_regression_red_run": 33969699735,
+    "notes": "Initial import-harness RED was corrected before production implementation. Subsequent adversarial review findings were converted into dedicated regression suites before fixes."
+  },
+  "main_reconciliation": {
+    "head": "95b6ae233578df98d10e640245d785817bc94d82",
+    "base_main": "c70cc5e8d261561ec9e01b91cda849e794947597",
+    "semantic_changed_files": 11
+  },
+  "exact_head_tests": {
+    "tests": 34035671503,
+    "generated_reference": 34035671506,
+    "m8_cross_validation": 34035671542
+  },
+  "review": {
+    "review_id": 5125437936,
+    "review_session": "review-gpt56sol-20260906-1626-49",
+    "implementation_session": "gpt56sol-20260906-1605-43",
+    "reviewed_head": "95b6ae233578df98d10e640245d785817bc94d82",
+    "verdict": "pass",
+    "prior_blocking_reviews": [5121441367]
+  },
+  "lease_recovery": {
+    "stale_claim": 5551948169,
+    "recovery_comment": 5559516655,
+    "new_claim": 5559517549,
+    "implementation_session": "gpt56sol-20260906-1605-43"
+  },
+  "result": "Parallel agents enumerate all ready work, arbitrate task-local leases deterministically, fail closed on stale/conflicting/malformed coordination state, enforce one implementation workstream or explicit supersession, recheck dependencies before completion, require exact-head review by a distinct session, and store new completion/blocker evidence per task."
+}

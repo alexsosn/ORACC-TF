@@ -280,24 +280,57 @@ def test_joined_corpus_invariants_and_tf_warp_load(tmp_path):
 
     assert report.words == 320975
     assert report.signs == 792651
+    assert report.semantic_signs == 792651
+    assert report.synthetic_slots == 689
+    assert report.tf_slots == 793340
     assert report.unicode_signs == 778873
     assert report.unicode_coverage == pytest.approx(778873 / 792651)
     assert report.slotless_words == 295
+    assert report.lines == 56226
+    assert report.lexemes == 8025
     assert report.sign_word_membership_errors == 0
     assert report.word_line_membership_errors == 0
     assert report.section_path_errors == 0
     assert report.zero_span_counts == {}
+    assert report.zero_span_nodes == 0
 
-    # Measurement gate for ADR-0001 migration.  The next commit pins the exact
-    # corpus-wide synthetic/total slot counts from this diagnostic RED run.
-    assert report.synthetic_slots == -1, report.report()
+    assert report.tf_node_counts == {
+        "chunk": 13644,
+        "column": 758,
+        "document": 2078,
+        "face": 2312,
+        "lex": 8025,
+        "line": 56226,
+        "phrase": 4499,
+        "sign": 793340,
+        "word": 320975,
+    }
 
     api = corpus.load_tf(tmp_path)
-    assert len(api.F.otype.s("document")) == report.documents
-    assert len(api.F.otype.s("word")) == report.words
-    assert len(api.F.otype.s("line")) == report.lines
-    assert len(api.F.otype.s("lex")) == report.lexemes
+    assert api.F.otype.maxSlot == 793340
+    assert len(api.F.otype.s("document")) == 2078
+    assert len(api.F.otype.s("face")) == 2312
+    assert len(api.F.otype.s("column")) == 758
+    assert len(api.F.otype.s("line")) == 56226
+    assert len(api.F.otype.s("chunk")) == 13644
+    assert len(api.F.otype.s("phrase")) == 4499
+    assert len(api.F.otype.s("word")) == 320975
+    assert len(api.F.otype.s("lex")) == 8025
 
+    synthetic = {
+        slot for slot in range(1, api.F.otype.maxSlot + 1)
+        if api.F.synthetic.v(slot) == 1
+    }
+    assert len(synthetic) == 689
+    assert all(api.F.utf8.v(slot) is None for slot in synthetic)
+    assert all(api.F.readingu.v(slot) is None for slot in synthetic)
+    assert all(api.F.sign_json.v(slot) is None for slot in synthetic)
+    assert not (tmp_path / corpus.ZERO_SPAN_FILENAME).exists()
+
+    # M7 source-preservation contract: every source word is now a TF word and
+    # every stored GDL serialisation must match the source representation
+    # exactly. Bare source ids are not sufficient because rinap5/rinap5p1
+    # reuse Q-numbers.
     stored_gdl: dict[tuple[str, str], str | None] = {
         (api.F.document_key.v(node), api.F.source_id.v(node)): api.F.gdl_json.v(node)
         for node in api.F.otype.s("word")

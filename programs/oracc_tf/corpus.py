@@ -16,6 +16,7 @@ slot cardinality.
 from __future__ import annotations
 
 import json
+import shutil
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -388,6 +389,34 @@ def _add_section_features(
     )
 
 
+def _clean_replaced_artifact(out_dir: Path, materialised: _MaterialisedGraph) -> None:
+    """Remove files from the previous TF artifact after a successful save.
+
+    ``Fabric.save()`` overwrites features it is given but leaves unrelated
+    ``*.tf`` files and binary caches in place. Cleanup must happen only after
+    save succeeds so a rejected rebuild does not proactively destroy the last
+    valid artifact.
+    """
+    expected = set(materialised.node_features) | set(materialised.edge_features)
+    expected.update(
+        name
+        for name in materialised.meta_data
+        if name and name not in materialised.node_features and name not in materialised.edge_features
+    )
+    try:
+        for path in out_dir.glob("*.tf"):
+            if path.stem not in expected:
+                path.unlink()
+        cache = out_dir / ".tf"
+        if cache.exists():
+            shutil.rmtree(cache)
+        (out_dir / ZERO_SPAN_FILENAME).unlink(missing_ok=True)
+    except OSError as exc:
+        raise CorpusBuildError(
+            f"cannot clean stale Text-Fabric artifact in {out_dir}: {exc}"
+        ) from exc
+
+
 def load_zero_span(out_dir: Path | str) -> dict[str, object]:
     """Load and minimally validate a legacy deterministic zero-span sidecar."""
     path = Path(out_dir) / ZERO_SPAN_FILENAME
@@ -660,9 +689,7 @@ def build_tf(
     ):
         raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
 
-    # A successful current-format build is self-contained in TF. Remove a
-    # stale sidecar only after the replacement TF graph has saved successfully.
-    (out_dir / ZERO_SPAN_FILENAME).unlink(missing_ok=True)
+    _clean_replaced_artifact(out_dir, materialised)
 
     return CorpusBuildReport(
         documents=document_count,

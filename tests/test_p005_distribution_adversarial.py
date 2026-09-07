@@ -27,9 +27,17 @@ def _minimal_tf(root: Path) -> Path:
     return root
 
 
-@pytest.mark.parametrize("forbidden", ["data", "programs", "docs"])
+@pytest.mark.parametrize(
+    "relative",
+    [
+        Path("data"),
+        Path("programs"),
+        Path("docs"),
+        Path("assyrian-royal-inscriptions") / "docs",
+    ],
+)
 def test_replay_rejects_forbidden_payload_added_to_existing_stage(
-    tmp_path: Path, forbidden: str
+    tmp_path: Path, relative: Path
 ) -> None:
     source = _minimal_tf(tmp_path / "source")
     stage = tmp_path / "stage"
@@ -42,9 +50,27 @@ def test_replay_rejects_forbidden_payload_added_to_existing_stage(
     )
     distribution.stage_distribution(source, stage, **kwargs)
 
-    leaked = stage / forbidden
-    leaked.mkdir()
+    leaked = stage / relative
+    leaked.mkdir(parents=True)
     (leaked / "must-not-survive.txt").write_text("forbidden\n", encoding="utf-8")
 
     with pytest.raises(distribution.InvalidDistribution, match="forbidden"):
+        distribution.stage_distribution(source, stage, **kwargs)
+
+
+def test_replay_rejects_symlink_added_to_existing_stage(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    stage = tmp_path / "stage"
+    kwargs = dict(
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    distribution.stage_distribution(source, stage, **kwargs)
+
+    (stage / "leaked-link").symlink_to(source / "feature.tf")
+
+    with pytest.raises(distribution.InvalidDistribution, match="symlink"):
         distribution.stage_distribution(source, stage, **kwargs)

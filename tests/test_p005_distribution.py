@@ -63,6 +63,118 @@ def test_multiple_tf_versions_have_distinct_roots_without_changing_dataset_ident
     assert v1 != v2
 
 
+def test_staged_tf_versions_have_explicit_visible_release_owners(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    first = _minimal_tf(tmp_path / "first", marker="one")
+    second = _minimal_tf(tmp_path / "second", marker="two")
+
+    release_a = distribution.stage_distribution(
+        first,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    release_b = distribution.stage_distribution(
+        second,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-b",
+        tf_version="0.3.0",
+        builder_commit="b" * 40,
+        source_state="sha256:" + "2" * 64,
+    )
+
+    assert (stage / release_a["tf_root"] / "otype.tf").is_file()
+    assert (stage / release_b["tf_root"] / "otype.tf").is_file()
+    assert release_b["visible_roots"] == {
+        release_a["tf_root"]: "release-a",
+        release_b["tf_root"]: "release-b",
+    }
+
+
+def test_non_current_visible_tf_version_corruption_fails_closed(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    first = _minimal_tf(tmp_path / "first", marker="one")
+    second = _minimal_tf(tmp_path / "second", marker="two")
+
+    release_a = distribution.stage_distribution(
+        first,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    distribution.stage_distribution(
+        second,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-b",
+        tf_version="0.3.0",
+        builder_commit="b" * 40,
+        source_state="sha256:" + "2" * 64,
+    )
+    (stage / release_a["tf_root"] / "feature.tf").write_text(
+        "@node\n@valueType=str\n\n1\tcorrupted\n", encoding="utf-8"
+    )
+
+    with pytest.raises(distribution.ImmutableDistributionConflict, match="visible"):
+        distribution.stage_distribution(
+            second,
+            stage,
+            dataset="assyrian-royal-inscriptions",
+            release_id="release-b",
+            tf_version="0.3.0",
+            builder_commit="b" * 40,
+            source_state="sha256:" + "2" * 64,
+        )
+
+
+def test_same_tf_version_update_changes_only_that_visible_owner(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    first = _minimal_tf(tmp_path / "first", marker="one")
+    second = _minimal_tf(tmp_path / "second", marker="two")
+    third = _minimal_tf(tmp_path / "third", marker="three")
+
+    release_a = distribution.stage_distribution(
+        first,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    release_b = distribution.stage_distribution(
+        second,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-b",
+        tf_version="0.3.0",
+        builder_commit="b" * 40,
+        source_state="sha256:" + "2" * 64,
+    )
+    release_c = distribution.stage_distribution(
+        third,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-c",
+        tf_version="0.2.0",
+        builder_commit="c" * 40,
+        source_state="sha256:" + "3" * 64,
+    )
+
+    assert release_c["visible_roots"] == {
+        release_a["tf_root"]: "release-c",
+        release_b["tf_root"]: "release-b",
+    }
+    assert release_c["releases"]["release-a"]["tree_digest"] == release_a["tree_digest"]
+
+
 def test_stage_distribution_is_minimal_deterministic_and_provenance_bound(tmp_path: Path) -> None:
     source = _minimal_tf(tmp_path / "source")
     stage = tmp_path / "stage"
@@ -81,6 +193,7 @@ def test_stage_distribution_is_minimal_deterministic_and_provenance_bound(tmp_pa
     assert manifest["builder_commit"] == "a" * 40
     assert manifest["source_state"] == "sha256:" + "b" * 64
     assert manifest["tf_root"] == "assyrian-royal-inscriptions/tf/0.2.0"
+    assert manifest["visible_roots"] == {manifest["tf_root"]: "release-a"}
     assert (stage / manifest["tf_root"] / "otype.tf").is_file()
     assert (stage / manifest["tf_root"] / "zero-span.json").is_file()
     assert not (stage / "data").exists()
@@ -171,6 +284,7 @@ def test_new_release_can_update_same_tf_version_without_rewriting_old_release(tm
     assert release_b["release_id"] == "release-b"
     assert release_b["releases"]["release-a"]["tree_digest"] == release_a["tree_digest"]
     assert release_b["releases"]["release-b"]["tree_digest"] == release_b["tree_digest"]
+    assert release_b["visible_roots"] == {release_b["tf_root"]: "release-b"}
     current_feature = stage / release_b["tf_root"] / "feature.tf"
     assert current_feature.read_text(encoding="utf-8").endswith("two\n")
 
@@ -184,6 +298,7 @@ def test_new_release_can_update_same_tf_version_without_rewriting_old_release(tm
         source_state="sha256:" + "1" * 64,
     )
     assert replay["release_id"] == "release-b"
+    assert replay["visible_roots"] == {release_b["tf_root"]: "release-b"}
     assert current_feature.read_text(encoding="utf-8").endswith("two\n")
 
     altered_old = _minimal_tf(tmp_path / "altered-old", marker="tampered")
@@ -268,6 +383,46 @@ def test_replaying_old_release_detects_corrupted_current_visible_tree(tmp_path: 
             source_state="sha256:" + "1" * 64,
             **common,
         )
+
+
+def test_existing_manifest_rejects_unsupported_schema_before_replay(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    source = _minimal_tf(tmp_path / "source")
+    kwargs = dict(
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    distribution.stage_distribution(source, stage, **kwargs)
+    manifest_path = stage / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["schema_version"] = 999
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    with pytest.raises(distribution.InvalidDistribution, match="schema"):
+        distribution.stage_distribution(source, stage, **kwargs)
+
+
+def test_existing_manifest_rejects_current_record_mirror_tampering(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    source = _minimal_tf(tmp_path / "source")
+    kwargs = dict(
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    distribution.stage_distribution(source, stage, **kwargs)
+    manifest_path = stage / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["tree_digest"] = "sha256:" + "0" * 64
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    with pytest.raises(distribution.InvalidDistribution, match="current"):
+        distribution.stage_distribution(source, stage, **kwargs)
 
 
 def test_incomplete_warp_never_becomes_visible(tmp_path: Path) -> None:

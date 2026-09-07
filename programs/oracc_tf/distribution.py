@@ -196,8 +196,20 @@ def _manifest_bytes(manifest: dict[str, object]) -> bytes:
 
 
 def _read_existing_manifest(stage: Path) -> dict[str, object] | None:
+    if stage.is_symlink():
+        raise InvalidDistribution(f"existing distribution stage is a symlink: {stage}")
+    if not stage.exists():
+        return None
+    if not stage.is_dir():
+        raise InvalidDistribution(f"existing distribution stage is not a directory: {stage}")
+
+    _validate_distribution_boundary(stage)
     path = stage / "manifest.json"
     if not path.exists():
+        if any(stage.iterdir()):
+            raise InvalidDistribution(
+                f"existing distribution stage contains content but has no manifest: {stage}"
+            )
         return None
     try:
         value = json.loads(path.read_text(encoding="utf-8"))

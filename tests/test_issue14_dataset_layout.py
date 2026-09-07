@@ -123,7 +123,7 @@ def test_registered_builder_cannot_mislabel_the_converter_schema(tmp_path, monke
     monkeypatch.setattr(corpus, "build_full_tf", should_not_build)
     with pytest.raises(ValueError, match="TF version"):
         publishing.build_registered_tf(
-            tmp_path, "assyrian-royal-inscriptions", tf_version="0.3.0"
+            tmp_path, "assyrian-royal-inscriptions", tf_version="0.2.0"
         )
 
 

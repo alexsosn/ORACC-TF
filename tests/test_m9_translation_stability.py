@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -125,4 +126,40 @@ def test_translation_index_rejects_documents_outside_build(tmp_path):
             editions=(edition,),
             metadata_index=metadata.MetadataIndex.empty(),
             translations_by_document={"test/unit:QFOREIGN": (foreign,)},
+        )
+
+
+def test_translation_index_rejects_duplicate_unit_source_ids(tmp_path):
+    edition = _edition()
+    unit = _unit()
+    duplicate = replace(unit, text="conflicting duplicate", text_raw="conflicting duplicate")
+
+    with pytest.raises(corpus.CorpusBuildError, match="duplicate translation unit"):
+        corpus.build_tf(
+            tmp_path,
+            editions=(edition,),
+            metadata_index=metadata.MetadataIndex.empty(),
+            translations_by_document={edition.key: (unit, duplicate)},
+        )
+
+
+def test_translation_index_rejects_conflicting_reused_note_ids(tmp_path):
+    edition = _edition()
+    first_note = translations.TranslationNote(
+        source_id="QSTABLE_project-en.n1",
+        text="first note",
+        text_raw="first note",
+        source_name="tei.zip",
+        source_sha256="b" * 64,
+    )
+    second_note = replace(first_note, text="different note", text_raw="different note")
+    first = replace(_unit(), source_id="QSTABLE_project-en.0", notes=(first_note,))
+    second = replace(_unit(), source_id="QSTABLE_project-en.1", notes=(second_note,))
+
+    with pytest.raises(corpus.CorpusBuildError, match="conflicting translation note"):
+        corpus.build_tf(
+            tmp_path,
+            editions=(edition,),
+            metadata_index=metadata.MetadataIndex.empty(),
+            translations_by_document={edition.key: (first, second)},
         )

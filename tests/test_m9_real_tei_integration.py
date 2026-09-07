@@ -1,9 +1,10 @@
 """Real-source P-001 M9 acceptance against the published RIAO TEI export.
 
-The ordinary test suite stays network-independent.  The dedicated M9 workflow
-fetches the exact archive and supplies ``ORACC_TRANSLATION_TEI_ZIP``.  This gate
-validates source shape/coverage, source-word reconciliation, and the resulting
-whole-corpus Text-Fabric graph before M9 may be finalized.
+The ordinary test suite stays network-independent. The dedicated M9 workflow
+fetches the exact archive and supplies ``ORACC_TRANSLATION_TEI_ZIP`` plus the
+verified mirror URL that served it. This gate validates source shape/coverage,
+source-word reconciliation, and the resulting whole-corpus Text-Fabric graph
+before M9 may be finalized.
 """
 
 from __future__ import annotations
@@ -20,6 +21,10 @@ from oracc_tf import corpus, loader, metadata, paths, translations, words
 EXCLUDED_SOURCE_GAPS = {"rinap/rinap5p1"}
 EXPECTED_TRANSLATED_DOCUMENTS = 1646
 EXPECTED_PARSEABLE_DOCUMENTS = 2078
+DEFAULT_SOURCE_URL = (
+    "https://oracc.museum.upenn.edu/riao/downloads/"
+    "riao-teiCorpus-20241202.zip"
+)
 
 
 @lru_cache(maxsize=1)
@@ -35,6 +40,8 @@ def _archive() -> translations.TranslationArchive:
 
     archive_path = Path(location)
     assert archive_path.is_file()
+    source_url = os.environ.get("ORACC_TRANSLATION_SOURCE_URL", DEFAULT_SOURCE_URL)
+    assert source_url.startswith("https://")
     document_keys = translations.qualified_key_map(
         _editions(),
         excluded_subprojects=EXCLUDED_SOURCE_GAPS,
@@ -42,7 +49,7 @@ def _archive() -> translations.TranslationArchive:
     return translations.load_tei_zip(
         archive_path,
         document_keys=document_keys,
-        source_url="https://oracc.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip",
+        source_url=source_url,
         source_license="CC BY-SA 3.0",
         source_license_url="https://creativecommons.org/licenses/by-sa/3.0/",
     )
@@ -66,7 +73,10 @@ def test_real_tei_archive_matches_pinned_m9_source_characterisation():
     assert any('type="i"' in unit.text_raw for unit in all_units)
     assert any('type="r"' in unit.text_raw for unit in all_units)
 
+    assert archive.source_url is not None
+    assert archive.source_url.startswith("https://")
     assert all(unit.source_sha256 == archive.source_sha256 for unit in all_units)
+    assert all(unit.source_url == archive.source_url for unit in all_units)
     assert all(unit.source_license == "CC BY-SA 3.0" for unit in all_units)
 
 

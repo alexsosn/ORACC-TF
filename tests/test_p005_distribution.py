@@ -90,6 +90,26 @@ def test_stage_distribution_is_minimal_deterministic_and_provenance_bound(tmp_pa
     assert disk == manifest
 
 
+def test_current_empty_slot_tf_does_not_require_legacy_zero_span_sidecar(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    (source / "zero-span.json").unlink()
+    stage = tmp_path / "stage"
+
+    manifest = distribution.stage_distribution(
+        source,
+        stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-empty-slots",
+        tf_version="0.3.0",
+        builder_commit="a" * 40,
+        source_state=None,
+    )
+
+    tf_root = stage / manifest["tf_root"]
+    assert (tf_root / "otype.tf").is_file()
+    assert not (tf_root / "zero-span.json").exists()
+
+
 def test_stage_distribution_rejects_unregistered_semantic_dataset(tmp_path: Path) -> None:
     source = _minimal_tf(tmp_path / "source")
     with pytest.raises(ValueError, match="unregistered dataset"):

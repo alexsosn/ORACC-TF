@@ -166,6 +166,9 @@ jobs:
               central = rows[f'central-{size}']
               minimal = rows[f'minimal-{size}']
               assert central['snapshot_bytes'] == minimal['snapshot_bytes']
+              assert central['snapshot_digest'] == minimal['snapshot_digest']
+              assert central['post_load_snapshot_bytes'] >= central['snapshot_bytes']
+              assert minimal['post_load_snapshot_bytes'] >= minimal['snapshot_bytes']
               assert central['max_slot'] == minimal['max_slot']
           summary = {
               'schema_version': 1,
@@ -180,6 +183,8 @@ jobs:
                       'minimal_metadata_cache_bytes': rows[f'minimal-{size}']['metadata_cache_bytes'],
                       'central_discovered_roots': rows[f'central-{size}']['discovered_roots'],
                       'minimal_discovered_roots': rows[f'minimal-{size}']['discovered_roots'],
+                      'snapshot_bytes': rows[f'central-{size}']['snapshot_bytes'],
+                      'snapshot_digest': rows[f'central-{size}']['snapshot_digest'],
                   }
                   for size in ('small', 'full')
               },

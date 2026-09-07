@@ -6,7 +6,7 @@ status: active
 priority: P0
 depends_on:
   - R-004
-updated: 2026-09-05
+updated: 2026-09-07
 ---
 
 # Parallel-safe research-design-TDD-review task loop
@@ -138,3 +138,71 @@ Issue: #43.
 - current duplicate/in-flight work is reconciled or explicitly documented for migration;
 - exact-head CI passes;
 - an independent review of the exact final head passes, with any blockers resolved through the dev/review sub-loop.
+
+## Issue-backed executable backlog bridge
+
+Open executable tickets created outside the original P-001–P-005 task lists are also registered here so P-004 can select them. Their GitHub issue bodies remain the authoritative research/design/TDD/review specification; this section supplies stable task/spec anchors only. Issue #48 is the dispatcher/meta issue and is deliberately not selectable.
+
+For tickets whose issue explicitly permits research/design before a later production dependency, registry `blocked_by` represents the claim/start gate. The worker must still obey all issue-local integration, merge, and stop conditions before finalization.
+
+### ISSUE-32
+ETCSRI morphology-rich TF dataset research/design/TDD — GitHub #32.
+
+### ISSUE-33
+ASBP/NINMED re-conversion and pinned cross-validation — GitHub #33.
+
+### ISSUE-34
+Translation-source policy for future corpus expansion — GitHub #34.
+
+### ISSUE-35
+Tier-2 ORACC-TF corpus-wave research and sequencing — GitHub #35.
+
+### ISSUE-36
+RINAP witnesses, exemplar linkage, and alignment-limit research — GitHub #36.
+
+### ISSUE-38
+TEI translation token cross-check against `index-tra` — GitHub #38.
+
+### ISSUE-40
+QPN glossary/proper-name entity-layer research — GitHub #40.
+
+### ISSUE-41
+Tier-3 small coherent corpus-wave evaluation — GitHub #41.
+
+### ISSUE-42
+Independent TEI translation-upstream discovery/versioning — GitHub #42.
+
+### ISSUE-44
+Legacy extraction workflow reconciliation with P-002 acquisition — GitHub #44.
+
+### ISSUE-46
+Pinned TEI ZIP/source-state support in translation auditing — GitHub #46.
+
+### ISSUE-47
+Generated-statistics documentation policy reconciliation — GitHub #47.
+
+### ISSUE-58
+Source-faithful OBABAT TF conversion — GitHub #58.
+
+### ISSUE-69
+BHSA/Text-Fabric application/browser gap research — GitHub #69.
+
+### ISSUE-70
+Per-dataset Text-Fabric application/browser implementation plan — GitHub #70.
+
+### ISSUE-71
+Per-dataset app packaging and Text-Fabric discovery — GitHub #71.
+
+### ISSUE-72
+Source-faithful cuneiform/transliteration/lexeme display formats — GitHub #72.
+
+### ISSUE-73
+Browser presentation policy, feature visibility, and docs integration — GitHub #73.
+
+### ISSUE-74
+Generated app provenance and collision-safe ORACC source links — GitHub #74.
+
+### ISSUE-75
+End-to-end Text-Fabric browser acceptance tests — GitHub #75.
+
+When one of these workstreams gains a dedicated normative R/P document, move its registry task to that document without changing the task id or GitHub issue mapping unless an explicit migration says otherwise. When an issue closes, reconcile registry status/evidence in the same merge window so closed work cannot remain falsely selectable.

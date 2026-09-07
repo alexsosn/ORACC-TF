@@ -2,7 +2,7 @@
   "task": "P-001.HARDENING",
   "issue": 37,
   "implementation_pr": 64,
-  "status": "in_review",
+  "status": "done",
   "architecture": {
     "adr": "docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md",
     "decision": "Independently positioned zero-span textual entities remain in Text-Fabric through explicit synthetic empty slots; zero span alone is not a sidecar justification."
@@ -10,7 +10,9 @@
   "tdd": {
     "red_run": 34060522489,
     "red_result": "6 expected failures, 173 passed, 1 skipped before production changes",
-    "contract": "source-order anchors, adjacent empty words, ancestor reuse, all-zero TF loadability, occurrence-backed lexemes, deterministic output, semantic/synthetic/total slot accounting"
+    "review_regression_red_run": 34090834126,
+    "review_regression_red_result": "2 expected reused-target failures, 180 passed, 1 skipped before cleanup fixes",
+    "contract": "source-order anchors, adjacent empty words, ancestor reuse, all-zero TF loadability, occurrence-backed lexemes, deterministic output, semantic/synthetic/total slot accounting, reused-target stale-feature/cache cleanup"
   },
   "whole_corpus_measurement": {
     "semantic_signs": 792651,
@@ -23,17 +25,26 @@
     "tf_documents": 2078,
     "zero_span_sidecar_nodes": 0
   },
-  "pre_review_green": {
-    "head": "a3898caf132d325edd799cae4a34afc1547d42f3",
-    "tests": 34065237399,
-    "generated_reference": 34065237393,
-    "m8_cross_validation": 34065237398,
-    "pytest": "179 passed, 1 skipped; whole-corpus 11 passed"
+  "exact_head_tests": {
+    "head": "d80274bd18612e3eff1ffc606cfa3a0029acf65a",
+    "tests": 34091643262,
+    "generated_reference": 34091643241,
+    "m8_cross_validation": 34091643408,
+    "pytest": "182 passed, 1 skipped; whole-corpus 11 passed"
   },
   "review": {
-    "required": true,
-    "implementation_session": "gpt56sol-20260907-0915-37-empty",
-    "verdict": "pending",
-    "note": "Final review must bind to the exact post-documentation head; this file intentionally records only pre-review evidence so a review result is never predeclared."
-  }
+    "review_id": 5130365531,
+    "review_session": "review-gpt56sol-20260907-1234-64",
+    "implementation_session": "gpt56sol-20260907-1227-37-empty",
+    "reviewed_head": "d80274bd18612e3eff1ffc606cfa3a0029acf65a",
+    "verdict": "pass",
+    "prior_blocking_reviews": [5128667615]
+  },
+  "lease_recovery": {
+    "stale_claim": 5565918196,
+    "recovery_comment": 5568544589,
+    "new_claim": 5568545947,
+    "implementation_session": "gpt56sol-20260907-1227-37-empty"
+  },
+  "result": "Zero-span textual entities stay queryable in normal Text-Fabric through minimum source-ordered synthetic anchors; semantic sign statistics remain source-facing; all parseable documents and words remain in TF; no zero-span sidecar is emitted; reused output targets cannot retain stale semantic features or binary caches after a successful replacement build."
 }

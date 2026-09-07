@@ -41,6 +41,18 @@ The version root must be independently loadable and contain the required TF warp
 
 `manifest.json` is deterministic and records dataset id, current release id, TF version, ORACC-TF builder commit, source-state identity when available, tree/artifact integrity information, and the exact relative TF root. It also retains an immutable release ledger sufficient to reject reuse of an earlier `release_id` with different bytes after later releases have been staged. A provenance field that cannot yet be established must be explicitly unavailable/blocking; it must not be fabricated.
 
+Because multiple TF schema-version roots may coexist and Agora discovers every root containing `otype.tf`, manifest schema v3 also records `visible_roots`, a deterministic mapping from every currently visible canonical `<dataset>/tf/<tf_version>` root to the `release_id` whose digest/provenance describes the bytes currently stored there.
+
+The visible-root contract is fail-closed:
+
+- every `visible_roots` target exists in the immutable release ledger and that release record names the same canonical `tf_root`;
+- the filesystem TF-version roots and `visible_roots` keys agree exactly, so an untracked discoverable TF root cannot bypass integrity metadata;
+- every visible root is structurally valid, independently loadable, and byte-digest-equal to its owning release record before any idempotent return or new staging transaction proceeds;
+- the top-level current fields (`tf_version`, `tf_root`, `builder_commit`, `source_state`, `provenance_complete`, `tree_digest`) exactly mirror `releases[release_id]`;
+- unsupported manifest schema versions or malformed/cross-root records are rejected rather than upgraded implicitly;
+- publishing a newer release at an already-visible TF version updates only that root's owner in `visible_roots`; other version roots remain mapped to their own current bytes;
+- replaying an older immutable release is a no-op when its ledger record matches, but it does not roll a visible root back to historical bytes and it still validates all currently visible roots first.
+
 ### Immutability and publication transaction
 
 Publication is stage -> validate -> compare identity -> publish. A version becomes visible only after the staged tree passes structural/load/integrity checks.
@@ -48,7 +60,7 @@ Publication is stage -> validate -> compare identity -> publish. A version becom
 - same `release_id` + same bytes: idempotent no-op, even if a newer release is currently staged;
 - same `release_id` + different bytes or provenance: hard conflict;
 - different `release_id` may update bytes at the same TF schema-version path; immutable Git refs/tags preserve the older release tree externally;
-- multiple TF schema-version roots may coexist in the current repository tree without collision;
+- multiple TF schema-version roots may coexist without collision and each visible root has explicit current-release ownership/integrity metadata;
 - partial/failed staging: never accepted as a valid version;
 - mutable branch heads may point at generated history, but Agora/release records pin an immutable commit/tag;
 - corrections create a new release identity; published immutable identities are not rewritten.
@@ -73,17 +85,18 @@ Before production publisher code, tests must fail for missing behavior covering:
 
 1. every registered dataset maps deterministically to one distribution identity;
 2. aggregate `assyrian-royal-inscriptions` remains one distribution despite eleven JSON archive inputs;
-3. multiple TF versions coexist without collision;
+3. multiple TF versions are actually staged together without collision, every discoverable root has explicit visible-release ownership, and corruption of a non-current visible root fails closed;
 4. same release identity/same bytes is idempotent;
 5. same release identity/different bytes fails closed;
-6. a new release identity may replace bytes at the same TF schema-version root without rewriting the earlier release ledger entry;
+6. a new release identity may replace bytes at the same TF schema-version root without rewriting the earlier release ledger entry, while updating only that root's visible owner;
 7. replaying an earlier release after a newer release is staged is a no-op when its bytes/provenance match and a conflict when they do not;
 8. staged output contains no unrelated raw/build/research paths;
 9. manifest binds distribution -> release id -> ORACC-TF builder commit -> source-state field explicitly;
 10. incomplete TF warp publication is rejected before visibility, while a loadable ADR-0001/current TF root without a legacy `zero-span.json` sidecar is accepted;
 11. unsafe/colliding repository-name derivations fail or disambiguate deterministically;
 12. a representative generated repository can be acquired at an immutable revision and its TF root loaded;
-13. benchmark accounting separates metadata bytes from materialized TF bytes and records warm/no-change cost.
+13. benchmark accounting separates metadata bytes from the **pre-load materialized Git snapshot** bytes, records a deterministic pre-load tree digest, proves central/minimal TF payload byte-equivalence at pinned revisions, and records warm/no-change cost;
+14. unsupported/tampered manifest schema or disagreement between the top-level current fields and `releases[release_id]` is rejected before an idempotent return or copied staging transaction.
 
 ### Implementation boundary
 
@@ -92,6 +105,8 @@ Add a package-level publisher/stager API; do not put cross-repository business l
 ### Verification
 
 Run focused tests, repository fast tests, whole-corpus invariants, generated-reference drift, and retained M8 cross-validation. For the large dataset benchmark, build the current registered dataset from the checked-in source snapshot; do not require live ORACC download.
+
+The benchmark must measure the materialized snapshot size/digest immediately after `GitStore.materialize()` and before `Text-Fabric.load()`, because TF loading may create cache files. Post-load size may be recorded separately, but it must not be mislabeled as Git materialization size. Central and generated-repository snapshots must have equal pre-load tree digests as well as equivalent TF load/cardinality results.
 
 ## Later phases
 
@@ -109,7 +124,7 @@ Issue #60 may close only when:
 - PH0 RED -> GREEN evidence exists;
 - local generated distribution excludes unrelated source/build data;
 - the representative Agora repository-acquisition/load contract is exercised;
-- benchmark evidence exists for central versus generated-repository acquisition;
+- benchmark evidence exists for central versus generated-repository acquisition and proves byte-equivalent pre-load TF snapshots;
 - exact-head repository CI is green;
 - logically-independent adversarial review passes on the exact final head.
 

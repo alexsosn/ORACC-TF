@@ -5,7 +5,7 @@ type: plan
 status: draft
 priority: P0
 depends_on: [R-005, P-001]
-updated: 2026-09-06
+updated: 2026-09-07
 ---
 
 # Publish semantic TF datasets to lightweight distribution repositories
@@ -37,7 +37,7 @@ manifest.json
 <dataset>/tf/<tf_version>/
 ```
 
-The version root must be independently loadable and contain the required TF warp plus coordinated sidecars. The publisher rejects raw source/build/research paths in the staged output.
+The version root must be independently loadable and contain the required TF warp. Coordinated sidecars are copied only when they genuinely exist in the source/build contract. Under ADR-0001, zero-span textual entities are represented by explicit synthetic TF slots, so current corpora do **not** require `zero-span.json`; the publisher must not fabricate a legacy sidecar merely to satisfy packaging. The publisher rejects raw source/build/research paths in the staged output.
 
 `manifest.json` is deterministic and records dataset id, current release id, TF version, ORACC-TF builder commit, source-state identity when available, tree/artifact integrity information, and the exact relative TF root. It also retains an immutable release ledger sufficient to reject reuse of an earlier `release_id` with different bytes after later releases have been staged. A provenance field that cannot yet be established must be explicitly unavailable/blocking; it must not be fabricated.
 
@@ -80,7 +80,7 @@ Before production publisher code, tests must fail for missing behavior covering:
 7. replaying an earlier release after a newer release is staged is a no-op when its bytes/provenance match and a conflict when they do not;
 8. staged output contains no unrelated raw/build/research paths;
 9. manifest binds distribution -> release id -> ORACC-TF builder commit -> source-state field explicitly;
-10. incomplete TF warp/sidecar publication is rejected before visibility;
+10. incomplete TF warp publication is rejected before visibility, while a loadable ADR-0001/current TF root without a legacy `zero-span.json` sidecar is accepted;
 11. unsafe/colliding repository-name derivations fail or disambiguate deterministically;
 12. a representative generated repository can be acquired at an immutable revision and its TF root loaded;
 13. benchmark accounting separates metadata bytes from materialized TF bytes and records warm/no-change cost.

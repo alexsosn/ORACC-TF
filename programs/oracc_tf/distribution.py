@@ -432,6 +432,16 @@ def stage_distribution(
 
     source_path = Path(source)
     stage_path = Path(stage)
+    source_resolved = source_path.resolve(strict=False)
+    stage_resolved = stage_path.resolve(strict=False)
+    if (
+        source_resolved == stage_resolved
+        or source_resolved in stage_resolved.parents
+        or stage_resolved in source_resolved.parents
+    ):
+        raise InvalidDistribution(
+            f"TF source and distribution stage overlap: source={source_path}, stage={stage_path}"
+        )
     files = _validate_source(source_path)
     _validate_loadable(source_path)
     tree_digest = _tree_digest(source_path, files)

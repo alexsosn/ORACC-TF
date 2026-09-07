@@ -63,6 +63,20 @@ DESCRIPTIONS: dict[str, str] = {
     "column_id": "Source ORACC column identifier.",
     "line": "Source ORACC line identifier used as the Text-Fabric line section value.",
     "lnno": "Source ATF/ORACC line label; compatibility alias used by cross-corpus tooling.",
+    # Translation layer
+    "translation_subtype": "Source TEI/XTR translation subtype for this aligned translation unit.",
+    "translation_sref": "Inclusive source line reference at the start of this translation unit.",
+    "translation_eref": "Inclusive source line reference at the end of this translation unit.",
+    "translation_rows": "Source TEI/XTR row-count annotation for this translation unit, when present.",
+    "translation_label": "Source translation label preserved from TEI/XTR, when present.",
+    "translation_se_label": "Source translation start/end label metadata preserved from TEI/XTR, when present.",
+    "translation_text": "Whitespace-normalized plain text of the source translation unit or note.",
+    "translation_text_raw": "Recoverable serialized inner XML for source translation markup.",
+    "translation_source": "Name of the translation archive or source supplied to the converter.",
+    "translation_source_sha256": "SHA-256 of the translation source archive when available.",
+    "translation_source_url": "URL identifying the translation source when supplied by the caller.",
+    "translation_license": "Licence label supplied specifically for the translation source.",
+    "translation_license_url": "Licence URL supplied specifically for the translation source.",
     # Word and lexical analysis
     "frag": "ORACC source fragment value for the word occurrence.",
     "form": "Surface transliteration form of the ORACC word occurrence.",
@@ -84,6 +98,9 @@ DESCRIPTIONS: dict[str, str] = {
     "line_column": "Edge from a line node to its containing column node.",
     "word_line": "Edge from a word node to its containing line node.",
     "word_lex": "Edge from a word occurrence to its ORACC-TF lexeme node.",
+    "translation_document": "Edge from a translation unit to the ORACC document whose source lines it translates.",
+    "translation_note_document": "Edge from a translation note to the ORACC document containing its linked translation unit.",
+    "translation_note": "Edge from a translation unit to an explicitly linked source translation note.",
 }
 
 

@@ -490,6 +490,7 @@ def build_tf(
     sign_word_memberships: Counter[int] = Counter()
     lex_nodes: dict[lexemes.LexemeKey, int] = {}
     translation_note_nodes: dict[tuple[str, str], int] = {}
+    translation_note_values: dict[tuple[str, str], translations.TranslationNote] = {}
     seen_document_keys: set[str] = set()
 
     for edition in editions:
@@ -652,7 +653,13 @@ def build_tf(
                     )
                 ref_positions[line.ref] = position
 
+            seen_translation_unit_ids: set[str] = set()
             for unit in translation_units:
+                if unit.source_id in seen_translation_unit_ids:
+                    raise CorpusBuildError(
+                        f"{edition.key}: duplicate translation unit {unit.source_id!r}"
+                    )
+                seen_translation_unit_ids.add(unit.source_id)
                 if unit.document_key != edition.key or unit.text_id != edition.text_id:
                     raise CorpusBuildError(
                         f"{edition.key}: translation {unit.source_id!r} identity mismatch"
@@ -710,6 +717,7 @@ def build_tf(
                     if note_node is None:
                         note_node = graph.node("translation_note", unit_slots)
                         translation_note_nodes[note_key] = note_node
+                        translation_note_values[note_key] = note
                         graph.feature(
                             note_node,
                             source_id=note.source_id,
@@ -724,6 +732,10 @@ def build_tf(
                         )
                         graph.edge("translation_note_document", note_node, document_node)
                     else:
+                        if translation_note_values[note_key] != note:
+                            raise CorpusBuildError(
+                                f"{edition.key}: conflicting translation note {note.source_id!r}"
+                            )
                         graph.add_oslots(note_node, unit_slots)
                     graph.edge("translation_note", node, note_node)
 

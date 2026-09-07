@@ -261,6 +261,24 @@ def _discover_tf_roots(stage: Path) -> set[str]:
     return roots
 
 
+def _validate_distribution_boundary(stage: Path) -> None:
+    """Reject injected build/research payload and symlinks anywhere in a staged tree."""
+    if stage.is_symlink():
+        raise InvalidDistribution(f"existing distribution stage is a symlink: {stage}")
+    for path in sorted(stage.rglob("*")):
+        relative = path.relative_to(stage)
+        if path.is_symlink():
+            raise InvalidDistribution(
+                f"existing distribution contains a symlink: {relative.as_posix()}"
+            )
+        forbidden = _FORBIDDEN_PAYLOAD_PARTS.intersection(relative.parts)
+        if forbidden:
+            raise InvalidDistribution(
+                "existing distribution contains forbidden payload path: "
+                f"{relative.as_posix()}"
+            )
+
+
 def _validate_manifest_state(
     stage: Path,
     manifest: dict[str, object],
@@ -268,6 +286,7 @@ def _validate_manifest_state(
     dataset: str,
     repository: str,
 ) -> tuple[dict[str, object], dict[str, str]]:
+    _validate_distribution_boundary(stage)
     if manifest.get("schema_version") != _MANIFEST_SCHEMA_VERSION:
         raise InvalidDistribution(
             f"unsupported existing distribution manifest schema: {manifest.get('schema_version')!r}"

@@ -1,0 +1,72 @@
+name: m9-real-tei
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/m9-real-tei.yml"
+      - "programs/oracc_tf/**"
+      - "tests/test_m9_real_tei_integration.py"
+      - "tests/test_m9_translation_archive.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-tei:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ORACC-TF
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Fetch exact published RIAO TEI archive from a TLS-valid official ORACC mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .external
+          archive=.external/riao-teiCorpus-20241202.zip
+          tmp="${archive}.partial"
+          rm -f "$archive" "$tmp"
+
+          candidates=(
+            "https://oracc.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip"
+            "https://build.oracc.org/riao/downloads/riao-teiCorpus-20241202.zip"
+            "https://build-oracc.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip"
+            "https://oracc2.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip"
+            "https://oracc.ub.uni-muenchen.de/riao/downloads/riao-teiCorpus-20241202.zip"
+          )
+
+          source_url=""
+          for url in "${candidates[@]}"; do
+            echo "Trying official ORACC mirror: $url"
+            rm -f "$tmp"
+            if curl --fail --location --retry 1 --retry-delay 2 \
+              --proto '=https' --tlsv1.2 \
+              --output "$tmp" "$url"; then
+              mv "$tmp" "$archive"
+              source_url="$url"
+              break
+            fi
+          done
+
+          if [[ -z "$source_url" || ! -s "$archive" ]]; then
+            echo "::error::No official ORACC mirror served the exact dated RIAO TEI archive with normal TLS verification"
+            exit 1
+          fi
+
+          unzip -t "$archive" >/dev/null
+          echo "Verified source mirror: $source_url"
+          sha256sum "$archive"
+          echo "ORACC_TRANSLATION_TEI_ZIP=$archive" >> "$GITHUB_ENV"
+          echo "ORACC_TRANSLATION_SOURCE_URL=$source_url" >> "$GITHUB_ENV"
+
+      - name: Validate real TEI source characterization and whole translation graph
+        run: pytest -q tests/test_m9_real_tei_integration.py

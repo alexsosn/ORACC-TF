@@ -65,14 +65,23 @@ def _build(path: Path, *, with_translation: bool) -> corpus.CorpusBuildReport:
     )
 
 
-def test_translation_build_is_byte_deterministic(tmp_path):
+def _stable_tf_bytes(path: Path) -> bytes:
+    """Ignore only Text-Fabric's framework-generated write timestamp."""
+    return b"\n".join(
+        line
+        for line in path.read_bytes().split(b"\n")
+        if not line.startswith(b"@dateWritten=")
+    )
+
+
+def test_translation_build_is_semantically_byte_deterministic(tmp_path):
     left = tmp_path / "left"
     right = tmp_path / "right"
     _build(left, with_translation=True)
     _build(right, with_translation=True)
 
-    left_files = {path.name: path.read_bytes() for path in left.glob("*.tf")}
-    right_files = {path.name: path.read_bytes() for path in right.glob("*.tf")}
+    left_files = {path.name: _stable_tf_bytes(path) for path in left.glob("*.tf")}
+    right_files = {path.name: _stable_tf_bytes(path) for path in right.glob("*.tf")}
     assert left_files
     assert left_files == right_files
 

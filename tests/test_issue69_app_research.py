@@ -110,3 +110,45 @@ def test_issue69_prototype_formats_do_not_leak_synthetic_slots(tmp_path: Path) -
     assert result["transliteration"].strip().split() == ["*", "a"]
     assert "synthetic" not in result["cuneiform"].lower()
     assert "synthetic" not in result["transliteration"].lower()
+
+
+def test_issue69_measures_candidate_feature_file_bytes(tmp_path: Path) -> None:
+    module = _research_module()
+    tf_root = tmp_path / "tf"
+    _build_fixture(tf_root)
+
+    features = ("sign_json", "gdl_json", "catalogue_json")
+    result = module.measure_feature_bytes(tf_root, features=features)
+
+    assert result["schema_version"] == 1
+    assert result["feature_bytes"] == {
+        feature: (tf_root / f"{feature}.tf").stat().st_size
+        for feature in features
+    }
+    assert result["total_bytes"] == sum(result["feature_bytes"].values())
+
+
+def test_issue69_censuses_none_values_without_copying_bhsa_policy(tmp_path: Path) -> None:
+    module = _research_module()
+    tf_root = tmp_path / "tf"
+    _build_fixture(tf_root)
+
+    assert module.BHSA_NONE_VALUES == (
+        "absent",
+        "n/a",
+        "none",
+        "unknown",
+        "null",
+        "NA",
+    )
+    default_result = module.census_exact_values(tf_root)
+    assert default_result["schema_version"] == 1
+    assert default_result["candidates"] == list(module.BHSA_NONE_VALUES)
+    assert default_result["counts"] == {value: 0 for value in module.BHSA_NONE_VALUES}
+    assert default_result["features"] == {value: [] for value in module.BHSA_NONE_VALUES}
+
+    positive = module.census_exact_values(tf_root, candidates=("a", "missing"))
+    assert positive["counts"]["a"] > 0
+    assert "form" in positive["features"]["a"]
+    assert positive["counts"]["missing"] == 0
+    assert positive["features"]["missing"] == []

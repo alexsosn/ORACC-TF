@@ -507,8 +507,10 @@ def stage_distribution(
 
         if stage_path.exists():
             backup = stage_path.with_name(stage_path.name + ".old")
-            if backup.exists():
-                shutil.rmtree(backup)
+            if backup.exists() or backup.is_symlink():
+                raise InvalidDistribution(
+                    f"transaction backup path already exists: {backup}"
+                )
             stage_path.replace(backup)
             try:
                 temp.replace(stage_path)

@@ -23,6 +23,8 @@ from oracc_tf import corpus
 SCHEMA_VERSION = 1
 CUNEIFORM_FORMAT = "@fmt:text-orig-full={utf8}"
 TRANSLITERATION_FORMAT = "@fmt:text-trans-full=word#{form} "
+BHSA_NONE_VALUES = ("absent", "n/a", "none", "unknown", "null", "NA")
+DEFAULT_HEAVY_FEATURES = ("sign_json", "gdl_json", "catalogue_json")
 
 
 def _peak_rss_kib() -> int:
@@ -71,6 +73,68 @@ def profile_advanced_app(
         "max_slot": api.F.otype.maxSlot,
         "loaded_node_features": sorted(api.Fall()),
         "loaded_edge_features": sorted(api.Eall()),
+    }
+
+
+def measure_feature_bytes(
+    tf_root: Path | str,
+    *,
+    features: tuple[str, ...] | list[str] = DEFAULT_HEAVY_FEATURES,
+) -> dict[str, object]:
+    """Measure source `.tf` bytes for candidate browser-heavy node features.
+
+    Missing files are an error: a typo or schema drift must not silently turn an
+    exclusion candidate into a zero-byte result.
+    """
+    root = Path(tf_root).resolve()
+    feature_bytes: dict[str, int] = {}
+    for feature in features:
+        path = root / f"{feature}.tf"
+        if not path.is_file():
+            raise FileNotFoundError(f"TF feature file not found: {path}")
+        feature_bytes[feature] = path.stat().st_size
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "feature_bytes": feature_bytes,
+        "total_bytes": sum(feature_bytes.values()),
+    }
+
+
+def census_exact_values(
+    tf_root: Path | str,
+    *,
+    candidates: tuple[str, ...] | list[str] = BHSA_NONE_VALUES,
+) -> dict[str, object]:
+    """Count exact node-feature values that could be configured as `noneValues`.
+
+    The default candidates are the values used by the pinned BHSA app.  They are
+    measurement inputs only: a value is recommended for ORACC-TF only if it is
+    actually observed and its source semantics justify treating it as absent.
+    """
+    candidate_values = tuple(candidates)
+    candidate_set = set(candidate_values)
+    counts = {value: 0 for value in candidate_values}
+    features_seen: dict[str, set[str]] = {value: set() for value in candidate_values}
+
+    api = corpus.load_tf(Path(tf_root))
+    for feature in sorted(api.Fall()):
+        feature_api = api.Fs(feature)
+        if feature_api is None:
+            continue
+        for _node, value in feature_api.items():
+            if not isinstance(value, str) or value not in candidate_set:
+                continue
+            counts[value] += 1
+            features_seen[value].add(feature)
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "candidates": list(candidate_values),
+        "counts": counts,
+        "features": {
+            value: sorted(feature_names)
+            for value, feature_names in features_seen.items()
+        },
     }
 
 
@@ -145,6 +209,10 @@ def probe_text_formats(tf_root: Path | str) -> dict[str, object]:
     }
 
 
+def _csv_values(value: str) -> tuple[str, ...]:
+    return tuple(item for item in value.split(",") if item)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -152,6 +220,17 @@ def main() -> int:
     profile = sub.add_parser("profile")
     profile.add_argument("tf_root", type=Path)
     profile.add_argument("--exclude", default="")
+
+    feature_bytes = sub.add_parser("feature-bytes")
+    feature_bytes.add_argument("tf_root", type=Path)
+    feature_bytes.add_argument(
+        "--features",
+        default=",".join(DEFAULT_HEAVY_FEATURES),
+    )
+
+    census = sub.add_parser("census")
+    census.add_argument("tf_root", type=Path)
+    census.add_argument("--candidates", default=",".join(BHSA_NONE_VALUES))
 
     prototype = sub.add_parser("prototype")
     prototype.add_argument("source", type=Path)
@@ -162,9 +241,32 @@ def main() -> int:
 
     args = parser.parse_args()
     if args.command == "profile":
-        excluded = tuple(x for x in args.exclude.split(",") if x)
-        result = profile_advanced_app(args.tf_root, excluded_features=excluded)
+        result = profile_advanced_app(
+            args.tf_root,
+            excluded_features=_csv_values(args.exclude),
+        )
         print(json.dumps(result, sort_keys=True))
+    elif args.command == "feature-bytes":
+        print(
+            json.dumps(
+                measure_feature_bytes(
+                    args.tf_root,
+                    features=_csv_values(args.features),
+                ),
+                sort_keys=True,
+            )
+        )
+    elif args.command == "census":
+        print(
+            json.dumps(
+                census_exact_values(
+                    args.tf_root,
+                    candidates=_csv_values(args.candidates),
+                ),
+                sort_keys=True,
+                ensure_ascii=False,
+            )
+        )
     elif args.command == "prototype":
         inject_prototype_formats(args.source, args.target)
     else:

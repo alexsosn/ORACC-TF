@@ -310,6 +310,9 @@ def _validate_manifest_state(
     repository: str,
 ) -> tuple[dict[str, object], dict[str, str]]:
     _validate_distribution_boundary(stage)
+    readme = stage / "README.md"
+    if not readme.is_file():
+        raise InvalidDistribution("existing distribution README.md is missing or is not a regular file")
     if manifest.get("schema_version") != _MANIFEST_SCHEMA_VERSION:
         raise InvalidDistribution(
             f"unsupported existing distribution manifest schema: {manifest.get('schema_version')!r}"

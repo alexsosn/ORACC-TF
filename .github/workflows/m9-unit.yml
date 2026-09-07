@@ -1,0 +1,38 @@
+name: m9-translation-unit
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/m9-unit.yml"
+      - "programs/oracc_tf/**"
+      - "tests/test_m9_*.py"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  translation-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout M9 unit surface
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            programs
+            tests
+            pyproject.toml
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run M9 translation tests
+        run: pytest -q tests/test_m9_*.py

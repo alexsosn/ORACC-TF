@@ -191,3 +191,24 @@ def test_source_and_stage_overlap_fails_before_recursive_copy(
         )
 
     assert (source / "otype.tf").is_file()
+
+
+def test_replay_rejects_unowned_content_added_to_valid_stage(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    stage = tmp_path / "stage"
+    kwargs = dict(
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    distribution.stage_distribution(source, stage, **kwargs)
+
+    marker = stage / "notes.txt"
+    marker.write_text("unowned payload\n", encoding="utf-8")
+
+    with pytest.raises(distribution.InvalidDistribution, match="unowned"):
+        distribution.stage_distribution(source, stage, **kwargs)
+
+    assert marker.read_text(encoding="utf-8") == "unowned payload\n"

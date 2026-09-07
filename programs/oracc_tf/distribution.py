@@ -22,7 +22,7 @@ from . import corpus, paths, releases
 _REPOSITORY_DATASET_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SOURCE_STATE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-_REQUIRED_FILES = ("otype.tf", "oslots.tf", "otext.tf", "zero-span.json")
+_REQUIRED_FILES = ("otype.tf", "oslots.tf", "otext.tf")
 _FORBIDDEN_PAYLOAD_PARTS = frozenset({"data", "programs", "docs"})
 
 

@@ -10,6 +10,7 @@ separately.
 from __future__ import annotations
 
 import argparse
+from hashlib import sha256
 import json
 from pathlib import Path
 import time
@@ -20,6 +21,20 @@ from oracc_tf import corpus
 
 def directory_size(path: Path) -> int:
     return sum(p.stat().st_size for p in path.rglob("*") if p.is_file() and not p.is_symlink())
+
+
+def directory_digest(path: Path) -> str:
+    """Digest the exact materialized corpus bytes before Text-Fabric can mutate them."""
+    digest = sha256()
+    files = sorted(p for p in path.rglob("*") if p.is_file() and not p.is_symlink())
+    for file in files:
+        relative = file.relative_to(path).as_posix()
+        payload = file.read_bytes()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+    return "sha256:" + digest.hexdigest()
 
 
 def interface_bytes(interface: str = "lo", proc_net_dev: Path = Path("/proc/net/dev")) -> int:
@@ -71,12 +86,15 @@ def benchmark(
         interface=interface,
     )
     snapshot = Path(snapshot_obj)
+    snapshot_bytes = directory_size(snapshot)
+    snapshot_digest = directory_digest(snapshot)
 
     started = time.perf_counter()
     api = corpus.load_tf(snapshot)
     load_seconds = time.perf_counter() - started
     if api.F.otype.maxSlot < 1:
         raise RuntimeError("materialized Text-Fabric dataset has no slots")
+    post_load_snapshot_bytes = directory_size(snapshot)
 
     _, warm_metadata_seconds, warm_metadata_network_bytes = elapsed_and_network(
         lambda: store.ensure_metadata(repository, cache_key=cache_key, ref=ref),
@@ -108,7 +126,9 @@ def benchmark(
         "warm_metadata_seconds": round(warm_metadata_seconds, 6),
         "warm_materialize_seconds": round(warm_materialize_seconds, 6),
         "metadata_cache_bytes": directory_size(repo),
-        "snapshot_bytes": directory_size(snapshot),
+        "snapshot_bytes": snapshot_bytes,
+        "snapshot_digest": snapshot_digest,
+        "post_load_snapshot_bytes": post_load_snapshot_bytes,
         "total_cache_bytes": directory_size(cache_dir),
         "max_slot": api.F.otype.maxSlot,
     }

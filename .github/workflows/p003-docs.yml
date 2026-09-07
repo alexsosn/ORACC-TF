@@ -1,0 +1,28 @@
+name: p003-docs-reference
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  generated-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: Build the real checked-in corpus
+        run: python -c "from oracc_tf import corpus; corpus.build_full_tf('/tmp/oracc-tf')"
+      - name: Generate reference evidence
+        run: python scripts/gen_docs.py /tmp/oracc-tf --docs-dir /tmp/reference
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p003-generated-reference
+          path: /tmp/reference
+          if-no-files-found: error
+      - name: Generated docs match the corpus
+        run: python scripts/check_docs.py /tmp/oracc-tf --docs-dir docs/reference

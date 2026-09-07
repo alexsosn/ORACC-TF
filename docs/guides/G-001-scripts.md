@@ -5,12 +5,12 @@ type: guide
 status: active
 priority: P2
 depends_on: []
-updated: 2026-08-29
+updated: 2026-09-06
 ---
 
 # Utility scripts
 
-Four small tools cover the pipeline from ORACC's published ZIPs to a
+Seven small tools cover the pipeline from ORACC's published ZIPs to a
 GitHub-hosted working copy. All are dependency-free (Python 3 stdlib + bash).
 
 | Script | Purpose |
@@ -155,22 +155,68 @@ always lives in `keys-p.json`. Any bucket still over `--max-mb` is
 subdivided by second character. `map` is written separately. Each shard is
 standalone valid JSON carrying the original metadata header.
 
-`--replace` deletes the source file, but only after the shards verify.
+`--replace` deletes the source only after a complete staged shard directory has
+verified against its manifest. Failed parsing, size checks, or verification do
+not publish partial output. A pre-existing output directory keeps unrelated
+files; successful publication replaces only the script-managed manifest,
+`map.json`, and `keys-*.json` set. `--dry-run` creates no output directories.
 
 ### Ordering and integrity
 
 ORACC emits `keys` in hash order, which carries no meaning. Sharding groups by
 prefix, so `join` returns a semantically identical file whose keys are grouped
-by shard rather than in the original order. Integrity is therefore checked with
-an **order-independent digest** — a SHA-1 over the sorted per-entry hashes —
-recorded in the shard directory's `_index.json` alongside entry counts.
+by shard rather than in the original order. Integrity is checked with the
+existing **order-independent v1 digest** — SHA-1 over the sorted per-entry
+SHA-1 values — recorded in `_index.json` alongside entry counts. The streaming
+implementation deliberately preserves those digest bytes so existing shard
+manifests remain verifiable without migration.
 
-`verify --against <original>` compares the shards to a source file directly.
+Every key shard and `map.json` must also carry the same source metadata as the
+manifest. `verify --against <original>` streams both sides and compares metadata
+as well as key/map counts and digests. An explicitly present empty `map: {}`
+remains distinct from an absent map. Duplicate object fields fail closed at any
+nesting depth in source values, shards, and the manifest instead of being
+silently collapsed by `json.load`.
 
-### Memory
+### Memory and temporary disk
 
-`split` and `join` load the whole document (roughly 6x the file size in RAM;
-545 MB needs about 3.5 GB).
+`split`, `join`, and `verify` no longer materialize a whole index or all shard
+payloads in Python memory. JSON is read incrementally. A temporary stdlib
+SQLite database provides disk-backed payload storage, duplicate detection, and
+sorting for the legacy digest; its configured SQLite page cache is 8 MiB.
+Python-side parser memory therefore scales with the configured read chunk,
+retained top-level metadata, and the largest individual JSON value being
+decoded, rather than with total index size. Temporary disk use does scale with
+the data being processed.
+
+The pre-redesign synthetic baseline showed the old whole-document path scaling
+approximately linearly with input size:
+
+| synthetic input | legacy peak RSS |
+|---:|---:|
+| 4.6 MiB | ~55 MiB |
+| 9.2 MiB | ~93 MiB |
+| 18.4 MiB | ~178 MiB |
+| 36.8 MiB | ~346 MiB |
+
+A separate post-redesign synthetic scaling run from **3.6 MiB through 28.4 MiB**
+stayed in the **~27–36 MiB peak-RSS range** instead of following total input
+size. The CI regression does not assert an OS-level RSS number, because allocator
+and runner versions make that brittle. It forces 4 KiB parser chunks over a
+>4 MiB generated index and asserts that the parser buffer remains below 64 KiB;
+this catches accidental accumulation of prior chunks while leaving room for
+implementation overhead. Giant individual entries are tested separately and
+remain an explicit lower bound on required memory.
+
+### Failure model
+
+Malformed or truncated JSON, invalid nesting, duplicate object fields that
+would lose information, shard/manifest metadata disagreement, a single shard
+that cannot satisfy `--max-mb`, and manifest digest mismatches all abort before
+new output is accepted. `join` writes to a temporary destination and only
+replaces the requested output after the staged content matches the manifest;
+it refuses an output path that aliases the manifest or any managed shard it is
+reading. The committed v1 shard format remains readable and joinable.
 
 ---
 

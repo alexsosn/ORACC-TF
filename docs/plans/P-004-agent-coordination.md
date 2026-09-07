@@ -54,14 +54,23 @@ Independent review:
 <!-- oracc-tf:review {"task":"P-004.PH0","review_session":"REVIEW_SESSION","implementation_session":"IMPLEMENTATION_SESSION","head_sha":"SHA","verdict":"pass"} -->
 ```
 
+## Dependency semantics
+
+Registry dependencies have two distinct meanings:
+
+- `blocked_by`: **claim/start dependencies**. Every referenced task must be `done` before the task becomes `ready` and can be claimed.
+- `completion_blocked_by`: **completion-only dependencies**. These do not prevent claiming when the issue explicitly permits research, design, fixture preparation, or other bounded work to start early. They must all be `done` before `validate_completion()` can pass and the task can be finalized.
+
+Use `completion_blocked_by` only when the mapped issue explicitly defines what may proceed early and where production integration or merge must stop. A dependency that prevents any useful source-grounded work belongs in `blocked_by` instead. Both dependency sets participate in static existence, cycle, and completed-task validation.
+
 ## Runtime states
 
 The durable registry uses `todo`, `blocked`, and `done`. Reconciliation computes runtime states:
 
-- `ready`: dependencies are complete, issue is open, and no ownership event blocks selection;
+- `ready`: claim/start dependencies are complete, issue is open, and no ownership event blocks selection;
 - `claimed`: one session owns the live winning lease and no implementation PR is active;
 - `review`: the winning session has the active implementation PR;
-- `blocked`: the durable task is blocked or a dependency is incomplete;
+- `blocked`: the durable task is blocked or a claim/start dependency is incomplete;
 - `stale`: an expired claim still requires explicit recovery;
 - `conflict`: registry/GitHub disagreement, malformed coordination data, competing live sessions, duplicate unsuperseded PRs, or invalid ownership.
 
@@ -93,7 +102,7 @@ A task has at most one active implementation PR. When an old PR must remain open
 
 Before a task is finalized, the worker re-reads current state and verifies:
 
-- every dependency is still `done`;
+- every claim/start dependency and every completion-only dependency is still `done`;
 - the task has one valid winning claim and one active implementation PR;
 - PR task/issue/session metadata agrees with the registry and claim;
 - tests and required external gates pass on the exact candidate head;
@@ -143,7 +152,7 @@ Issue: #43.
 
 Open executable tickets created outside the original P-001–P-005 task lists are also registered here so P-004 can select them. Their GitHub issue bodies remain the authoritative research/design/TDD/review specification; this section supplies stable task/spec anchors only. Issue #48 is the dispatcher/meta issue and is deliberately not selectable.
 
-For tickets whose issue explicitly permits research/design before a later production dependency, registry `blocked_by` represents the claim/start gate. The worker must still obey all issue-local integration, merge, and stop conditions before finalization.
+For tickets whose issue explicitly permits research/design before a later production dependency, put only the true claim/start gate in `blocked_by` and put later integration/finalization dependencies in `completion_blocked_by`. The worker must still obey all issue-local integration, merge, and stop conditions.
 
 ### ISSUE-32
 ETCSRI morphology-rich TF dataset research/design/TDD — GitHub #32.

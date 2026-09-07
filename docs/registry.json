@@ -331,7 +331,8 @@
       "plan": "P-002",
       "spec": "§Phase 2",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH1"
       ],
       "status": "todo",
@@ -344,7 +345,8 @@
       "plan": "P-002",
       "spec": "§Phase 3",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH2"
       ],
       "status": "todo",
@@ -357,7 +359,8 @@
       "plan": "P-002",
       "spec": "§Phase 4",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH3",
         "P-001.M6"
       ],
@@ -371,7 +374,8 @@
       "plan": "P-002",
       "spec": "§Phase 5",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH4"
       ],
       "status": "todo",
@@ -384,7 +388,8 @@
       "plan": "P-002",
       "spec": "§Phase 6",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH5"
       ],
       "status": "todo",
@@ -397,7 +402,8 @@
       "plan": "P-002",
       "spec": "§Phase 7",
       "priority": "P1",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH6"
       ],
       "status": "todo",
@@ -410,8 +416,10 @@
       "plan": "P-002",
       "spec": "§Phase 8",
       "priority": "P1",
-      "blocked_by": [
-        "P-002.PH7"
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-002.PH7",
+        "P-002.PH9"
       ],
       "status": "todo",
       "issue": 24,
@@ -423,7 +431,8 @@
       "plan": "P-002",
       "spec": "§Phase 9",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH5"
       ],
       "status": "todo",
@@ -455,8 +464,10 @@
       "priority": "P1",
       "blocked_by": [
         "P-001.M6",
-        "P-001.M9",
         "P-003.PH0"
+      ],
+      "completion_blocked_by": [
+        "P-001.M9"
       ],
       "status": "todo",
       "issue": 27,
@@ -468,7 +479,8 @@
       "plan": "P-003",
       "spec": "§Phase 2",
       "priority": "P1",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-003.PH1",
         "P-002.PH1"
       ],
@@ -498,8 +510,10 @@
       "plan": "P-003",
       "spec": "§Phase 4",
       "priority": "P2",
-      "blocked_by": [
-        "P-003.PH1"
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-003.PH1",
+        "P-001.M9"
       ],
       "status": "todo",
       "issue": 30,
@@ -511,7 +525,8 @@
       "plan": "P-003",
       "spec": "§Phase 5",
       "priority": "P2",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-003.PH1"
       ],
       "status": "todo",
@@ -582,6 +597,9 @@
       "spec": "§ISSUE-35",
       "priority": "P2",
       "blocked_by": [],
+      "completion_blocked_by": [
+        "ISSUE-34"
+      ],
       "status": "todo",
       "issue": 35,
       "evidence_file": "docs/task-state/ISSUE-35.json"
@@ -604,6 +622,9 @@
       "spec": "§ISSUE-38",
       "priority": "P2",
       "blocked_by": [],
+      "completion_blocked_by": [
+        "P-001.M9"
+      ],
       "status": "todo",
       "issue": 38,
       "evidence_file": "docs/task-state/ISSUE-38.json"
@@ -626,6 +647,9 @@
       "spec": "§ISSUE-41",
       "priority": "P2",
       "blocked_by": [],
+      "completion_blocked_by": [
+        "ISSUE-34"
+      ],
       "status": "todo",
       "issue": 41,
       "evidence_file": "docs/task-state/ISSUE-41.json"
@@ -637,6 +661,9 @@
       "spec": "§ISSUE-42",
       "priority": "P0",
       "blocked_by": [],
+      "completion_blocked_by": [
+        "P-002.PH1"
+      ],
       "status": "todo",
       "issue": 42,
       "evidence_file": "docs/task-state/ISSUE-42.json"
@@ -648,6 +675,10 @@
       "spec": "§ISSUE-44",
       "priority": "P1",
       "blocked_by": [],
+      "completion_blocked_by": [
+        "P-002.PH1",
+        "P-002.PH3"
+      ],
       "status": "todo",
       "issue": 44,
       "evidence_file": "docs/task-state/ISSUE-44.json"
@@ -659,6 +690,9 @@
       "spec": "§ISSUE-46",
       "priority": "P2",
       "blocked_by": [],
+      "completion_blocked_by": [
+        "P-001.M9"
+      ],
       "status": "todo",
       "issue": 46,
       "evidence_file": "docs/task-state/ISSUE-46.json"
@@ -760,6 +794,12 @@
       "spec": "§ISSUE-74",
       "priority": "P1",
       "blocked_by": [],
+      "completion_blocked_by": [
+        "ISSUE-69",
+        "ISSUE-70",
+        "ISSUE-71",
+        "ISSUE-73"
+      ],
       "status": "todo",
       "issue": 74,
       "evidence_file": "docs/task-state/ISSUE-74.json"
@@ -783,7 +823,7 @@
       "evidence_file": "docs/task-state/ISSUE-75.json"
     }
   ],
-  "selection_rule": "enumerate every dependency-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; losing sessions reselect unrelated ready work",
+  "selection_rule": "enumerate every claim/start-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; completion_blocked_by gates finalization without suppressing explicitly permitted early research/design; losing sessions reselect unrelated ready work",
   "stop_conditions": [
     "coordination reconciliation reports conflict",
     "a stale lease exists without explicit recovery",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -118,3 +119,36 @@ def test_preexisting_unowned_stage_symlink_is_not_dereferenced(tmp_path: Path) -
 
     assert link.is_symlink()
     assert not (stage / "manifest.json").exists()
+
+
+def test_publish_does_not_delete_preexisting_backup_sibling(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    stage = tmp_path / "stage"
+    first = dict(
+        dataset="assyrian-royal-inscriptions",
+        release_id="release-a",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state="sha256:" + "1" * 64,
+    )
+    distribution.stage_distribution(source, stage, **first)
+    original_manifest = json.loads((stage / "manifest.json").read_text(encoding="utf-8"))
+
+    foreign_backup = stage.with_name(stage.name + ".old")
+    foreign_backup.mkdir()
+    marker = foreign_backup / "foreign.txt"
+    marker.write_text("must survive\n", encoding="utf-8")
+
+    with pytest.raises(distribution.InvalidDistribution, match="backup"):
+        distribution.stage_distribution(
+            source,
+            stage,
+            dataset="assyrian-royal-inscriptions",
+            release_id="release-b",
+            tf_version="0.2.0",
+            builder_commit="b" * 40,
+            source_state="sha256:" + "2" * 64,
+        )
+
+    assert marker.read_text(encoding="utf-8") == "must survive\n"
+    assert json.loads((stage / "manifest.json").read_text(encoding="utf-8")) == original_manifest

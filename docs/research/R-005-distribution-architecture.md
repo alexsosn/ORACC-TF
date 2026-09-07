@@ -5,7 +5,7 @@ type: research
 status: active
 priority: P0
 depends_on: [P-001]
-updated: 2026-09-06
+updated: 2026-09-07
 ---
 
 # Distribution architecture for installable ORACC-TF datasets
@@ -18,12 +18,13 @@ This research is the source-grounded gate for issue #60. It does not create dist
 
 ## Measured baseline
 
-Measurements are bound to ORACC-TF main `6c608ae749ac7e4884676f2f371a42779c182340` and Agora main `302178da1f85c6097950d1bb4c0986bd10c3c141`, observed 2026-09-06.
+Initial distribution measurements were bound to ORACC-TF main `6c608ae749ac7e4884676f2f371a42779c182340` and Agora main `302178da1f85c6097950d1bb4c0986bd10c3c141`, observed 2026-09-06. The P-005 implementation was re-grounded on ORACC-TF main `e8f2b160912e0adaa37b24e68384ac551077a440` on 2026-09-07 after the corpus adopted ADR-0001 synthetic empty slots.
 
-- GitHub reports `alexsosn/ORACC-TF` repository size `627839` KiB (about 613 MiB). This is repository metadata from GitHub, not a claim about cold-install transfer.
+- GitHub reported `alexsosn/ORACC-TF` repository size `627839` KiB (about 613 MiB) at the initial measurement. This is repository metadata from GitHub, not a claim about cold-install transfer.
 - `datasets.toml` currently defines exactly one semantic publishable dataset, `assyrian-royal-inscriptions`, from eleven JSON archive inputs plus the independently tracked `riao-teiCorpus` translation source. The dataset therefore deliberately aggregates upstream archive/subproject boundaries.
 - Issue #14 established the publishable root grammar `<output-base>/<dataset>/tf/<tf_version>/`. Dataset identity, TF schema version, and upstream source state are distinct identities.
 - No generated publishable TF root is committed to the central repository today; distribution work must therefore not pretend there is a legacy published tree that requires byte-for-byte path compatibility.
+- ADR-0001/current `corpus.py` represents textual zero-span source positions with explicit synthetic TF slots and removes the legacy `zero-span.json` artifact after a successful build. A distribution contract that requires that sidecar is therefore stale and rejects the current real corpus. Re-ground benchmark run `34126044419` reproduced this directly: the full current build reached `stage_distribution()` and failed only because `zero-span.json` was missing. The packaging boundary must follow the current loadable TF graph, not resurrect sidecar-only architecture.
 
 ### What Agora actually transfers
 
@@ -68,15 +69,15 @@ Every published distribution version must bind at least:
 - exact contributing upstream source-state identity / archive hashes when P-002 lock provenance is available;
 - generated artifact/tree digest;
 - licence/provenance payloads appropriate to the contributing sources;
-- verification result proving required TF warp/sidecars are complete before the version becomes addressable.
+- verification result proving the required TF warp and any genuinely emitted coordinated artifacts are complete before the version becomes addressable.
 
 A mutable branch name is not an immutable release identity. Agora should pin an immutable distribution commit or immutable tag resolved to a commit. Re-running publication for the same identity and bytes is idempotent; the same immutable version identity with different bytes is a hard failure.
 
 ## Generated repository boundary
 
-A distribution repository contains only corpus-distribution material: generated TF roots, coordinated sidecars/manifests, provenance/integrity metadata, and minimal generated README/licence/attribution furniture. It must not copy unrelated `data/`, converter source, research plans, or other datasets.
+A distribution repository contains only corpus-distribution material: generated TF roots, genuinely emitted coordinated artifacts, manifests, provenance/integrity metadata, and minimal generated README/licence/attribution furniture. It must not copy unrelated `data/`, converter source, research plans, or other datasets. Sidecars are conditional outputs, not a structural requirement. In particular, ADR-0001 means current zero-span textual entities live inside TF through synthetic slots, so `zero-span.json` must not be fabricated for current corpora.
 
-Recommended tree shape:
+Recommended current tree shape:
 
 ```text
 README.md
@@ -88,7 +89,7 @@ manifest.json
       oslots.tf
       otext.tf
       ...features...
-      zero-span.json
+      ...only genuinely emitted coordinated artifacts, if any...
 ```
 
 The repository name is an operational locator, not the semantic id. A collision-safe generated name should be derived from the dataset id (provisionally `ORACC-TF-<dataset>`); the manifest remains authoritative for semantic identity.
@@ -103,7 +104,7 @@ The architecture is not complete until a test publisher can create a local/gener
 - local cache size;
 - no-change/update-check cost;
 
-for central-monorepo repository acquisition versus the generated per-dataset repository shape using Agora's actual `GitStore` path. The benchmark must distinguish Git metadata transfer from selected TF blob transfer.
+for central-monorepo repository acquisition versus the generated per-dataset repository shape using Agora's actual `GitStore` path. The benchmark must distinguish Git metadata transfer from selected TF blob transfer and must be re-run after the ADR-0001 re-ground so slot counts and payload sizes are current rather than copied from the pre-empty-slot benchmark.
 
 ## Stop conditions
 

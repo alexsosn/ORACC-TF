@@ -152,3 +152,42 @@ def test_publish_does_not_delete_preexisting_backup_sibling(tmp_path: Path) -> N
 
     assert marker.read_text(encoding="utf-8") == "must survive\n"
     assert json.loads((stage / "manifest.json").read_text(encoding="utf-8")) == original_manifest
+
+
+@pytest.mark.parametrize("layout", ["same", "stage-inside-source", "source-inside-stage"])
+def test_source_and_stage_overlap_fails_before_recursive_copy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, layout: str
+) -> None:
+    if layout == "source-inside-stage":
+        stage = tmp_path / "stage"
+        source = _minimal_tf(stage / "source")
+    else:
+        source = _minimal_tf(tmp_path / "source")
+        stage = source if layout == "same" else source / "stage"
+
+    source_resolved = source.resolve()
+    real_copytree = distribution.shutil.copytree
+
+    def guarded_copytree(src: object, dst: object, *args: object, **kwargs: object):
+        src_path = Path(src).resolve()
+        dst_path = Path(dst).resolve(strict=False)
+        if src_path == source_resolved and (
+            dst_path == source_resolved or source_resolved in dst_path.parents
+        ):
+            raise AssertionError("recursive copy attempted")
+        return real_copytree(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr(distribution.shutil, "copytree", guarded_copytree)
+
+    with pytest.raises(distribution.InvalidDistribution, match="overlap"):
+        distribution.stage_distribution(
+            source,
+            stage,
+            dataset="assyrian-royal-inscriptions",
+            release_id="release-a",
+            tf_version="0.2.0",
+            builder_commit="a" * 40,
+            source_state="sha256:" + "1" * 64,
+        )
+
+    assert (source / "otype.tf").is_file()

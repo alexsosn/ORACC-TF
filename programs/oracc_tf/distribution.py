@@ -291,6 +291,17 @@ def _validate_distribution_boundary(stage: Path) -> None:
             )
 
 
+def _is_owned_stage_path(relative: Path, visible_roots: dict[str, str]) -> bool:
+    """Return whether a staged path is manifest metadata or part of an owned TF root."""
+    if relative.as_posix() in {"README.md", "manifest.json"}:
+        return True
+    for tf_root in visible_roots:
+        root = Path(tf_root)
+        if relative == root or relative in root.parents or root in relative.parents:
+            return True
+    return False
+
+
 def _validate_manifest_state(
     stage: Path,
     manifest: dict[str, object],
@@ -349,6 +360,13 @@ def _validate_manifest_state(
                 f"visible TF root {tf_root!r} disagrees with release {owner_id!r}"
             )
         visible_roots[tf_root] = owner_id
+
+    for path in sorted(stage.rglob("*")):
+        relative = path.relative_to(stage)
+        if not _is_owned_stage_path(relative, visible_roots):
+            raise InvalidDistribution(
+                f"existing distribution contains unowned content: {relative.as_posix()}"
+            )
 
     current_root = current_record["tf_root"]
     assert isinstance(current_root, str)

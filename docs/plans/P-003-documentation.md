@@ -6,7 +6,7 @@ status: draft
 priority: P1
 depends_on: [R-003, P-001]
 blocked_by: [P-001]
-updated: 2026-08-29
+updated: 2026-09-07
 ---
 
 # Plan: build user documentation for ORACC-TF
@@ -84,6 +84,10 @@ number differs from the current build. Wire into CI.
 # Phase 1 — the five hazard pages (highest value)
 
 Each corresponds to a hazard in R-003 §2 and must exist before any tutorial.
+Phase 1 may be researched or drafted before the translation layer lands, but
+its executable acceptance gate is blocked on P-001 M9: the translations page
+must exercise the real line-range API rather than a fixture-only substitute or
+a fictitious per-line translation field.
 
 ## 1.1 `reference/signs.md`
 The GDL ontology. Includes the P-001 §2.3 disposition census, states plainly
@@ -117,9 +121,15 @@ join to CDLI or a catalogue without merging editions.
 
 ## 1.5 `reference/model.md`
 Node types, section hierarchy, an SVG diagram, and the statement that `d`
-markers are flat in the source but nested in TF.
+markers are flat in the source but nested in TF. The page must also explain the
+accepted empty-slot architecture: an independently positioned zero-span textual
+locus is represented by an explicit `synthetic=1` synthetic empty `sign` slot,
+while semantic sign counts and visible sign content describe source signs only.
+Structural ancestors reuse descendant anchors rather than manufacturing one
+technical slot per container.
 
-**Acceptance:** the node-count table is generated, not typed.
+**Acceptance:** the node-count table is generated, not typed, and the model
+clearly separates semantic sign content from synthetic empty positional anchors.
 
 ---
 

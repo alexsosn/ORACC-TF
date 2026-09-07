@@ -405,7 +405,7 @@ def _clean_replaced_artifact(out_dir: Path, materialised: _MaterialisedGraph) ->
     )
     try:
         for path in out_dir.glob("*.tf"):
-            if path.stem not in expected:
+            if path.is_file() and path.stem not in expected:
                 path.unlink()
         cache = out_dir / ".tf"
         if cache.exists():

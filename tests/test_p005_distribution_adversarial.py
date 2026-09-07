@@ -74,3 +74,47 @@ def test_replay_rejects_symlink_added_to_existing_stage(tmp_path: Path) -> None:
 
     with pytest.raises(distribution.InvalidDistribution, match="symlink"):
         distribution.stage_distribution(source, stage, **kwargs)
+
+
+def test_preexisting_unowned_stage_content_fails_closed(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    stage = tmp_path / "stage"
+    stage.mkdir()
+    marker = stage / "unknown.txt"
+    marker.write_text("unowned\n", encoding="utf-8")
+
+    with pytest.raises(distribution.InvalidDistribution, match="manifest"):
+        distribution.stage_distribution(
+            source,
+            stage,
+            dataset="assyrian-royal-inscriptions",
+            release_id="release-a",
+            tf_version="0.2.0",
+            builder_commit="a" * 40,
+            source_state="sha256:" + "1" * 64,
+        )
+
+    assert marker.read_text(encoding="utf-8") == "unowned\n"
+    assert not (stage / "manifest.json").exists()
+
+
+def test_preexisting_unowned_stage_symlink_is_not_dereferenced(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    stage = tmp_path / "stage"
+    stage.mkdir()
+    link = stage / "leaked-link"
+    link.symlink_to(source / "feature.tf")
+
+    with pytest.raises(distribution.InvalidDistribution, match="symlink"):
+        distribution.stage_distribution(
+            source,
+            stage,
+            dataset="assyrian-royal-inscriptions",
+            release_id="release-a",
+            tf_version="0.2.0",
+            builder_commit="a" * 40,
+            source_state="sha256:" + "1" * 64,
+        )
+
+    assert link.is_symlink()
+    assert not (stage / "manifest.json").exists()

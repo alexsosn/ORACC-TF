@@ -84,6 +84,14 @@ RIAO+RINAP converter, [P-002](docs/plans/P-002-upstream-automation.md) automates
 tracking ORACC upstream, and [P-003](docs/plans/P-003-documentation.md) covers
 user-facing documentation.
 
+**Architecture note:** P-001 revision 5 records the historical M6 sidecar
+implementation. That zero-span design is superseded by
+[`ADR-0001`](docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md)
+and the current [data-model reference](docs/reference/model.md): independently
+positioned zero-span textual entities use explicit synthetic empty TF slots,
+not a sidecar. New builds keep all 2,078 documents and 320,975 words in TF and
+do not emit `zero-span.json` for those entities.
+
 ## Licence
 
 ORACC corpus data is released by its projects; each states its own terms.

@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `word`
 - value type: `str`
-- populated values: `289203`
-- distinct values: `6226`
+- populated values: `289205`
+- distinct values: `6227`
 - description: ORACC contextual lexical sense attached to the word occurrence.
 
 ## Value frequencies

@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `word`
 - value type: `str`
-- populated values: `288558`
-- distinct values: `54437`
+- populated values: `288560`
+- distinct values: `54439`
 - description: ORACC occurrence analysis signature preserved verbatim; not a stable ORACC-TF lexeme identifier.
 
 ## Value frequencies

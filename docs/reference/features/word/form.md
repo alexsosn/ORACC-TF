@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `word`
 - value type: `str`
-- populated values: `320680`
-- distinct values: `29423`
+- populated values: `320975`
+- distinct values: `29446`
 - description: Surface transliteration form of the ORACC word occurrence.
 
 ## Value frequencies
@@ -13,7 +13,7 @@ Showing the 20 most frequent values.
 
 | value | count |
 |---|---:|
-| `x` | 22541 |
+| `x` | 22542 |
 | `ina` | 7641 |
 | `a-na` | 7610 |
 | `ša₂` | 5914 |

@@ -1,14 +1,19 @@
-# Agent instructions
+# ORACC-TF Agent Instructions
+
+## Mandatory coordination
+
+All autonomous work must follow the parallel-safe coordination protocol in `docs/plans/P-004-agent-coordination.md` and the machine-readable task registry in `docs/registry.json`.
+
+Before implementing a task:
+
+1. Reconcile the task against current GitHub issue/PR markers and registry state.
+2. Hold a live claim lease for that task.
+3. Bind exactly one open implementation PR to the winning claim session.
+4. Follow research → design → RED-first TDD → implementation → exact-head tests → logically independent review.
+5. Never complete a task from a stale claim, stale review, or superseded implementation.
 
 ## Text-Fabric zero-span architecture
 
-Before designing or changing Text-Fabric serialization, read `docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md`.
+For any Text-Fabric modelling work, read `docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md` before designing zero-span handling.
 
-Normative rule: an **independently positioned source entity in the textual sequence** that has no ordinary semantic slot remains inside Text-Fabric through an explicit empty/synthetic slot. Do not invent a zero-span sidecar merely to work around the TF `oslots` invariant.
-
-- Ancestors/containers reuse descendant real or empty anchors; do not create one synthetic slot per ancestor.
-- Non-textual graph abstractions anchor through occurrences/loci or a documented technical anchor when required; that anchor is not textual content.
-- Converters and reports distinguish semantic/source slots, synthetic empty slots, and total TF slots.
-- Never borrow a neighbouring real slot for an independently positioned textual entity.
-- Never fabricate visible source content for an empty anchor.
-- Sidecars are for data genuinely outside the TF graph/API contract. A sidecar for textual zero-span nodes requires an explicit corpus-specific ADR proving empty-slot anchoring is semantically invalid and must pass independent review.
+Independently positioned textual entities with zero semantic slot extent stay inside TF through explicit synthetic empty slots. Ancestors reuse descendant anchors. Do not borrow neighbouring real slots and do not invent visible/lexical content. A sidecar is not an acceptable workaround merely because TF rejects empty `oslots`; any exception requires a corpus-specific ADR and independent review.

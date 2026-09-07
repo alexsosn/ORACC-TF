@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `mixed`
 - value type: `str`
-- populated values: `297226`
-- distinct values: `4629`
+- populated values: `297230`
+- distinct values: `4630`
 - description: ORACC guide word used to disambiguate the lexical entry.
 
 ## Value frequencies

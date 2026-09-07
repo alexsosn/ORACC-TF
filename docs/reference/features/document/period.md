@@ -3,17 +3,18 @@
 - kind: `node`
 - scope: `document`
 - value type: `str`
-- populated values: `1841`
-- distinct values: `5`
+- populated values: `2075`
+- distinct values: `6`
 - description: ORACC catalogue period value preserved as text.
 
 ## Value frequencies
 
 | value | count |
 |---|---:|
-| `Neo-Assyrian` | 1461 |
-| `Middle Assyrian` | 269 |
-| `Old Assyrian` | 108 |
+| `Neo-Assyrian` | 1641 |
+| `Middle Assyrian` | 297 |
+| `Old Assyrian` | 122 |
+| `Late Middle Assyrian or early Neo-Assyrian` | 12 |
 | `Old Akkadian` | 2 |
 | `Ur III` | 1 |
 

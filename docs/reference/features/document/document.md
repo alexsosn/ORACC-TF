@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `document`
 - value type: `str`
-- populated values: `1842`
-- distinct values: `1842`
+- populated values: `2078`
+- distinct values: `2078`
 - description: Qualified ORACC document key used as the Text-Fabric document section value.
 
 ## Value frequencies

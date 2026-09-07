@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `sign`
 - value type: `str`
-- populated values: `792651`
-- distinct values: `284299`
+- populated values: `792946`
+- distinct values: `284594`
 - description: Source ORACC word identifier containing this sign.
 
 ## Value frequencies

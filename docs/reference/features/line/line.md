@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `line`
 - value type: `str`
-- populated values: `56084`
-- distinct values: `47368`
+- populated values: `56226`
+- distinct values: `47510`
 - description: Source ORACC line identifier used as the Text-Fabric line section value.
 
 ## Value frequencies

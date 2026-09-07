@@ -54,8 +54,8 @@ DESCRIPTIONS: dict[str, str] = {
     "pleiades_coord": "ORACC catalogue Pleiades coordinate value preserved as text.",
     "cdli_id": "ORACC catalogue CDLI identifier value preserved as text.",
     "collection": "ORACC catalogue collection value preserved as text.",
-    # Structural layer
-    "synthetic": "Integer flag marking a section node synthesized by ORACC-TF to preserve source hierarchy.",
+    # Structural / technical provenance layer
+    "synthetic": "Integer flag marking ORACC-TF-synthesized section nodes or technical empty sign slots; synthetic slots carry no fabricated cuneiform content.",
     "implicit": "Source section implicit marker preserved from ORACC.",
     "chunk_type": "ORACC chunk type preserved from the source structure.",
     "chunk_subtype": "ORACC chunk subtype preserved from the source structure.",

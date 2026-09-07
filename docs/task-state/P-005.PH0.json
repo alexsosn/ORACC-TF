@@ -2,7 +2,8 @@
   "task": "P-005.PH0",
   "issue": 60,
   "pr": 62,
-  "status": "done",
+  "registry_status": "todo",
+  "runtime_status": "review-pending",
   "research": {
     "document": "docs/research/R-005-distribution-architecture.md",
     "issue_comments": [5554966145, 5555160559, 5555179630],
@@ -25,16 +26,18 @@
     "blocking_review": 5126035218,
     "blocking_head": "a9642d42aafb01c10e65727c5f8e5c8a5e9e335b",
     "resolution_head": "3dd9910eaa963dbfae88e41db0baded4fe27f2e2",
-    "resolution": "publisher now rejects structurally complete but unloadable TF, rejects raw/build/research payload directories, verifies current visible release integrity before replay, and performs TF load validation on an isolated copy so validation cannot alter publishable bytes"
+    "resolution": "publisher rejects structurally complete but unloadable TF, rejects raw/build/research payload directories, verifies current visible release integrity before replay, and performs TF load validation on an isolated copy so validation cannot alter publishable bytes",
+    "fresh_exact_head_review_required": true
   },
   "verification": {
-    "head": "3dd9910eaa963dbfae88e41db0baded4fe27f2e2",
+    "historical_head": "3dd9910eaa963dbfae88e41db0baded4fe27f2e2",
     "standard_tests": 34049623911,
     "generated_reference": 34049623914,
     "m8_cross_validation": 34049623913,
     "agora_benchmark": 34049623895,
     "agora_benchmark_artifact": 9994278279,
-    "agora_benchmark_artifact_digest": "sha256:c476c56031e6509d2e1678c296f18c3b3fbf6ccbfc603c0c98ee11b98338da6e"
+    "agora_benchmark_artifact_digest": "sha256:c476c56031e6509d2e1678c296f18c3b3fbf6ccbfc603c0c98ee11b98338da6e",
+    "retest_required_after_reground": true
   },
   "benchmark": {
     "method": "pinned Agora GitStore via loopback git daemon with /proc/net/dev RX+TX byte deltas",
@@ -53,13 +56,13 @@
     "small_snapshot_bytes": 965,
     "central_small_total_network_bytes": 1303686688,
     "minimal_small_total_network_bytes": 27218,
-    "result": "equivalent TF payloads load at exact immutable revisions; the generated minimal repository sharply reduces cold Git transfer and metadata/tree coupling while warm/no-change cost remains small"
+    "result": "historical benchmark: equivalent TF payloads loaded at exact immutable revisions; the generated minimal repository sharply reduced cold Git transfer and metadata/tree coupling while warm/no-change cost remained small"
   },
   "coordination": {
-    "implementation_session": "gpt56sol-20260906-1652-60",
-    "expired_claim": 5560221808,
-    "recovery": 5561044763,
-    "fresh_claim": 5561045939
+    "previous_implementation_session": "gpt56sol-20260906-1652-60",
+    "recovery_session": "gpt56sol-20260907-1602-60",
+    "recovery_claim": 5571029984,
+    "reground_base": "e8f2b160912e0adaa37b24e68384ac551077a440"
   },
-  "result": "PH0 establishes and tests a fail-closed local distribution contract with immutable release ledger, registered semantic dataset identity, load-before-visibility validation, current-tree tamper detection, minimal repository boundary, and measured compatibility with Agora's existing repository acquisition model. External repository mutation remains deferred to a separately reviewed phase."
+  "resume_gate": "Re-ground PR #62 on current main, rerun focused/full/benchmark gates on the exact new head, then obtain a logically independent adversarial review of that exact head before marking done or merging."
 }

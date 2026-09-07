@@ -1,0 +1,24 @@
+{
+  "task": "P-003.PH1",
+  "issue": 27,
+  "implementation_pr": 67,
+  "registry_status": "todo",
+  "runtime_status": "dependency-blocked",
+  "research": {
+    "base_head": "34030b8e29779f976a9db9565274b9029f33a639",
+    "finding": "Phase 1 requires an executable line-range translation lookup, but P-001.M9 is unfinished and main has no translation_unit implementation. The Phase-1 model contract also predated ADR-0001 and therefore did not require semantic-sign versus synthetic-empty-slot separation."
+  },
+  "tdd": {
+    "red_run": 34108070316,
+    "red_result": "2 expected failures, 182 passed, 1 skipped: missing P-001.M9 dependency and stale empty-slot model contract",
+    "intermediate_run": 34108555805,
+    "intermediate_result": "1 expected failure, 183 passed, 1 skipped after the model contract was corrected; only the missing registry dependency remained"
+  },
+  "blocker": {
+    "dependency": "P-001.M9",
+    "dependency_issue": 16,
+    "dependency_pr": 13,
+    "reason": "The translations hazard page cannot satisfy its runnable overlap-query acceptance criterion until the translation layer is present on main."
+  },
+  "resume_gate": "Resume P-003.PH1 only after P-001.M9 is done; then re-measure all hazard claims against the current corpus and add executable snippets before prose finalization."
+}

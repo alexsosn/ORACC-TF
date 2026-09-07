@@ -3,7 +3,7 @@
 - kind: `node`
 - scope: `mixed`
 - value type: `str`
-- populated values: `327736`
+- populated values: `327886`
 - distinct values: `35`
 - description: ORACC lexical part-of-speech value.
 
@@ -16,12 +16,12 @@ Showing the 20 most frequent values.
 | `N` | 130823 |
 | `V` | 43334 |
 | `PRP` | 29399 |
-| `u` | 26033 |
+| `u` | 26176 |
 | `AJ` | 14169 |
 | `DN` | 10919 |
 | `GN` | 10463 |
 | `SN` | 9710 |
-| `RN` | 8703 |
+| `RN` | 8705 |
 | `CNJ` | 6376 |
 | `DET` | 6247 |
 | `REL` | 6117 |
@@ -31,7 +31,7 @@ Showing the 20 most frequent values.
 | `EN` | 2896 |
 | `IP` | 2665 |
 | `NU` | 1965 |
-| `PN` | 1318 |
+| `PN` | 1320 |
 | `TN` | 1005 |
 
 <!-- manual:begin interpretation -->

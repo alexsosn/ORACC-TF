@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `mixed`
 - value type: `str`
-- populated values: `1191903`
-- distinct values: `1842`
+- populated values: `1193832`
+- distinct values: `2078`
 - description: Qualified ORACC subproject/document key used by ORACC-TF for cross-node identity.
 
 ## Value frequencies

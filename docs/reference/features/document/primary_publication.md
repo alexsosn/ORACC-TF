@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `document`
 - value type: `str`
-- populated values: `1695`
-- distinct values: `1557`
+- populated values: `1922`
+- distinct values: `1782`
 - description: ORACC catalogue primary-publication value preserved as text.
 
 ## Value frequencies

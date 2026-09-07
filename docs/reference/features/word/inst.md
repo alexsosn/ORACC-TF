@@ -3,8 +3,8 @@
 - kind: `node`
 - scope: `word`
 - value type: `str`
-- populated values: `320680`
-- distinct values: `35795`
+- populated values: `320975`
+- distinct values: `35820`
 - description: ORACC source instance-analysis value preserved on the word occurrence.
 
 ## Value frequencies
@@ -13,7 +13,7 @@ Showing the 20 most frequent values.
 
 | value | count |
 |---|---:|
-| `u` | 25637 |
+| `u` | 25780 |
 | `u[and]CNJ` | 6262 |
 | `ana[to]PRP` | 5861 |
 | `ša[of]DET` | 5682 |

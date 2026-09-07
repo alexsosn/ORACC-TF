@@ -3,7 +3,7 @@
 - kind: `node`
 - scope: `document`
 - value type: `str`
-- populated values: `1842`
+- populated values: `2078`
 - distinct values: `1`
 - description: Licence label supplied by ORACC for the source document metadata.
 
@@ -11,7 +11,7 @@
 
 | value | count |
 |---|---:|
-| `This data is released under the CC0 license` | 1842 |
+| `This data is released under the CC0 license` | 2078 |
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

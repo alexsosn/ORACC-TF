@@ -12,7 +12,8 @@
   "design": {
     "document": "docs/plans/P-005-distribution-publishing.md",
     "decision": "one generated lightweight distribution repository per registered semantic dataset; dataset identity, TF schema version, immutable release identity, and upstream source state remain distinct",
-    "post_adr_contract": "zero-span textual entities are represented by explicit synthetic TF slots; zero-span.json is not a mandatory distribution file"
+    "post_adr_contract": "zero-span textual entities are represented by explicit synthetic TF slots; zero-span.json is not a mandatory distribution file",
+    "root_contract": "a valid generated distribution contains manifest.json, README.md as a regular file, and only manifest-owned TF-root paths; source and stage paths must be disjoint"
   },
   "tdd": {
     "initial_red": 34037626181,
@@ -30,22 +31,34 @@
     "timestamp_determinism_red": 34135955726,
     "timestamp_determinism_red_result": "1 failed, 214 passed, 1 skipped; identical builds differed only in Text-Fabric generated @dateWritten metadata",
     "cache_cleanup_compatibility_red": 34136866635,
-    "cache_cleanup_compatibility_red_result": "1 failed, 214 passed, 1 skipped; the .tf binary-cache directory was matched by *.tf normalization after the determinism fix"
+    "cache_cleanup_compatibility_red_result": "1 failed, 214 passed, 1 skipped; the .tf binary-cache directory was matched by *.tf normalization after the determinism fix",
+    "foreign_backup_red": 34146669789,
+    "foreign_backup_red_result": "1 failed, 215 passed, 1 skipped; publication could delete a pre-existing unowned stage.old sibling",
+    "source_stage_topology_red": 34147667564,
+    "source_stage_topology_red_result": "1 failed, 218 passed, 1 skipped; a stage nested below source reached a real recursive-copy attempt intercepted by the regression guard",
+    "unowned_content_red": 34152657705,
+    "unowned_content_red_result": "1 failed, 219 passed, 1 skipped; an injected stage/notes.txt survived validated replay outside manifest integrity ownership",
+    "readme_contract_red": 34155334757,
+    "readme_contract_red_result": "2 failed, 220 passed, 1 skipped; both missing README.md and README.md replaced by a directory were accepted before the fix"
   },
   "review": {
     "historical_blocking_review": 5126035218,
     "manifest_blocking_review": 5132821160,
     "manifest_blocking_head": "6b3f2fae7d7d9a00b80d9fb550349423a02c94c2",
-    "resolution_summary": "manifest v3 owns every visible TF root, validates all roots before replay/publication, distribution boundaries reject forbidden payloads and symlinks before copying, unowned nonempty stages fail closed, benchmark measures immutable pre-load bytes, and ORACC-TF strips only Text-Fabric's volatile @dateWritten header metadata to make publishable TF bytes reproducible",
+    "topology_blocking_review": 5134300196,
+    "unowned_content_blocking_review": 5134640473,
+    "readme_blocking_review": 5134704625,
+    "resolution_summary": "manifest v3 owns and validates every visible TF root before replay/publication; sources and staged roots must be loadable and provenance-bound; publishable TF bytes are deterministic; distribution paths reject forbidden payloads, symlinks, arbitrary unowned content, foreign transaction-backup collisions, and source/stage overlap; README.md is required as a regular root artifact; legacy zero-span.json is optional under ADR-0001",
     "fresh_exact_head_review_required": true
   },
   "verification": {
-    "semantic_head": "56a258603123018575ea146c674c28ba94fad42f",
-    "standard_tests": 34137358425,
-    "standard_tests_result": "215 passed, 1 skipped; 11 whole-corpus tests passed",
-    "generated_reference": 34137358449,
-    "m8_cross_validation": 34137358493,
-    "agora_benchmark": 34137358464,
+    "code_head": "c221b2283d9f41bd1ea7ad573317863c81556958",
+    "standard_tests": 34155840507,
+    "standard_tests_result": "222 passed, 1 skipped; 11 whole-corpus tests passed",
+    "generated_reference": 34155840580,
+    "m8_cross_validation": 34155840516,
+    "agora_benchmark": 34155840547,
+    "previous_semantic_head": "56a258603123018575ea146c674c28ba94fad42f",
     "agora_benchmark_first_artifact": 10024849830,
     "agora_benchmark_first_artifact_digest": "sha256:a60247a374038a7e74a8aed28e8964e4fe46b4e761394ad84a1e2b333ea8be11",
     "agora_benchmark_aa_rerun_job": 101798705146,
@@ -76,10 +89,10 @@
   "coordination": {
     "previous_implementation_session": "gpt56sol-20260906-1652-60",
     "reground_session": "gpt56sol-20260907-1602-60",
-    "current_session": "gpt56sol-20260907-2001-60",
-    "current_recovery_comment": 5573740001,
-    "current_claim_comment": 5573741939,
+    "current_session": "gpt56sol-20260907-2132-60",
+    "current_recovery_comment": 5574479581,
+    "current_claim_comment": 5574480644,
     "reground_base": "e8f2b160912e0adaa37b24e68384ac551077a440"
   },
-  "resume_gate": "Run exact-head repository CI for this evidence commit, obtain a fresh logically independent adversarial review of that exact head, and only then synchronize done status and merge."
+  "resume_gate": "Run exact-head repository CI and Agora benchmark for this evidence commit, obtain a fresh logically independent adversarial review of that exact head, then merge, close, and release the claim without changing the reviewed head."
 }

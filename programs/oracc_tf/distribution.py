@@ -22,8 +22,29 @@ from . import corpus, paths, releases
 _REPOSITORY_DATASET_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SOURCE_STATE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_TREE_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _REQUIRED_FILES = ("otype.tf", "oslots.tf", "otext.tf")
 _FORBIDDEN_PAYLOAD_PARTS = frozenset({"data", "programs", "docs"})
+_MANIFEST_SCHEMA_VERSION = 3
+_RELEASE_RECORD_FIELDS = (
+    "tf_version",
+    "tf_root",
+    "builder_commit",
+    "source_state",
+    "provenance_complete",
+    "tree_digest",
+)
+_MANIFEST_FIELDS = frozenset(
+    {
+        "schema_version",
+        "dataset",
+        "repository",
+        "release_id",
+        *_RELEASE_RECORD_FIELDS,
+        "releases",
+        "visible_roots",
+    }
+)
 
 
 class DistributionError(ValueError):
@@ -77,6 +98,14 @@ def distribution_root(output_base: Path | str, dataset: str, tf_version: str) ->
     """Return the canonical dataset/version root inside a distribution tree."""
     repository_name(dataset)
     return paths.publishable_tf_root(output_base, dataset, tf_version)
+
+
+def _canonical_tf_root(dataset: str, tf_version: str) -> str:
+    try:
+        root = distribution_root(Path("."), dataset, tf_version)
+    except (TypeError, ValueError) as exc:
+        raise InvalidDistribution(f"invalid TF version in distribution manifest: {tf_version!r}") from exc
+    return root.as_posix().removeprefix("./")
 
 
 def _validate_release_id(release_id: str) -> None:
@@ -176,37 +205,153 @@ def _read_existing_manifest(stage: Path) -> dict[str, object] | None:
         raise InvalidDistribution(f"existing distribution manifest is unreadable: {path}") from exc
     if not isinstance(value, dict):
         raise InvalidDistribution("existing distribution manifest must be a JSON object")
-    releases_value = value.get("releases")
-    if releases_value is not None and not isinstance(releases_value, dict):
-        raise InvalidDistribution("existing distribution releases ledger must be a JSON object")
     return value
 
 
-def _validate_current_visible(stage: Path, manifest: dict[str, object]) -> None:
-    current_id = manifest.get("release_id")
-    ledger = manifest.get("releases")
-    if not isinstance(current_id, str) or not isinstance(ledger, dict):
-        raise InvalidDistribution("existing distribution has no valid current release ledger")
-    record = ledger.get(current_id)
-    if not isinstance(record, dict):
-        raise InvalidDistribution("existing distribution current release is absent from its ledger")
-    tf_root = record.get("tf_root")
-    expected_digest = record.get("tree_digest")
-    if not isinstance(tf_root, str) or not isinstance(expected_digest, str):
-        raise InvalidDistribution("existing distribution current release has invalid integrity metadata")
-    current_root = stage / tf_root
+def _validate_manifest_release_record(
+    release_id: str,
+    value: object,
+    *,
+    dataset: str,
+) -> dict[str, object]:
     try:
-        files = _validate_source(current_root)
-        actual_digest = _tree_digest(current_root, files)
-        _validate_loadable(current_root)
-    except InvalidDistribution as exc:
-        raise ImmutableDistributionConflict(
-            f"current visible release {current_id!r} is invalid"
-        ) from exc
-    if actual_digest != expected_digest:
-        raise ImmutableDistributionConflict(
-            f"current visible release {current_id!r} has changed bytes"
+        _validate_release_id(release_id)
+    except ValueError as exc:
+        raise InvalidDistribution(f"invalid release id in existing distribution: {release_id!r}") from exc
+    if not isinstance(value, dict) or set(value) != set(_RELEASE_RECORD_FIELDS):
+        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid fields")
+
+    tf_version = value.get("tf_version")
+    tf_root = value.get("tf_root")
+    if not isinstance(tf_version, str) or not isinstance(tf_root, str):
+        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid TF identity")
+    if tf_root != _canonical_tf_root(dataset, tf_version):
+        raise InvalidDistribution(f"existing distribution release {release_id!r} has non-canonical TF root")
+
+    builder_commit = value.get("builder_commit")
+    source_state = value.get("source_state")
+    try:
+        _validate_provenance(builder_commit, source_state)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as exc:
+        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid provenance") from exc
+
+    provenance_complete = value.get("provenance_complete")
+    if not isinstance(provenance_complete, bool) or provenance_complete != (source_state is not None):
+        raise InvalidDistribution(
+            f"existing distribution release {release_id!r} has inconsistent provenance state"
         )
+    tree_digest = value.get("tree_digest")
+    if not isinstance(tree_digest, str) or not _TREE_DIGEST_RE.fullmatch(tree_digest):
+        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid tree digest")
+    return dict(value)
+
+
+def _discover_tf_roots(stage: Path) -> set[str]:
+    if not stage.exists():
+        return set()
+    roots: set[str] = set()
+    for otype in stage.rglob("otype.tf"):
+        if not otype.is_file():
+            continue
+        try:
+            relative = otype.parent.relative_to(stage).as_posix()
+        except ValueError as exc:
+            raise InvalidDistribution(f"discoverable TF root escapes staging tree: {otype}") from exc
+        roots.add(relative)
+    return roots
+
+
+def _validate_manifest_state(
+    stage: Path,
+    manifest: dict[str, object],
+    *,
+    dataset: str,
+    repository: str,
+) -> tuple[dict[str, object], dict[str, str]]:
+    if manifest.get("schema_version") != _MANIFEST_SCHEMA_VERSION:
+        raise InvalidDistribution(
+            f"unsupported existing distribution manifest schema: {manifest.get('schema_version')!r}"
+        )
+    if set(manifest) != _MANIFEST_FIELDS:
+        raise InvalidDistribution("existing distribution manifest has invalid schema fields")
+    if manifest.get("dataset") != dataset or manifest.get("repository") != repository:
+        raise ImmutableDistributionConflict(
+            f"staging tree already belongs to another distribution: {manifest.get('dataset')!r}"
+        )
+
+    raw_ledger = manifest.get("releases")
+    if not isinstance(raw_ledger, dict) or not raw_ledger:
+        raise InvalidDistribution("existing distribution releases ledger must be a non-empty JSON object")
+    ledger: dict[str, object] = {}
+    for release_id, raw_record in raw_ledger.items():
+        if not isinstance(release_id, str):
+            raise InvalidDistribution("existing distribution release ids must be strings")
+        ledger[release_id] = _validate_manifest_release_record(
+            release_id,
+            raw_record,
+            dataset=dataset,
+        )
+
+    current_id = manifest.get("release_id")
+    if not isinstance(current_id, str) or current_id not in ledger:
+        raise InvalidDistribution("existing distribution current release is absent from its ledger")
+    current_record = ledger[current_id]
+    assert isinstance(current_record, dict)
+    for field in _RELEASE_RECORD_FIELDS:
+        if field not in manifest or manifest[field] != current_record[field]:
+            raise InvalidDistribution(
+                f"existing distribution current fields do not match release {current_id!r}"
+            )
+
+    raw_visible = manifest.get("visible_roots")
+    if not isinstance(raw_visible, dict) or not raw_visible:
+        raise InvalidDistribution("existing distribution visible_roots must be a non-empty JSON object")
+    visible_roots: dict[str, str] = {}
+    for tf_root, owner_id in raw_visible.items():
+        if not isinstance(tf_root, str) or not isinstance(owner_id, str):
+            raise InvalidDistribution("existing distribution visible_roots entries must be strings")
+        owner = ledger.get(owner_id)
+        if not isinstance(owner, dict):
+            raise InvalidDistribution(f"visible TF root {tf_root!r} references unknown release {owner_id!r}")
+        if owner.get("tf_root") != tf_root:
+            raise InvalidDistribution(
+                f"visible TF root {tf_root!r} disagrees with release {owner_id!r}"
+            )
+        visible_roots[tf_root] = owner_id
+
+    current_root = current_record["tf_root"]
+    assert isinstance(current_root, str)
+    if visible_roots.get(current_root) != current_id:
+        raise InvalidDistribution("existing distribution current release does not own its visible TF root")
+
+    discovered = _discover_tf_roots(stage)
+    if discovered != set(visible_roots):
+        raise InvalidDistribution(
+            "existing distribution visible_roots do not match discoverable TF roots: "
+            f"manifest={sorted(visible_roots)!r}, filesystem={sorted(discovered)!r}"
+        )
+
+    for tf_root, owner_id in sorted(visible_roots.items()):
+        owner = ledger[owner_id]
+        assert isinstance(owner, dict)
+        expected_digest = owner["tree_digest"]
+        assert isinstance(expected_digest, str)
+        root = stage / tf_root
+        label = "current visible release" if owner_id == current_id else "visible release"
+        try:
+            files = _validate_source(root)
+            actual_digest = _tree_digest(root, files)
+            _validate_loadable(root)
+        except InvalidDistribution as exc:
+            raise ImmutableDistributionConflict(
+                f"{label} {owner_id!r} at {tf_root!r} is invalid"
+            ) from exc
+        if actual_digest != expected_digest:
+            raise ImmutableDistributionConflict(
+                f"{label} {owner_id!r} at {tf_root!r} has changed bytes"
+            )
+
+    return ledger, visible_roots
 
 
 def _current_manifest(
@@ -216,14 +361,16 @@ def _current_manifest(
     release_id: str,
     record: dict[str, object],
     ledger: dict[str, object],
+    visible_roots: dict[str, str],
 ) -> dict[str, object]:
     return {
-        "schema_version": 2,
+        "schema_version": _MANIFEST_SCHEMA_VERSION,
         "dataset": dataset,
         "repository": repository,
         "release_id": release_id,
         **record,
         "releases": ledger,
+        "visible_roots": visible_roots,
     }
 
 
@@ -243,7 +390,9 @@ def stage_distribution(
     identifies the TF schema/layout. Replaying an earlier matching release is a
     no-op even when a newer release is current. A new release may replace bytes
     at the same TF-version root while the manifest ledger retains immutable
-    digest/provenance evidence for older releases.
+    digest/provenance evidence for older releases. Manifest v3 additionally maps
+    every discoverable TF root to the release that owns its currently visible
+    bytes, so all coexisting versions are checked before replay or publication.
     """
     identity = distribution_identity(dataset)
     _validate_release_id(release_id)
@@ -266,15 +415,14 @@ def stage_distribution(
 
     existing = _read_existing_manifest(stage_path)
     ledger: dict[str, object] = {}
+    visible_roots: dict[str, str] = {}
     if existing is not None:
-        if existing.get("dataset") != dataset or existing.get("repository") != identity.repository:
-            raise ImmutableDistributionConflict(
-                f"staging tree already belongs to another distribution: {existing.get('dataset')!r}"
-            )
-        _validate_current_visible(stage_path, existing)
-        raw_ledger = existing.get("releases", {})
-        assert isinstance(raw_ledger, dict)
-        ledger = dict(raw_ledger)
+        ledger, visible_roots = _validate_manifest_state(
+            stage_path,
+            existing,
+            dataset=dataset,
+            repository=identity.repository,
+        )
         old_record = ledger.get(release_id)
         if old_record is not None:
             if old_record != record:
@@ -283,13 +431,17 @@ def stage_distribution(
                 )
             return existing
 
+    ledger = dict(ledger)
+    visible_roots = dict(visible_roots)
     ledger[release_id] = record
+    visible_roots[tf_root] = release_id
     manifest = _current_manifest(
         dataset=dataset,
         repository=identity.repository,
         release_id=release_id,
         record=record,
         ledger=ledger,
+        visible_roots=visible_roots,
     )
 
     stage_path.parent.mkdir(parents=True, exist_ok=True)
@@ -314,6 +466,13 @@ def stage_distribution(
             encoding="utf-8",
         )
         (temp / "manifest.json").write_bytes(_manifest_bytes(manifest))
+
+        _validate_manifest_state(
+            temp,
+            manifest,
+            dataset=dataset,
+            repository=identity.repository,
+        )
 
         if stage_path.exists():
             backup = stage_path.with_name(stage_path.name + ".old")

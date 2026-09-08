@@ -25,6 +25,8 @@ import zipfile
 
 
 _ZIP_LOCAL_MAGIC = b"PK\x03\x04"
+_ZIP_CENTRAL_SIGNATURE = b"PK\x01\x02"
+_ZIP_CENTRAL_HEADER = struct.Struct("<4s4B4HL2L5H2L")
 _ZIP_EOCD_SIGNATURE = b"PK\x05\x06"
 _ZIP_EOCD = struct.Struct("<4s4H2LH")
 _ZIP_EOCD_MAX_SEARCH = 65_535 + _ZIP_EOCD.size
@@ -292,8 +294,8 @@ def _read_metadata(archive: zipfile.ZipFile, member: _Member) -> Mapping[str, ob
     return value
 
 
-def _declared_member_count(path: Path) -> int:
-    """Read the classic EOCD member count without materializing the central directory."""
+def _read_eocd(path: Path) -> tuple[int, int, int]:
+    """Read classic EOCD facts without materializing the central directory."""
     try:
         archive_size = path.stat().st_size
         read_size = min(archive_size, _ZIP_EOCD_MAX_SEARCH)
@@ -331,10 +333,68 @@ def _declared_member_count(path: Path) -> int:
                 absolute_eocd = archive_size - read_size + position
                 if central_directory_offset + central_directory_size > absolute_eocd:
                     raise ArchiveStructureError("ZIP central-directory bounds are invalid")
-                return entries_total
+                return entries_total, central_directory_offset, central_directory_size
         position = tail.rfind(_ZIP_EOCD_SIGNATURE, 0, position)
 
     raise ArchiveStructureError("archive EOCD is missing or invalid")
+
+
+def _scan_central_directory(
+    path: Path, *, offset: int, size: int, limits: ArchiveLimits
+) -> int:
+    """Count/validate classic central-directory records without building ZipInfo objects."""
+    if size <= 0:
+        raise ArchiveStructureError("archive central directory is empty")
+    remaining = size
+    count = 0
+    try:
+        with path.open("rb") as handle:
+            handle.seek(offset)
+            while remaining:
+                if remaining < _ZIP_CENTRAL_HEADER.size:
+                    raise ArchiveStructureError("ZIP central-directory record is truncated")
+                header = handle.read(_ZIP_CENTRAL_HEADER.size)
+                if len(header) != _ZIP_CENTRAL_HEADER.size:
+                    raise ArchiveStructureError("ZIP central-directory record is truncated")
+                fields = _ZIP_CENTRAL_HEADER.unpack(header)
+                if fields[0] != _ZIP_CENTRAL_SIGNATURE:
+                    raise ArchiveStructureError("ZIP central-directory signature is invalid")
+
+                compressed_size = fields[10]
+                uncompressed_size = fields[11]
+                filename_length = fields[12]
+                extra_length = fields[13]
+                comment_length = fields[14]
+                disk_number_start = fields[15]
+                local_header_offset = fields[18]
+                if (
+                    compressed_size == _ZIP32_SENTINEL
+                    or uncompressed_size == _ZIP32_SENTINEL
+                    or local_header_offset == _ZIP32_SENTINEL
+                    or disk_number_start == _ZIP16_SENTINEL
+                ):
+                    raise ArchiveStructureError("ZIP64 members require an explicit research update")
+                if disk_number_start != 0:
+                    raise ArchiveStructureError("multi-disk ZIP members are unsupported")
+
+                variable_size = filename_length + extra_length + comment_length
+                record_size = _ZIP_CENTRAL_HEADER.size + variable_size
+                if record_size > remaining:
+                    raise ArchiveStructureError("ZIP central-directory variable data is truncated")
+
+                count += 1
+                if count > limits.max_members:
+                    raise ArchiveResourceLimitError("archive exceeds member-count ceiling")
+                handle.seek(variable_size, os.SEEK_CUR)
+                remaining -= record_size
+    except ArchiveSecurityError:
+        raise
+    except OSError as exc:
+        raise ArchiveStructureError("archive central directory cannot be scanned") from exc
+
+    if count == 0:
+        raise ArchiveStructureError("archive contains no members")
+    return count
 
 
 def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLayout, tuple[_Member, ...]]:
@@ -350,11 +410,12 @@ def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLa
     except OSError as exc:
         raise ArchiveStructureError("archive cannot be opened") from exc
 
-    declared_members = _declared_member_count(archive_path)
-    if declared_members == 0:
-        raise ArchiveStructureError("archive contains no members")
-    if declared_members > limits.max_members:
-        raise ArchiveResourceLimitError("archive exceeds member-count ceiling")
+    declared_members, central_offset, central_size = _read_eocd(archive_path)
+    scanned_members = _scan_central_directory(
+        archive_path, offset=central_offset, size=central_size, limits=limits
+    )
+    if scanned_members != declared_members:
+        raise ArchiveStructureError("ZIP member count disagrees with EOCD")
     if not zipfile.is_zipfile(archive_path):
         raise ArchiveStructureError("archive is not a complete ZIP file")
 
@@ -368,8 +429,8 @@ def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLa
             infos = archive.infolist()
         except zipfile.BadZipFile as exc:
             raise ArchiveStructureError("archive central directory is invalid") from exc
-        if len(infos) != declared_members:
-            raise ArchiveStructureError("ZIP member count disagrees with EOCD")
+        if len(infos) != scanned_members:
+            raise ArchiveStructureError("ZIP member count disagrees after materialization")
 
         members: list[_Member] = []
         literal: dict[str, bool] = {}

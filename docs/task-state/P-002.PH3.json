@@ -34,27 +34,37 @@
         "head": "3a996201b9a552c9fe9c342bb362bde695c4a49c",
         "workflow": 34247014006,
         "result": "1 intended failure with 311 existing fast tests passing: a forged EOCD entry count could reach ZipFile before the configured member ceiling, proving EOCD count cannot be the pre-allocation trust boundary."
+      },
+      {
+        "head": "62dec76e9595227de9264762ab5198e7b5755786",
+        "workflow": 34264236550,
+        "result": "4 intended failures with 312 existing fast tests passing: Win32 COM/LPT superscript-digit device aliases were accepted, and hybrid ZIP64 metadata reached ZipFile before the declared ZIP64 stop condition."
+      },
+      {
+        "head": "27d927a8670d3c4029b839c20edc19b597e8b462",
+        "workflow": 34282566687,
+        "result": "5 intended failures with 312 existing fast tests passing: the four prior review regressions plus malformed UTF-8 central-directory filenames leaking raw UnicodeDecodeError instead of the typed archive-security boundary."
       }
     ],
     "functional_green": {
-      "head": "f41f45fcc4f91cba934bf2a134d33e371fd9737a",
-      "tests_workflow": 34247701198,
-      "result": "Standard fast tests, whole-corpus invariants, and docs-registry passed.",
-      "m8_cross_validation_workflow": 34247701208,
+      "head": "8d1b46321aeadf8552b6967f2546302d2d781228",
+      "tests_workflow": 34283144505,
+      "result": "317 fast tests passed, 1 skipped, 11 deselected; all 11 whole-corpus invariants passed; docs-registry passed.",
+      "m8_cross_validation_workflow": 34283144483,
       "m8_result": "Pinned real oldbabylonian cross-validation passed.",
-      "generated_reference_workflow": 34247701180,
+      "generated_reference_workflow": 34283144512,
       "generated_reference_result": "Real checked-in corpus build and generated-reference consistency passed."
     }
   },
   "behavior": {
     "acquisition": "Download chunks are byte-capped while written once and hashed; unseen bytes are accepted only after two independently supplied streams agree in length and SHA-256; mismatch or second-fetch failure cleans temporary copies.",
-    "preflight": "Classic ZIP EOCD facts are bounded-read, the central directory is sequentially scanned and member-capped before ZipFile materialization, scanned count is cross-checked against EOCD and materialized entries, and ZIP64/multidisk inputs fail closed pending explicit research.",
-    "paths": "Member/project components require NFC relative POSIX paths and reject traversal, backslashes, Windows forbidden characters, trailing dot/space, reserved device names, casefold aliases at full-path and ancestor-prefix levels, and file/directory prefix collisions.",
+    "preflight": "Classic ZIP EOCD facts are bounded-read, the central directory is sequentially scanned and member-capped before ZipFile materialization, scanned count is cross-checked against EOCD and materialized entries, hybrid/ordinary ZIP64 and multidisk inputs fail closed pending explicit research, and malformed filename decoding remains a typed structure failure.",
+    "paths": "Member/project components require NFC relative POSIX paths and reject traversal, backslashes, Windows forbidden characters, trailing dot/space, ordinary and superscript-digit Win32 reserved device names, casefold aliases at full-path and ancestor-prefix levels, and file/directory prefix collisions.",
     "extraction": "All members are manually copied only after complete preflight into an isolated sibling staging tree with actual decompressed byte accounting; destination publication is one final rename and failed staging trees are removed."
   },
   "independent_review": {
-    "reviewed_head": "f41f45fcc4f91cba934bf2a134d33e371fd9737a",
-    "result": "Fresh logically-independent security re-review found no remaining blocker inside PH3's declared remote-archive threat boundary after the portable-path and forged-EOCD hardening. Durable evidence addition requires a new exact-head validation and final re-review before this core can be considered blocked-ready."
+    "reviewed_runtime_head": "f41f45fcc4f91cba934bf2a134d33e371fd9737a",
+    "result": "Fresh logically-independent review found hybrid ZIP64, superscript Win32 device aliases, and malformed-filename exception typing as blockers. Each blocker was reproduced RED-first and fixed on the later green runtime head. This evidence commit intentionally does not claim its own final review; exact-head CI plus a fresh PR review are required after this file is committed."
   },
   "completion_blocker": {
     "task": "P-002.PH2",

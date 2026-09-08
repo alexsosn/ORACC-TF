@@ -8,6 +8,7 @@ on:
       - "scripts/research_issue69_tf_app.py"
       - "tests/test_issue69_app_research.py"
       - "tests/test_issue69_format_evidence.py"
+      - "tests/test_issue69_browser_baseline.py"
       - "docs/research/R-006-tf-application-browser.md"
       - "docs/registry.json"
   workflow_dispatch:
@@ -76,6 +77,13 @@ jobs:
             probe /tmp/oracc-tf-prototype \
             > /tmp/issue69-research/formats.json
 
+      - name: Record current browser-stack baseline on real corpus
+        run: |
+          rm -rf /tmp/oracc-tf/.tf
+          python scripts/research_issue69_tf_app.py \
+            browser /tmp/oracc-tf \
+            > /tmp/issue69-research/browser.json
+
       - name: Summarize measurements
         env:
           RESEARCH_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -92,6 +100,7 @@ jobs:
           feature_bytes = json.loads((root / "feature-bytes.json").read_text())
           none_values = json.loads((root / "none-values.json").read_text())
           formats = json.loads((root / "formats.json").read_text())
+          browser = json.loads((root / "browser.json").read_text())
           heavy = ("sign_json", "gdl_json", "catalogue_json")
 
           for run in (*baseline, *excluded):
@@ -104,6 +113,12 @@ jobs:
           assert formats["synthetic_slot_transliteration"] == ""
           assert formats["semantic_line_cuneiform"]
           assert formats["semantic_line_transliteration"].strip()
+
+          assert browser["browser_setup"] is True
+          assert browser["probe_path"] == "advanced-app->kernel->factory"
+          assert browser["data_only_browser_cli_supported"] is False
+          assert set(browser["routes"]) == {"/", "/passage", "/query", "/export"}
+          assert all(browser["responses_nonempty"].values())
 
           baseline_loaded = set.intersection(*(set(run["loaded_node_features"]) for run in baseline))
           excluded_loaded = set.union(*(set(run["loaded_node_features"]) for run in excluded))
@@ -135,6 +150,7 @@ jobs:
               "feature_bytes": feature_bytes,
               "none_values": none_values,
               "formats": formats,
+              "browser": browser,
           }
           (root / "summary.json").write_text(
               json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + "\n",

@@ -27,9 +27,11 @@ import zipfile
 _ZIP_LOCAL_MAGIC = b"PK\x03\x04"
 _ZIP_CENTRAL_SIGNATURE = b"PK\x01\x02"
 _ZIP_CENTRAL_HEADER = struct.Struct("<4s4B4HL2L5H2L")
+_ZIP64_LOCATOR_SIGNATURE = b"PK\x06\x07"
+_ZIP64_LOCATOR = struct.Struct("<4sLQL")
 _ZIP_EOCD_SIGNATURE = b"PK\x05\x06"
 _ZIP_EOCD = struct.Struct("<4s4H2LH")
-_ZIP_EOCD_MAX_SEARCH = 65_535 + _ZIP_EOCD.size
+_ZIP_EOCD_MAX_SEARCH = 65_535 + _ZIP_EOCD.size + _ZIP64_LOCATOR.size
 _ZIP16_SENTINEL = 0xFFFF
 _ZIP32_SENTINEL = 0xFFFFFFFF
 _SUPPORTED_COMPRESSION = {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
@@ -47,6 +49,7 @@ _WINDOWS_RESERVED = {
     *(f"com{number}" for number in range(1, 10)),
     *(f"lpt{number}" for number in range(1, 10)),
 }
+_WINDOWS_DEVICE_DIGIT_TRANSLATION = str.maketrans({"¹": "1", "²": "2", "³": "3"})
 _COPY_CHUNK = 64 * 1024
 
 
@@ -211,7 +214,11 @@ def _safe_components(value: str, *, field: str) -> tuple[str, ...]:
             raise ArchiveStructureError(f"{field} contains a non-portable path character")
         if part.endswith((" ", ".")):
             raise ArchiveStructureError(f"{field} contains a non-portable path suffix")
-        device_stem = part.split(".", 1)[0].casefold()
+        device_stem = (
+            part.split(".", 1)[0]
+            .casefold()
+            .translate(_WINDOWS_DEVICE_DIGIT_TRANSLATION)
+        )
         if device_stem in _WINDOWS_RESERVED:
             raise ArchiveStructureError(f"{field} contains a reserved Windows device name")
     return parts
@@ -282,7 +289,7 @@ def _read_metadata(archive: zipfile.ZipFile, member: _Member) -> Mapping[str, ob
     try:
         with archive.open(member.info, "r") as handle:
             payload = handle.read()
-    except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
+    except (OSError, RuntimeError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
         raise ArchiveStructureError(f"cannot read metadata member {member.path!r}") from exc
     try:
         decoded = payload.decode("utf-8")
@@ -320,6 +327,15 @@ def _read_eocd(path: Path) -> tuple[int, int, int]:
                 comment_length,
             ) = fields
             if position + _ZIP_EOCD.size + comment_length == len(tail):
+                locator_position = position - _ZIP64_LOCATOR.size
+                if (
+                    locator_position >= 0
+                    and tail[locator_position : locator_position + 4]
+                    == _ZIP64_LOCATOR_SIGNATURE
+                ):
+                    raise ArchiveStructureError(
+                        "ZIP64 archives require an explicit research update"
+                    )
                 if disk_number != 0 or central_directory_disk != 0:
                     raise ArchiveStructureError("multi-disk ZIP archives are unsupported")
                 if entries_on_disk != entries_total:
@@ -421,13 +437,13 @@ def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLa
 
     try:
         archive = zipfile.ZipFile(archive_path, "r")
-    except (OSError, zipfile.BadZipFile) as exc:
+    except (OSError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
         raise ArchiveStructureError("archive central directory is invalid") from exc
 
     with archive:
         try:
             infos = archive.infolist()
-        except zipfile.BadZipFile as exc:
+        except (UnicodeDecodeError, zipfile.BadZipFile) as exc:
             raise ArchiveStructureError("archive central directory is invalid") from exc
         if len(infos) != scanned_members:
             raise ArchiveStructureError("ZIP member count disagrees after materialization")
@@ -559,7 +575,7 @@ def extract_archive(
                 actual_member = 0
                 try:
                     source = archive.open(member.info, "r")
-                except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
+                except (OSError, RuntimeError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
                     raise ArchiveExtractionError(
                         f"cannot open ZIP member during extraction: {member.path!r}"
                     ) from exc
@@ -600,7 +616,7 @@ def extract_archive(
         return layout
     except ArchiveSecurityError:
         raise
-    except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
+    except (OSError, RuntimeError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
         raise ArchiveExtractionError("archive extraction failed") from exc
     finally:
         if not published:

@@ -16,7 +16,7 @@ import json
 import re
 import tomllib
 from typing import Callable, Iterable, Mapping, TypeVar
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import unquote, urljoin, urlsplit
 import posixpath
 import zipfile
 
@@ -125,11 +125,22 @@ def _validate_identity(name: str, digest: str, size: int) -> None:
         raise UpstreamDiscoveryError("archive byte length must be a positive integer")
 
 
+def _inventory_directory(index_url: str) -> tuple[str, str, str]:
+    parsed = urlsplit(index_url)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        raise UpstreamInventoryError("archive inventory URL must be an absolute HTTP(S) URL")
+    decoded_path = unquote(parsed.path)
+    directory = decoded_path.rstrip("/") if decoded_path.endswith("/") else posixpath.dirname(decoded_path)
+    directory = posixpath.normpath(directory or "/")
+    return parsed.scheme.lower(), parsed.netloc.lower(), directory
+
+
 def parse_archive_inventory(html: str, index_url: str) -> tuple[ArchiveEntry, ...]:
     if not isinstance(html, str):
         raise UpstreamInventoryError("archive inventory must be text")
     if not isinstance(index_url, str) or not index_url:
         raise UpstreamInventoryError("archive inventory URL must be non-empty")
+    trusted_scheme, trusted_netloc, trusted_directory = _inventory_directory(index_url)
     parser = _HrefParser()
     parser.feed(html)
     parser.close()
@@ -139,7 +150,18 @@ def parse_archive_inventory(html: str, index_url: str) -> tuple[ArchiveEntry, ..
         match = _ARCHIVE_RE.fullmatch(name)
         if match is None:
             continue
-        entry = ArchiveEntry(match.group("name"), urljoin(index_url, href))
+        resolved = urljoin(index_url, href)
+        parsed = urlsplit(resolved)
+        resolved_directory = posixpath.normpath(posixpath.dirname(unquote(parsed.path)))
+        if (
+            parsed.scheme.lower() != trusted_scheme
+            or parsed.netloc.lower() != trusted_netloc
+            or resolved_directory != trusted_directory
+        ):
+            raise UpstreamInventoryError(
+                f"archive link {href!r} resolves outside the configured inventory boundary"
+            )
+        entry = ArchiveEntry(match.group("name"), resolved)
         previous = unique.get(entry.url)
         if previous is not None and previous != entry:
             raise UpstreamInventoryError(f"conflicting archive inventory entry {entry.url!r}")
@@ -243,16 +265,27 @@ def head_from_response(status: int, headers: Mapping[str, str]) -> HeadMetadata:
     )
 
 
+def _strong_etag(value: str | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    token = value.strip()
+    if len(token) < 2 or token[:2].lower() == "w/":
+        return None
+    if not (token.startswith('"') and token.endswith('"')):
+        return None
+    return token
+
+
 def decide_probe(locked: ArchiveFingerprint, current: HeadMetadata) -> ProbeDecision:
     if not isinstance(locked, ArchiveFingerprint) or not isinstance(current, HeadMetadata):
         raise UpstreamDiscoveryError("probe decision requires typed lock and HEAD metadata")
+    locked_etag = _strong_etag(locked.etag)
+    current_etag = _strong_etag(current.etag)
     if (
-        isinstance(locked.etag, str)
-        and bool(locked.etag.strip())
-        and isinstance(current.etag, str)
-        and bool(current.etag.strip())
+        locked_etag is not None
+        and current_etag is not None
         and current.content_length is not None
-        and locked.etag == current.etag
+        and locked_etag == current_etag
         and locked.bytes == current.content_length
     ):
         return ProbeDecision("unchanged", False)

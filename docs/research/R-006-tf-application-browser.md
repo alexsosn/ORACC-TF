@@ -126,6 +126,14 @@ The app should reinforce the adopted ORACC-TF model rather than give every sourc
 
 Exact typography, hidden defaults beyond `chunk`, and compact feature lists belong to #73 and must be tested against representative real browser output rather than frozen here as CSS trivia.
 
+## Documentation breadth
+
+The BHSA reference is useful here as a **documentation product pattern**, not as corpus content to copy. Its repository/browser documentation surface goes beyond feature help: it has a user-facing landing orientation, corpus/topic reference material, bibliography/references, historical and colophon-style provenance, news/change-oriented material, static documentation assets, and app-to-doc cross-linking. Those categories explain how a mature Text-Fabric corpus helps a user move from discovery to interpretation and provenance.
+
+ORACC-TF should adopt the transferable categories through P-003 and #78: a concise per-corpus landing page; corpus scope and topic/reference pages generated or curated from authoritative metadata; bibliography/references tied to source and release provenance; history/version and colophon/provenance material derived from release state; a changelog or news-style release surface where it adds user value; documentation assets owned by the generated distribution; and explicit app-to-doc links for feature help, corpus guidance, source/provenance, and release information. These are product-level documentation responsibilities, distinct from the narrower `docs.featureBase` browser integration described below.
+
+BHSA-specific theological/Biblical corpus explanations, Hebrew-specific reference material, SHEBANQ-oriented guidance, BHSA bibliography selections, project history narratives, branding assets, screenshots, and news content are **not transferable** facts and must not be cargo-culted into ORACC-TF. #78 should reproduce the useful information architecture with ORACC-specific evidence and generated provenance rather than cloning BHSA pages. The app work should expose stable links into that documentation product; it should not become the owner of the documentation content itself.
+
 ## Documentation integration
 
 Text-Fabric's app documentation contract is feature-name-centric (`docs.featureBase` substitutes `<feature>`), while P-003 deliberately generates richer canonical pages by node type, e.g. `docs/reference/features/<node-type>/<feature>.md`. ORACC-TF should not flatten the semantic scope of mixed features merely to satisfy one browser URL.

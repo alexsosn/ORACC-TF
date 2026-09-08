@@ -76,6 +76,34 @@ def test_matching_weak_etag_never_authorizes_unchanged() -> None:
 
 
 @pytest.mark.parametrize(
+    "etag",
+    [
+        '"bad space"',
+        '"embedded"quote"',
+        '"tab\tvalue"',
+    ],
+)
+def test_malformed_quoted_etag_never_authorizes_unchanged(etag: str) -> None:
+    module = api()
+    locked = module.ArchiveFingerprint(
+        name="riao-ria1",
+        sha256="a" * 64,
+        bytes=123,
+        etag=etag,
+        last_modified=None,
+    )
+    current = module.head_from_response(
+        200,
+        {"ETag": etag, "Content-Length": "123"},
+    )
+
+    decision = module.decide_probe(locked, current)
+
+    assert decision.action == "download-required"
+    assert decision.requires_download is True
+
+
+@pytest.mark.parametrize(
     "href",
     [
         "https://evil.invalid/riao-ria1.zip",

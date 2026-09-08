@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "task": "ISSUE-47",
+  "issue": 47,
+  "session": "gpt56sol-20260908-1358-47-recovery",
+  "stage": "green",
+  "research": {
+    "finding": "Current user-facing corpus statistics need generated/drift-checked authority, while dated research and plan measurements are legitimate historical evidence; digit scanning cannot reliably distinguish statistics from identifiers, versions, dates, examples, and CI evidence.",
+    "accepted_design": "Registered research/plan documents use dated snapshot-evidence policy; guide/index documents use operational policy; docs/reference remains the machine-enforced generated current-state statistics surface."
+  },
+  "tdd": {
+    "historical_red_workflow": 34153622354,
+    "historical_red_result": "4 intended new contract failures while 184 pre-existing tests passed",
+    "recovery_red_workflow": 34218347327,
+    "recovery_red_result": "4 intended failures while 248 pre-existing fast tests passed and docs-registry stayed green",
+    "storage_red_workflow": 34221533548,
+    "storage_red_result": "5 intended failures while 248 pre-existing fast tests passed; added exact registry-to-policy bijection contract"
+  },
+  "implementation": {
+    "fact_policy": "docs/fact-policy.json is the single policy table keyed exactly by registered document id",
+    "checker": "scripts/check_docs_registry.py validates schema, exact id coverage, document-class policy, semantic ISO dates, non-empty evidence basis, and rejects policy orphans without scanning Markdown digits",
+    "docs": "G-002 distinguishes generated current facts from dated research/plan evidence and keeps docs/reference generation/drift checks authoritative for current statistics"
+  },
+  "validation": {
+    "base_after_reground": "fc9c3614bacf95ab39ad9b29cb06856a7d98df7b",
+    "regrounded_head_before_evidence": "ccad53073a2fa9bd1a8d35a10f70e9b6cf2ab2d2",
+    "required": "standard tests/registry and generated-reference exact-head workflows must pass after this evidence file is added"
+  },
+  "review_gate": "A logically independent exact-head reviewer must sample snapshot and operational classes, policy-table drift, false-positive digit cases, and generated-reference enforcement before merge."
+}

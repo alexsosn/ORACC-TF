@@ -38,9 +38,9 @@
   },
   "approval_contract": {
     "evidence_ref": "EvidenceRef(kind, id, sha256)",
-    "expected_evidence_kinds": ["archive", "dataset-source-state", "project-inventory", "tei-archive", "build-report"],
+    "expected_evidence_kinds": ["archive", "dataset-source-state", "dataset-manifest", "project-inventory", "tei-archive", "build-report"],
     "evidence_fingerprint": "SHA256(canonical sorted evidence_refs)",
-    "dataset_wide_evidence_rule": "Every dataset-wide finding must include both the last-accepted and candidate dataset-source-state EvidenceRefs. Changed-archive SHA refs may be added for local witness provenance but never replace either dataset-state ref.",
+    "dataset_wide_evidence_rule": "Every dataset-wide finding must include both the last-accepted and candidate dataset-source-state EvidenceRefs and both accepted and candidate dataset-manifest/contributor-tuple EvidenceRefs. For an ordinary upstream update the accepted/candidate manifest digests must be identical; disagreement emits dataset-input-set-changed before ordinary gates. Changed-archive SHA refs may be added for local witness provenance but never replace these dataset-context refs.",
     "approval_key": ["gate_id", "subject.scope", "subject.id", "condition_sha256", "evidence_fingerprint"],
     "matching": "Exact only. Any relevant evidence digest or accepted baseline change makes the approval stale.",
     "suppression": "Run the gate, emit the finding, exact-match an approval, retain the finding as approved with audit metadata, and only then remove that finding from the blocking set.",
@@ -64,9 +64,9 @@
     "chunk-type-unknown": "Policy is new c.type only. PH4 may observe (type, subtype); a new subtype under an accepted type is a non-blocking observation unless later research widens policy.",
     "lemma-coverage-drop": "Aggregate exact subproject numerator/denominator facts over the complete accepted and candidate dataset contexts using P-001 lexical-evidence semantics. For comparable nonzero baselines, block only when accepted coverage minus candidate coverage is strictly greater than 0.02 using exact rational arithmetic; never round.",
     "q-collision-new-class": "Build bare text-id to qualified-subproject membership classes over the full accepted and candidate dataset states. Block a newly colliding id or strict membership expansion. Unchanged or shrinking collision classes are not new collisions.",
-    "project-disappeared": "Compare candidate public-project inventory with the last accepted project-inventory evidence. A blocked candidate cannot become the next baseline.",
+    "project-disappeared": "Compare candidate public-project inventory with the last accepted project-inventory evidence. Evidence refs must bind both accepted and candidate project-inventory digests as well as the required dataset-context refs. A blocked candidate cannot become the next baseline.",
     "licence-changed": "Compare verbatim archive licence evidence at archive scope and bind approval to exact accepted/candidate archive evidence.",
-    "translation-coverage-drop": "Compare exact validated joined/eligible counts from accepted and candidate TEI evidence. Any real fall blocks. Evidence binds both JSON dataset source states and every TEI archive digest used by each measurement. Missing or unauthenticated evidence is an evaluation error, never implicit zero or unchanged.",
+    "translation-coverage-drop": "Compare exact validated joined/eligible counts from accepted and candidate TEI evidence. Any real fall blocks. Evidence binds both JSON dataset source states, both canonical dataset-manifest/contributor-tuple digests, and every TEI archive digest used by each measurement. Missing or unauthenticated evidence is an evaluation error, never implicit zero or unchanged.",
     "word-count-unexplained": "After rebuild, compare PH4 source-expected word totals/deltas with independent converter/build output including zero-span sidecar words. Differences not reconciled by source text deltas block."
   },
   "lemma_coverage_scope_lifecycle": {
@@ -79,13 +79,14 @@
     "state": "deterministic accepted public-project snapshot, e.g. upstream.inventory.lock.json with schema_version, sorted exact public paths, and SHA256 of the canonical sorted public list",
     "identity": "No wall-clock field participates in project-inventory identity.",
     "comparison": "project-disappeared compares last-accepted and candidate inventory digests/sets; network or inventory uncertainty is evaluation-error.",
+    "evidence": "Every project-disappeared finding binds both the accepted and candidate project-inventory EvidenceRefs so either inventory change invalidates a stale approval.",
     "promotion": "Observed/blocked candidate inventory never replaces the accepted inventory baseline."
   },
   "baseline_contract": {
     "source": "last accepted release/update state",
     "candidate": "complete candidate dataset state assembled from changed and unchanged contributor archives",
     "dataset_context": "Both accepted and candidate contexts contain the same validated canonical contributor tuple plus archive-name to typed PH4 ArchiveSnapshot mapping. Construction fails closed on a missing/duplicate contributor or archive/source-state mismatch.",
-    "dataset_input_set": "Accepted contributor tuple comes from the last accepted release manifest; candidate contributors come from current validated datasets.toml. Ordinary upstream evaluation requires exact tuple equality. Difference emits non-approvable dataset-input-set-changed before normal gates.",
+    "dataset_input_set": "Accepted contributor tuple comes from the last accepted release manifest; candidate contributors come from current validated datasets.toml. Ordinary upstream evaluation requires exact tuple equality. Difference emits non-approvable dataset-input-set-changed before normal gates. The accepted and candidate canonical tuple/dataset-manifest digests participate in evidence fingerprints even when equal.",
     "promotion": "Only a fully accepted update may replace accepted source, project-inventory, translation, and gate baselines.",
     "blocked_candidate": "Reports/findings only; must not advance any accepted baseline.",
     "toctou": "Immediately before promotion, recompute/verify candidate evidence fingerprints and the canonical contributor tuple/dataset-manifest digest. Any drift invalidates readiness."
@@ -111,8 +112,8 @@
   "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation baselines before PH5 evaluator TDD begins.",
   "independent_review": {
     "issue_review_rounds": 2,
-    "serialization_review_rounds": 1,
-    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received a separate stale-approval/baseline-lifecycle review and explicit fixes",
+    "serialization_review_rounds": 2,
+    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received separate stale-approval, baseline-lifecycle, and evidence-fingerprint reviews with explicit fixes",
     "final_issue_comment": 5587972646
   }
 }

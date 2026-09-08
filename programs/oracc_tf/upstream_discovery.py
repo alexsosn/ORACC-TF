@@ -243,8 +243,10 @@ def decide_probe(locked: ArchiveFingerprint, current: HeadMetadata) -> ProbeDeci
     if not isinstance(locked, ArchiveFingerprint) or not isinstance(current, HeadMetadata):
         raise UpstreamDiscoveryError("probe decision requires typed lock and HEAD metadata")
     if (
-        locked.etag is not None
-        and current.etag is not None
+        isinstance(locked.etag, str)
+        and bool(locked.etag.strip())
+        and isinstance(current.etag, str)
+        and bool(current.etag.strip())
         and current.content_length is not None
         and locked.etag == current.etag
         and locked.bytes == current.content_length
@@ -280,6 +282,10 @@ def verify_downloaded_archive(
         raise UpstreamDiscoveryError("download verification requires typed entry and HEAD metadata")
     if not isinstance(payload, bytes) or not payload:
         raise UpstreamDiscoveryError("downloaded archive payload must be non-empty bytes")
+    if current.content_length is not None and current.content_length != len(payload):
+        raise UpstreamProtocolError(
+            f"downloaded archive {entry.name!r} length disagrees with HEAD Content-Length"
+        )
     if not payload.startswith(_ZIP_MAGIC) or not zipfile.is_zipfile(BytesIO(payload)):
         raise UpstreamDiscoveryError(f"downloaded archive {entry.name!r} is not a ZIP payload")
     return DownloadedArchive(

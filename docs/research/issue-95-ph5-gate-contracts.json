@@ -40,6 +40,7 @@
     "evidence_ref": "EvidenceRef(kind, id, sha256)",
     "expected_evidence_kinds": ["archive", "dataset-source-state", "project-inventory", "tei-archive", "build-report"],
     "evidence_fingerprint": "SHA256(canonical sorted evidence_refs)",
+    "dataset_wide_evidence_rule": "Every dataset-wide finding must include both the last-accepted and candidate dataset-source-state EvidenceRefs. Changed-archive SHA refs may be added for local witness provenance but never replace either dataset-state ref.",
     "approval_key": ["gate_id", "subject.scope", "subject.id", "condition_sha256", "evidence_fingerprint"],
     "matching": "Exact only. Any relevant evidence digest or accepted baseline change makes the approval stale.",
     "suppression": "Run the gate, emit the finding, exact-match an approval, retain the finding as approved with audit metadata, and only then remove that finding from the blocking set.",
@@ -64,13 +65,14 @@
     "lemma-coverage-drop": "Evaluate exact subproject numerator/denominator facts using P-001 lexical-evidence semantics and block only when accepted coverage minus candidate coverage is strictly greater than 0.02. Do not round. New scopes create a baseline observation; zero-word or missing denominators are evaluation errors when comparison is required.",
     "q-collision-new-class": "Build bare text-id to qualified-subproject membership classes over the full accepted and candidate dataset states. Block a newly colliding id or strict membership expansion. Unchanged or shrinking collision classes are not new collisions.",
     "project-disappeared": "Compare candidate public-project inventory with the last accepted project-inventory evidence. A blocked candidate cannot become the next baseline.",
-    "licence-changed": "Compare verbatim archive licence evidence at archive scope and bind approval to exact before/after evidence.",
-    "translation-coverage-drop": "Compare exact validated joined/eligible counts from accepted and candidate TEI evidence. Any real fall blocks. Missing or unauthenticated evidence is an evaluation error, never implicit zero or unchanged.",
+    "licence-changed": "Compare verbatim archive licence evidence at archive scope and bind approval to exact accepted/candidate archive evidence.",
+    "translation-coverage-drop": "Compare exact validated joined/eligible counts from accepted and candidate TEI evidence. Any real fall blocks. Evidence binds both JSON dataset source states and every TEI archive digest used by each measurement. Missing or unauthenticated evidence is an evaluation error, never implicit zero or unchanged.",
     "word-count-unexplained": "After rebuild, compare PH4 source-expected word totals/deltas with independent converter/build output including zero-span sidecar words. Differences not reconciled by source text deltas block."
   },
   "baseline_contract": {
     "source": "last accepted release/update state",
     "candidate": "complete candidate dataset state assembled from changed and unchanged contributor archives",
+    "dataset_context": "Both accepted and candidate contexts contain the same validated canonical contributor tuple plus archive-name to typed PH4 ArchiveSnapshot mapping. Construction fails closed on a missing/duplicate contributor or archive/source-state mismatch.",
     "promotion": "Only a fully accepted update may replace accepted source, project-inventory, translation, and gate baselines.",
     "blocked_candidate": "Reports/findings only; must not advance any accepted baseline.",
     "toctou": "Immediately before promotion, recompute/verify candidate evidence fingerprints and the canonical contributor tuple/dataset-manifest digest. Any drift invalidates readiness."
@@ -96,7 +98,7 @@
   "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation baselines before PH5 evaluator TDD begins.",
   "independent_review": {
     "rounds": 2,
-    "result": "accepted research/design after corrections; no remaining known ambiguity in the issue-level contract",
+    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received a separate stale-approval review and explicit accepted+candidate dataset-state binding fix",
     "final_issue_comment": 5587972646
   }
 }

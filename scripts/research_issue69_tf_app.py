@@ -79,14 +79,13 @@ def profile_advanced_app(
 
 
 def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
-    """Exercise Text-Fabric's real browser kernel/routes without opening a server.
+    """Exercise Text-Fabric's browser kernel/routes without opening a server.
 
-    Text-Fabric 13.1 documents ``data:/path`` as a browser CLI source, but its
-    ``argApp()`` currently rejects the data-only form before ``web.setup()`` can
-    construct the app.  The advanced ``use(data:...)`` path does work, so the
-    probe feeds that real AdvancedApp into the same browser kernel and Flask
-    factory used by ``web.setup()``.  This keeps the measurement on Text-Fabric's
-    supported rendering/search/export stack while recording the CLI discrepancy.
+    Text-Fabric 13.1 accepts ``data:/path`` in ``tf.app.use()``, but its browser
+    CLI parser drops the data-only source before ``tf.browser.web.setup()`` can
+    construct an app.  This probe therefore starts from that real AdvancedApp and
+    feeds it into the same browser kernel and Flask factory.  It characterises the
+    browser stack only; it is not proof of repository-style production discovery.
     """
     root = Path(tf_root).resolve()
     advanced_app = use(f"data:{root}", silent="deep")
@@ -94,6 +93,8 @@ def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
         return {
             "schema_version": SCHEMA_VERSION,
             "browser_setup": False,
+            "probe_path": "advanced-app->kernel->factory",
+            "data_only_browser_cli_supported": False,
             "routes": {},
             "responses_nonempty": {},
         }
@@ -103,6 +104,8 @@ def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
         return {
             "schema_version": SCHEMA_VERSION,
             "browser_setup": False,
+            "probe_path": "advanced-app->kernel->factory",
+            "data_only_browser_cli_supported": False,
             "routes": {},
             "responses_nonempty": {},
         }
@@ -120,6 +123,8 @@ def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
     return {
         "schema_version": SCHEMA_VERSION,
         "browser_setup": True,
+        "probe_path": "advanced-app->kernel->factory",
+        "data_only_browser_cli_supported": False,
         "routes": routes,
         "responses_nonempty": responses_nonempty,
     }
@@ -318,6 +323,9 @@ def main() -> int:
     probe = sub.add_parser("probe")
     probe.add_argument("tf_root", type=Path)
 
+    browser = sub.add_parser("browser")
+    browser.add_argument("tf_root", type=Path)
+
     args = parser.parse_args()
     if args.command == "profile":
         result = profile_advanced_app(
@@ -348,6 +356,8 @@ def main() -> int:
         )
     elif args.command == "prototype":
         inject_prototype_formats(args.source, args.target)
+    elif args.command == "browser":
+        print(json.dumps(probe_browser_routes(args.tf_root), sort_keys=True))
     else:
         print(json.dumps(probe_text_formats(args.tf_root), sort_keys=True, ensure_ascii=False))
     return 0

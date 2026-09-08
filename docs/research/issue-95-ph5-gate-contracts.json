@@ -66,11 +66,21 @@
     "gdl-shape-unknown": "Compare the full candidate dataset-wide GDL shape set with the full last-accepted dataset-wide shape set. A shape already present in any unchanged contributor is not new. Include all affected qualified candidate text witnesses from typed PH4 snapshots.",
     "chunk-type-unknown": "Use the same accepted-vs-candidate dataset-wide union logic projected to c.type only. A new subtype under an accepted type is a non-blocking observation unless later research widens policy.",
     "lemma-coverage-drop": "Aggregate exact subproject numerator/denominator facts over the complete accepted and candidate dataset contexts using P-001 lexical-evidence semantics. For comparable nonzero baselines, block only when accepted coverage minus candidate coverage is strictly greater than 0.02 using exact rational arithmetic; never round.",
-    "q-collision-new-class": "For bare text id q let B[q] be accepted qualified-subproject membership and A[q] candidate membership. Block iff len(A[q]) > 1 and (q is absent from B or A[q] minus B[q] is non-empty). The canonical condition records sorted accepted_members, candidate_members, and new_members. Unchanged or shrinking collision classes are not new collisions.",
+    "q-collision-new-class": "For bare text id q let B[q] be accepted qualified-subproject membership and A[q] candidate membership. Block iff len(A[q]) > 1 and (q is absent from B or A[q] minus B[q] is non-empty). Unchanged or shrinking collision classes are not new collisions.",
     "project-disappeared": "Compare candidate public-project inventory with the last accepted project-inventory evidence. Relevance is derived only from the accepted dataset-to-archive contributor mapping plus each accepted contributing ArchiveLock.extract_paths structural root; archive-filename prefix inference is forbidden. Evidence refs bind accepted and candidate project-inventory digests plus the required dataset-context refs. A blocked candidate cannot become the next baseline.",
     "licence-changed": "Compare verbatim archive licence evidence at archive scope and bind approval to exact accepted/candidate archive evidence.",
     "translation-coverage-drop": "Compare exact rational accepted and candidate coverage where numerator is the count of qualified populated source documents with source-supported joined translation coverage and denominator is the count of qualified populated source documents in that source state. Any strict fall blocks. Evidence binds both JSON dataset source states, both canonical dataset-manifest/contributor-tuple digests, and every TEI archive digest used by each measurement. Missing or unauthenticated evidence, ambiguous identity, or a required zero denominator is a non-approvable evaluation error, never implicit zero or unchanged.",
     "word-count-unexplained": "After rebuild, use independent accepted and candidate converter/build reports whose source-word totals include the TF warp plus zero-span sidecar domain. Require candidate_build_source_words == candidate_PH4_source_words and (candidate_build_source_words - accepted_build_source_words) == sum(PH4_text_word_deltas across all changed contributors). Evidence refs bind both dataset-source-state contexts, both canonical dataset-manifest/contributor-tuple contexts, and both accepted and candidate build-report digests. Either failed equality blocks; missing build evidence is a non-approvable evaluation error."
+  },
+  "condition_contracts": {
+    "gdl-shape-unknown": ["shape: exact sorted tuple of observed GDL object keys"],
+    "chunk-type-unknown": ["chunk_type: exact newly observed c.type string"],
+    "lemma-coverage-drop": ["subproject: exact scope id", "accepted_lemma_count", "accepted_word_count", "candidate_lemma_count", "candidate_word_count", "lifecycle: comparable | baseline-created | candidate-coverage-denominator-zero | no-prior-quantitative-baseline"],
+    "q-collision-new-class": ["text_id: exact bare text id", "accepted_members: sorted qualified-subproject tuple", "candidate_members: sorted qualified-subproject tuple", "new_members: sorted candidate-minus-accepted tuple"],
+    "project-disappeared": ["project: exact disappeared public project path", "relevant_archive_roots: sorted accepted structural roots establishing tracked relevance"],
+    "licence-changed": ["licence_before: verbatim accepted string", "licence_after: verbatim candidate string"],
+    "translation-coverage-drop": ["accepted_joined", "accepted_eligible", "candidate_joined", "candidate_eligible"],
+    "word-count-unexplained": ["accepted_PH4_source_words", "candidate_PH4_source_words", "accepted_build_source_words", "candidate_build_source_words", "ph4_text_word_delta_sum"]
   },
   "lemma_coverage_scope_lifecycle": {
     "new_scope": "Accepted subproject absent, candidate present: emit non-blocking lemma-coverage-baseline-created with candidate integer counts; do not fabricate 0% and do not emit an error merely because the scope is new.",
@@ -126,7 +136,8 @@
     "project relevance inferred from archive filename",
     "postbuild reconciliation under-specified",
     "first-blocker short-circuit hiding later findings",
-    "TOCTOU drift before promotion"
+    "TOCTOU drift before promotion",
+    "lossy condition hashing across materially distinct findings"
   ],
   "dependencies": {
     "ph4_source_diff": "PH5 production implementation remains blocked until PH4 completion criteria and accepted dataset-wide source-state inputs are available.",
@@ -136,8 +147,8 @@
   "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation/build baselines before PH5 evaluator TDD begins.",
   "independent_review": {
     "issue_review_rounds": 2,
-    "serialization_review_rounds": 4,
-    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received separate stale-approval, baseline-lifecycle, evidence-fingerprint, categorical-evaluation-error, and executable-contract reviews with explicit fixes",
+    "serialization_review_rounds": 5,
+    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received separate stale-approval, baseline-lifecycle, evidence-fingerprint, categorical-evaluation-error, executable-contract, and condition-identity reviews with explicit fixes",
     "final_issue_comment": 5587972646
   }
 }

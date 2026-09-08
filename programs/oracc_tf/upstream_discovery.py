@@ -172,15 +172,19 @@ def tracked_archives_from_datasets(payload: str) -> tuple[str, ...]:
     except tomllib.TOMLDecodeError as exc:
         raise UpstreamInventoryError("datasets manifest is invalid TOML") from exc
     names: list[str] = []
+    seen: set[str] = set()
     for dataset in raw.values():
         if not isinstance(dataset, Mapping):
             raise UpstreamInventoryError("dataset entry must be a table")
         archives = dataset.get("archives", [])
         if not isinstance(archives, list) or any(not isinstance(item, str) or not item for item in archives):
             raise UpstreamInventoryError("dataset archives must be a list of non-empty strings")
-        names.extend(archives)
-    if len(set(names)) != len(names):
-        raise UpstreamInventoryError("tracked archive appears in more than one active dataset")
+        if len(set(archives)) != len(archives):
+            raise UpstreamInventoryError("dataset archives contains a duplicate source")
+        for archive in archives:
+            if archive not in seen:
+                seen.add(archive)
+                names.append(archive)
     return tuple(names)
 
 
@@ -305,7 +309,7 @@ def reconcile_download(
         raise UpstreamDiscoveryError("download reconciliation requires typed archive states")
     if locked.name != downloaded.name:
         raise UpstreamDiscoveryError("cannot reconcile different archive names")
-    if locked.sha256 == downloaded.sha256:
+    if locked.sha256.lower() == downloaded.sha256.lower():
         if locked.bytes != downloaded.bytes:
             raise UpstreamDiscoveryError("same archive hash has inconsistent byte length")
         return ArchiveChange(

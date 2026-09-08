@@ -87,7 +87,11 @@ def fact_policy_problems(path: Path, meta: Mapping[str, object], body: str) -> l
                 f"{path}: {doc_type} document requires fact_policy 'snapshot-evidence'"
             )
         raw_date = meta.get("evidence_date")
-        valid_date = isinstance(raw_date, str) and bool(raw_date) and raw_date == raw_date.strip()
+        valid_date = (
+            isinstance(raw_date, str)
+            and raw_date == raw_date.strip()
+            and re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw_date) is not None
+        )
         if valid_date:
             try:
                 date.fromisoformat(raw_date)

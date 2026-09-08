@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-09-07",
+  "updated": "2026-09-08",
   "documents": [
     {
       "id": "G-001",
@@ -137,6 +137,19 @@
       "path": "docs/research/R-005-distribution-architecture.md",
       "depends_on": [
         "P-001"
+      ]
+    },
+    {
+      "id": "R-006",
+      "title": "Text-Fabric application and browser architecture for ORACC-TF datasets",
+      "type": "research",
+      "status": "active",
+      "priority": "P1",
+      "path": "docs/research/R-006-tf-application-browser.md",
+      "depends_on": [
+        "P-001",
+        "R-003",
+        "R-005"
       ]
     }
   ],

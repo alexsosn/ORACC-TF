@@ -20,6 +20,7 @@ _STATE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$")
 _ID_COMPONENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _TEXT_ID_RE = re.compile(r"^[PQX][0-9]+$")
+_KNOWN_GDL_CHILD_KEYS = ("group", "seq", "qualified", "mods")
 
 
 class SourceDiffError(ValueError):
@@ -164,6 +165,19 @@ def _gdl_object_shapes(value: object) -> set[tuple[str, ...]]:
     def visit(obj: object) -> None:
         if isinstance(obj, Mapping):
             shapes.add(tuple(sorted(str(key) for key in obj.keys())))
+            # Preserve the established ORACC syntax contract for known child
+            # containers while still descending generically through any future
+            # mapping/list-valued keys so novelty cannot hide under new names.
+            for key in _KNOWN_GDL_CHILD_KEYS:
+                if key not in obj:
+                    continue
+                children = obj[key]
+                if not isinstance(children, list):
+                    raise SourceDiffError(f"GDL child field {key!r} must be a list")
+                if any(not isinstance(child, Mapping) for child in children):
+                    raise SourceDiffError(
+                        f"GDL child field {key!r} must contain only objects"
+                    )
             for child in obj.values():
                 if isinstance(child, (Mapping, list)):
                     visit(child)

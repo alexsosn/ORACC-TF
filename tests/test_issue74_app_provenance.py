@@ -120,6 +120,25 @@ def test_release_provenance_rejects_unsupported_schema_and_current_ledger_drift(
         module.release_provenance(mismatched_source)
 
 
+def test_release_provenance_rejects_noncanonical_tf_version_even_when_paths_agree() -> None:
+    module = api()
+    payload = manifest()
+    bad_version = "../x"
+    bad_root = f"{DATASET}/tf/{bad_version}"
+    payload["tf_version"] = bad_version
+    payload["tf_root"] = bad_root
+    releases = payload["releases"]
+    assert isinstance(releases, dict)
+    current = releases[RELEASE_ID]
+    assert isinstance(current, dict)
+    current["tf_version"] = bad_version
+    current["tf_root"] = bad_root
+    payload["visible_roots"] = {bad_root: RELEASE_ID}
+
+    with pytest.raises(module.AppProvenanceError):
+        module.release_provenance(payload)
+
+
 def _source_doc(subproject: str) -> dict[str, object]:
     path = ROOT / "data" / subproject / "corpusjson" / "Q003840.json"
     return json.loads(path.read_text(encoding="utf-8"))
@@ -170,6 +189,7 @@ def test_missing_source_url_omits_link_instead_of_guessing_from_bare_q() -> None
         ("rinap/rinap5", "Q003840", "https://user@oracc.org/rinap/rinap5", "rinap/rinap5"),
         ("rinap/rinap5", "Q003840", "https://oracc.org/rinap/rinap5?x=1", "rinap/rinap5"),
         ("rinap/rinap5", "Q003840", "https://oracc.org/rinap/rinap5#frag", "rinap/rinap5"),
+        ("rinap/rinap5", "Q003840", "http://oracc.org/rinap/\trinap5", "rinap/rinap5"),
     ],
 )
 def test_source_link_validation_fails_closed(

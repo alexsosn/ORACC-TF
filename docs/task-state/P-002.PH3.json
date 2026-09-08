@@ -1,0 +1,65 @@
+{
+  "task": "P-002.PH3",
+  "issue": 19,
+  "implementation_pr": 93,
+  "registry_status": "todo",
+  "runtime_status": "completion-blocked",
+  "research": {
+    "base_head": "5fa3062632d0971345f5435c6db12adfc379eb67",
+    "summary": "Archive acquisition/extraction is a fail-closed network-independent core. ORACC publishes no authenticated checksum, so previously unseen bytes require two independent fetch streams with identical byte length and SHA-256. Project roots are derived from internal metadata.json location plus declared pathname/project, including three-level projects; live HTTP/TLS ownership remains outside PH3."
+  },
+  "design": {
+    "module": "programs/oracc_tf/archive_security.py",
+    "boundary": "Bounded stream-to-temp acquisition, two-fetch corroboration, ZIP structural/resource preflight, portable path validation, structure-derived ORACC project roots, manual staged extraction, atomic destination publication, and cleanup only. No live HTTP client, discovery policy, lock mutation, source diff, rebuild, or release publication.",
+    "security_contract": "Reject unsafe/non-portable paths, duplicate/casefold/prefix aliases, symlinks and special files, encryption, unsupported compression, classic-ZIP structural inconsistencies, member/aggregate/ratio resource exhaustion, and extraction length disagreement before publishing any destination tree. ZIP64 requires an explicit research/design update rather than silent widening."
+  },
+  "tdd": {
+    "initial_red": {
+      "head": "ab817e67b19825bc39f77e4fe39c2864af9f7701",
+      "workflow": 34226877471,
+      "result": "29 intended PH3 contract failures because oracc_tf.archive_security did not yet exist; 264 pre-existing fast tests passed, 1 skipped, 11 corpus tests deselected; docs-registry passed."
+    },
+    "review_reds": [
+      {
+        "head": "d91447f2cf30cb56c0edf67da0fcabb4506da418",
+        "workflow": 34235600000,
+        "result": "2 intended failures with 294 existing fast tests passing: NaN and +infinity compression-ratio ceilings were accepted instead of failing closed."
+      },
+      {
+        "head": "e20ec94075bef44ca1b67e347e844d03613cd439",
+        "workflow": 34245344247,
+        "result": "8 intended failures with 303 existing fast tests passing: seven Windows/portable path hazards plus member-count enforcement occurring only after ZipFile central-directory materialization."
+      },
+      {
+        "head": "3a996201b9a552c9fe9c342bb362bde695c4a49c",
+        "workflow": 34247014006,
+        "result": "1 intended failure with 311 existing fast tests passing: a forged EOCD entry count could reach ZipFile before the configured member ceiling, proving EOCD count cannot be the pre-allocation trust boundary."
+      }
+    ],
+    "functional_green": {
+      "head": "f41f45fcc4f91cba934bf2a134d33e371fd9737a",
+      "tests_workflow": 34247701198,
+      "result": "Standard fast tests, whole-corpus invariants, and docs-registry passed.",
+      "m8_cross_validation_workflow": 34247701208,
+      "m8_result": "Pinned real oldbabylonian cross-validation passed.",
+      "generated_reference_workflow": 34247701180,
+      "generated_reference_result": "Real checked-in corpus build and generated-reference consistency passed."
+    }
+  },
+  "behavior": {
+    "acquisition": "Download chunks are byte-capped while written once and hashed; unseen bytes are accepted only after two independently supplied streams agree in length and SHA-256; mismatch or second-fetch failure cleans temporary copies.",
+    "preflight": "Classic ZIP EOCD facts are bounded-read, the central directory is sequentially scanned and member-capped before ZipFile materialization, scanned count is cross-checked against EOCD and materialized entries, and ZIP64/multidisk inputs fail closed pending explicit research.",
+    "paths": "Member/project components require NFC relative POSIX paths and reject traversal, backslashes, Windows forbidden characters, trailing dot/space, reserved device names, casefold aliases at full-path and ancestor-prefix levels, and file/directory prefix collisions.",
+    "extraction": "All members are manually copied only after complete preflight into an isolated sibling staging tree with actual decompressed byte accounting; destination publication is one final rename and failed staging trees are removed."
+  },
+  "independent_review": {
+    "reviewed_head": "f41f45fcc4f91cba934bf2a134d33e371fd9737a",
+    "result": "Fresh logically-independent security re-review found no remaining blocker inside PH3's declared remote-archive threat boundary after the portable-path and forged-EOCD hardening. Durable evidence addition requires a new exact-head validation and final re-review before this core can be considered blocked-ready."
+  },
+  "completion_blocker": {
+    "task": "P-002.PH2",
+    "issue": 18,
+    "reason": "PH3's network-independent security core is implemented and tested, but completion requires integration with PH2's discovery/download transport path; PH2 itself remains completion-blocked by PH1 normal-TLS upstream acquisition. No TLS verification may be weakened to satisfy this dependency."
+  },
+  "resume_gate": "After PH2/PH1 authenticated transport is available, connect the real downloaded archive stream to acquire_unseen/preflight/extract without relaxing any fail-closed rule, exercise representative active RIAO/RINAP inputs plus a three-level project, record integration evidence, then run exact-head CI and a fresh independent security review before marking P-002.PH3 done."
+}

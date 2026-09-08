@@ -9,6 +9,7 @@ corpus as normative ground truth.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
+from hashlib import sha256
 import json
 from pathlib import Path
 
@@ -28,6 +29,16 @@ def _read_json_object(path: Path) -> Mapping[str, object]:
     if not isinstance(value, Mapping):
         raise ResearchError(f"JSON root is not an object: {path}")
     return value
+
+
+def _json_documents(directory: Path | str) -> tuple[Mapping[str, object], ...]:
+    root = Path(directory)
+    if not root.is_dir():
+        raise ResearchError(f"source directory does not exist: {root}")
+    paths = tuple(sorted(root.glob("*.json")))
+    if not paths:
+        raise ResearchError(f"source directory contains no JSON documents: {root}")
+    return tuple(_read_json_object(path) for path in paths)
 
 
 def _document_ids(directory: Path | str, field: str) -> tuple[str, ...]:
@@ -104,6 +115,38 @@ def _nonempty(value: object) -> bool:
     return True
 
 
+def _oracc_features(node: Mapping[str, object]) -> Mapping[str, object]:
+    features = node.get("f")
+    if features is None:
+        return {}
+    if not isinstance(features, Mapping):
+        raise ResearchError("ORACC word f field must be an object when present")
+    return features
+
+
+def _reference_lines(document: Mapping[str, object]) -> tuple[Mapping[str, object], ...]:
+    text = document.get("text")
+    if text is None:
+        return ()
+    if not isinstance(text, Mapping):
+        raise ResearchError("reference text field must be an object")
+    lines = text.get("allLines", [])
+    if not isinstance(lines, list):
+        raise ResearchError("reference text.allLines must be a list")
+    if any(not isinstance(line, Mapping) for line in lines):
+        raise ResearchError("reference lines must be objects")
+    return tuple(lines)
+
+
+def _reference_content(line: Mapping[str, object]) -> tuple[Mapping[str, object], ...]:
+    content = line.get("content", [])
+    if not isinstance(content, list):
+        raise ResearchError("reference line content must be a list")
+    if any(not isinstance(item, Mapping) for item in content):
+        raise ResearchError("reference content items must be objects")
+    return tuple(content)
+
+
 def oracc_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[str, object]:
     """Count word-level ORACC lexical fields independently and source-faithfully."""
     words = 0
@@ -114,11 +157,7 @@ def oracc_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[str,
             if node.get("node") != "l":
                 continue
             words += 1
-            features = node.get("f")
-            if features is None:
-                features = {}
-            if not isinstance(features, Mapping):
-                raise ResearchError("ORACC word f field must be an object when present")
+            features = _oracc_features(node)
 
             for field in _ORACC_FIELDS:
                 # Real ORACC occurrence signatures commonly keep ``inst`` on the
@@ -142,23 +181,8 @@ def reference_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[
     maximum = 0
 
     for document in documents:
-        text = document.get("text")
-        if text is None:
-            continue
-        if not isinstance(text, Mapping):
-            raise ResearchError("reference text field must be an object")
-        lines = text.get("allLines", [])
-        if not isinstance(lines, list):
-            raise ResearchError("reference text.allLines must be a list")
-        for line in lines:
-            if not isinstance(line, Mapping):
-                raise ResearchError("reference line must be an object")
-            content = line.get("content", [])
-            if not isinstance(content, list):
-                raise ResearchError("reference line content must be a list")
-            for item in content:
-                if not isinstance(item, Mapping):
-                    raise ResearchError("reference content item must be an object")
+        for line in _reference_lines(document):
+            for item in _reference_content(line):
                 if item.get("type") != "Word":
                     continue
                 words += 1
@@ -182,12 +206,277 @@ def reference_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[
     }
 
 
+def oracc_structure_census(documents: Iterable[Mapping[str, object]]) -> dict[str, int]:
+    """Measure ORACC source-native structural units without mapping them to Nino units."""
+    document_count = 0
+    line_starts = 0
+    words = 0
+    gdl_entries = 0
+    empty_gdl = 0
+    missing_gdl = 0
+
+    for document in documents:
+        document_count += 1
+        for node in _walk_cdl(document):
+            if node.get("node") == "d" and node.get("type") == "line-start":
+                line_starts += 1
+            if node.get("node") != "l":
+                continue
+            words += 1
+            features = _oracc_features(node)
+            if "gdl" not in features or features.get("gdl") is None:
+                missing_gdl += 1
+                continue
+            gdl = features.get("gdl")
+            if not isinstance(gdl, list):
+                raise ResearchError("ORACC word gdl field must be a list when present")
+            if not gdl:
+                empty_gdl += 1
+            gdl_entries += len(gdl)
+
+    return {
+        "documents": document_count,
+        "line_starts": line_starts,
+        "words": words,
+        "gdl_top_level_entries": gdl_entries,
+        "words_with_empty_gdl": empty_gdl,
+        "words_without_gdl": missing_gdl,
+    }
+
+
+def reference_structure_census(documents: Iterable[Mapping[str, object]]) -> dict[str, int]:
+    """Measure Nino JSON native lines, words and word-part structures independently."""
+    document_count = 0
+    line_count = 0
+    words = 0
+    word_parts = 0
+    empty_parts = 0
+    empty_lines = 0
+
+    for document in documents:
+        document_count += 1
+        lines = _reference_lines(document)
+        line_count += len(lines)
+        for line in lines:
+            content = _reference_content(line)
+            if not content:
+                empty_lines += 1
+            for item in content:
+                if item.get("type") != "Word":
+                    continue
+                words += 1
+                parts = item.get("parts", [])
+                if parts is None:
+                    parts = []
+                if not isinstance(parts, list):
+                    raise ResearchError("reference Word parts must be a list when present")
+                if not parts:
+                    empty_parts += 1
+                word_parts += len(parts)
+
+    return {
+        "documents": document_count,
+        "lines": line_count,
+        "words": words,
+        "word_parts": word_parts,
+        "words_with_empty_parts": empty_parts,
+        "empty_lines": empty_lines,
+    }
+
+
+def _source_id(document: Mapping[str, object], field: str) -> str:
+    value = document.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ResearchError(f"document missing non-empty {field}")
+    return value.strip()
+
+
+def _oracc_forms(document: Mapping[str, object]) -> tuple[str | None, ...]:
+    forms: list[str | None] = []
+    for node in _walk_cdl(document):
+        if node.get("node") != "l":
+            continue
+        value = _oracc_features(node).get("form")
+        if value is not None and not isinstance(value, str):
+            raise ResearchError("ORACC word form must be a string or null")
+        forms.append(value)
+    return tuple(forms)
+
+
+def _reference_forms(document: Mapping[str, object]) -> tuple[str | None, ...]:
+    forms: list[str | None] = []
+    for line in _reference_lines(document):
+        for item in _reference_content(line):
+            if item.get("type") != "Word":
+                continue
+            value = item.get("cleanValue") if "cleanValue" in item else item.get("value")
+            if value is not None and not isinstance(value, str):
+                raise ResearchError("reference word value must be a string or null")
+            forms.append(value)
+    return tuple(forms)
+
+
+def paired_transliteration_witness(
+    oracc_document: Mapping[str, object], reference_document: Mapping[str, object]
+) -> dict[str, object]:
+    """Compare exact source word sequences without transliteration normalization."""
+    oracc_id = _source_id(oracc_document, "textid")
+    reference_id = _source_id(reference_document, "cdliNumber")
+    if oracc_id != reference_id:
+        raise ResearchError(
+            f"paired source identities disagree: {oracc_id!r} != {reference_id!r}"
+        )
+
+    oracc_words = _oracc_forms(oracc_document)
+    reference_words = _reference_forms(reference_document)
+    first_difference: int | None = None
+    for index, (left, right) in enumerate(zip(oracc_words, reference_words)):
+        if left != right:
+            first_difference = index
+            break
+    if first_difference is None and len(oracc_words) != len(reference_words):
+        first_difference = min(len(oracc_words), len(reference_words))
+
+    return {
+        "text_id": oracc_id,
+        "oracc_words": oracc_words,
+        "reference_words": reference_words,
+        "same_word_count": len(oracc_words) == len(reference_words),
+        "exact_sequence_equal": oracc_words == reference_words,
+        "first_difference": first_difference,
+    }
+
+
 def tf_feature_names(directory: Path | str) -> tuple[str, ...]:
     """Inventory TF feature files by filename only, without semantic inference."""
     root = Path(directory)
     if not root.is_dir():
         raise ResearchError(f"TF directory does not exist: {root}")
     return tuple(sorted(path.stem for path in root.iterdir() if path.is_file() and path.suffix == ".tf"))
+
+
+def _json_tree_sha256(directory: Path | str) -> str:
+    root = Path(directory)
+    if not root.is_dir():
+        raise ResearchError(f"source directory does not exist: {root}")
+    files = tuple(sorted(root.glob("*.json")))
+    if not files:
+        raise ResearchError(f"source directory contains no JSON documents: {root}")
+    digest = sha256()
+    for path in files:
+        try:
+            payload = path.read_bytes()
+        except OSError as exc:
+            raise ResearchError(f"cannot read source bytes {path}") from exc
+        digest.update(path.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(sha256(payload).digest())
+    return digest.hexdigest()
+
+
+def _sequence_sha256(values: Sequence[str | None]) -> str:
+    payload = json.dumps(
+        list(values), ensure_ascii=False, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    return sha256(payload).hexdigest()
+
+
+def _compact_witness(witness: Mapping[str, object]) -> dict[str, object]:
+    oracc_words = witness["oracc_words"]
+    reference_words = witness["reference_words"]
+    if not isinstance(oracc_words, tuple) or not isinstance(reference_words, tuple):
+        raise ResearchError("paired witness word sequences must be tuples")
+    first_difference = witness["first_difference"]
+    if first_difference is not None and not isinstance(first_difference, int):
+        raise ResearchError("paired witness first_difference must be an integer or null")
+
+    left_value = None
+    right_value = None
+    if first_difference is not None:
+        if first_difference < len(oracc_words):
+            left_value = oracc_words[first_difference]
+        if first_difference < len(reference_words):
+            right_value = reference_words[first_difference]
+
+    return {
+        "text_id": witness["text_id"],
+        "oracc_word_count": len(oracc_words),
+        "reference_word_count": len(reference_words),
+        "same_word_count": witness["same_word_count"],
+        "exact_sequence_equal": witness["exact_sequence_equal"],
+        "first_difference": first_difference,
+        "first_difference_oracc": left_value,
+        "first_difference_reference": right_value,
+        "oracc_sequence_sha256": _sequence_sha256(oracc_words),
+        "reference_sequence_sha256": _sequence_sha256(reference_words),
+    }
+
+
+def build_report(
+    *,
+    oracc_dir: Path | str,
+    reference_dir: Path | str,
+    reference_tf_dir: Path | str,
+    oracc_revision: str,
+    reference_revision: str,
+    oracc_licence: str,
+    reference_repository_licence: str,
+    reference_source_provenance: str,
+) -> dict[str, object]:
+    """Assemble deterministic A/B evidence without merging the two source models."""
+    for field, value in (
+        ("oracc_revision", oracc_revision),
+        ("reference_revision", reference_revision),
+        ("oracc_licence", oracc_licence),
+        ("reference_repository_licence", reference_repository_licence),
+        ("reference_source_provenance", reference_source_provenance),
+    ):
+        if not isinstance(value, str) or not value:
+            raise ResearchError(f"{field} must be a non-empty string")
+
+    oracc_documents = _json_documents(oracc_dir)
+    reference_documents = _json_documents(reference_dir)
+    oracc_ids = oracc_document_ids(oracc_dir)
+    reference_ids = reference_document_ids(reference_dir)
+    identity = identity_overlap(oracc_ids, reference_ids)
+
+    oracc_by_id = {_source_id(document, "textid"): document for document in oracc_documents}
+    reference_by_id = {
+        _source_id(document, "cdliNumber"): document for document in reference_documents
+    }
+    if len(oracc_by_id) != len(oracc_documents) or len(reference_by_id) != len(reference_documents):
+        raise ResearchError("duplicate source identity while assembling report")
+
+    paired = tuple(
+        _compact_witness(
+            paired_transliteration_witness(oracc_by_id[text_id], reference_by_id[text_id])
+        )
+        for text_id in identity["overlap"]
+    )
+
+    return {
+        "schema_version": 1,
+        "pins": {
+            "oracc_revision": oracc_revision,
+            "reference_revision": reference_revision,
+        },
+        "input_digests": {
+            "oracc_json_sha256": _json_tree_sha256(oracc_dir),
+            "reference_json_sha256": _json_tree_sha256(reference_dir),
+        },
+        "licences": {
+            "oracc": oracc_licence,
+            "reference_repository": reference_repository_licence,
+        },
+        "reference_source_provenance": reference_source_provenance,
+        "identity": identity,
+        "oracc_lexical": oracc_lexical_census(oracc_documents),
+        "reference_lexical": reference_lexical_census(reference_documents),
+        "oracc_structure": oracc_structure_census(oracc_documents),
+        "reference_structure": reference_structure_census(reference_documents),
+        "reference_tf_features": tf_feature_names(reference_tf_dir),
+        "paired_witnesses": paired,
+    }
 
 
 def canonical_report_bytes(report: object) -> bytes:
@@ -207,11 +496,15 @@ def canonical_report_bytes(report: object) -> bytes:
 
 __all__ = [
     "ResearchError",
+    "build_report",
     "canonical_report_bytes",
     "identity_overlap",
     "oracc_document_ids",
     "oracc_lexical_census",
+    "oracc_structure_census",
+    "paired_transliteration_witness",
     "reference_document_ids",
     "reference_lexical_census",
+    "reference_structure_census",
     "tf_feature_names",
 ]

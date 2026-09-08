@@ -24,7 +24,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install project
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" "text-fabric==13.1.0"
 
       - name: Build representative real corpus
         run: |

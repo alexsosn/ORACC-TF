@@ -59,6 +59,48 @@ def forge_eocd_member_count(payload: bytes, count: int) -> bytes:
     return bytes(data)
 
 
+def add_hybrid_zip64_records(payload: bytes) -> bytes:
+    """Insert valid ZIP64 metadata while leaving classic EOCD fields non-sentinel."""
+    position = payload.rfind(b"PK\x05\x06")
+    assert position >= 0
+    (
+        signature,
+        disk_number,
+        central_disk,
+        entries_on_disk,
+        entries_total,
+        central_size,
+        central_offset,
+        comment_length,
+    ) = struct.unpack_from("<4s4H2LH", payload, position)
+    assert signature == b"PK\x05\x06"
+    assert disk_number == central_disk == 0
+    assert entries_on_disk == entries_total
+    assert comment_length == 0
+
+    zip64_eocd = struct.pack(
+        "<4sQ2H2L4Q",
+        b"PK\x06\x06",
+        44,
+        45,
+        45,
+        0,
+        0,
+        entries_total,
+        entries_total,
+        central_size,
+        central_offset,
+    )
+    locator = struct.pack(
+        "<4sLQL",
+        b"PK\x06\x07",
+        0,
+        position,
+        1,
+    )
+    return payload[:position] + zip64_eocd + locator + payload[position:]
+
+
 @pytest.mark.parametrize("ratio", [math.nan, math.inf, -math.inf])
 def test_archive_limits_reject_non_finite_compression_ratio(ratio: float) -> None:
     """A non-finite ceiling must not disable compression-ratio enforcement."""
@@ -110,6 +152,9 @@ def test_preflight_rejects_casefold_file_directory_prefix_collision(tmp_path: Pa
         "safe/project/CON",
         "safe/project/con.txt",
         "safe/project/COM1.log",
+        "safe/project/COM¹",
+        "safe/project/LPT².txt",
+        "safe/project/com³.log",
         "safe/project/trailing-dot.",
         "safe/project/trailing-space ",
         "safe/project/data:alternate",
@@ -168,3 +213,18 @@ def test_member_limit_does_not_trust_forged_eocd_entry_count(
 
     with pytest.raises(ArchiveResourceLimitError):
         preflight_archive(path, limits(max_members=1))
+
+
+def test_hybrid_zip64_is_rejected_before_zipfile_materialization(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ZIP64 locator/EOCD metadata is a stop condition even with ordinary classic EOCD fields."""
+    path = write_archive(tmp_path, add_hybrid_zip64_records(archive_with([])))
+
+    def forbidden_zipfile(*args: object, **kwargs: object) -> object:
+        raise AssertionError("ZipFile materialized before hybrid ZIP64 rejection")
+
+    monkeypatch.setattr("oracc_tf.archive_security.zipfile.ZipFile", forbidden_zipfile)
+
+    with pytest.raises(ArchiveStructureError):
+        preflight_archive(path, limits())

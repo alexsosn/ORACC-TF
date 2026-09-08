@@ -46,3 +46,17 @@ def test_verified_payload_records_own_sha256_and_size_without_extracting() -> No
 
     assert verified.sha256 == hashlib.sha256(payload).hexdigest()
     assert verified.bytes == len(payload)
+
+
+def test_payload_type_check_does_not_read_or_decompress_members(monkeypatch) -> None:
+    module = api()
+    payload = valid_zip_bytes()
+
+    def forbidden_open(*args, **kwargs):
+        raise AssertionError("ISSUE-42 must not read/decompress ZIP members; PH3 owns that")
+
+    monkeypatch.setattr(zipfile.ZipFile, "open", forbidden_open)
+
+    verified = module.verify_candidate_bytes(candidate(module), payload)
+
+    assert verified.sha256 == hashlib.sha256(payload).hexdigest()

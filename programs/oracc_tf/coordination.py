@@ -212,15 +212,21 @@ def validate_registry(registry: dict[str, Any]) -> list[str]:
                 evidence_owner[evidence_file] = task_id
 
     for task_id, task in tasks.items():
-        dependencies = task.get("blocked_by") or []
-        if not isinstance(dependencies, list):
-            problems.append(f"task {task_id}: blocked_by must be a list")
-            continue
-        for dependency in dependencies:
-            if dependency not in tasks:
-                problems.append(f"task {task_id}: blocked_by unknown task {dependency}")
-        if task.get("status") == "done":
+        dependency_fields = ("blocked_by", "completion_blocked_by")
+        combined_dependencies: list[str] = []
+        for field_name in dependency_fields:
+            dependencies = task.get(field_name) or []
+            if not isinstance(dependencies, list):
+                problems.append(f"task {task_id}: {field_name} must be a list")
+                continue
+            combined_dependencies.extend(dependencies)
             for dependency in dependencies:
+                if dependency not in tasks:
+                    problems.append(
+                        f"task {task_id}: {field_name} unknown task {dependency}"
+                    )
+        if task.get("status") == "done":
+            for dependency in combined_dependencies:
                 if tasks.get(dependency, {}).get("status") != "done":
                     problems.append(
                         f"task {task_id}: done but depends on unfinished {dependency}"
@@ -619,6 +625,12 @@ def validate_completion(
         status = tasks.get(dependency, {}).get("status")
         if status != "done":
             problems.append(f"task {task_id}: dependency {dependency} is {status}")
+    for dependency in task.get("completion_blocked_by") or []:
+        status = tasks.get(dependency, {}).get("status")
+        if status != "done":
+            problems.append(
+                f"task {task_id}: completion dependency {dependency} is {status}"
+            )
 
     state = analyze(registry, snapshot, now)[task_id]
     problems.extend(state.problems)

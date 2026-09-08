@@ -13,8 +13,8 @@ Verifies:
   * every depends_on / blocks target exists
   * registry documents match the files on disk, field for field
   * every task's plan exists and its spec section is findable in that plan
-  * the task graph is acyclic and every blocked_by id exists
-  * no task is 'done' while something it depends on is not
+  * the task graph is acyclic and every dependency id exists
+  * no task is 'done' while a start or completion dependency is not
   * schema-v2 unfinished tasks have unique GitHub issue mappings
   * task-specific evidence_file paths are unique
   * completed/blocked task evidence files, when declared, exist
@@ -64,6 +64,15 @@ def front_matter(path):
             pending_list = key
         out[key] = val
     return out, body
+
+
+def task_dependencies(task):
+    """Return all start and completion dependencies for validation/cycle checks."""
+
+    return [
+        *(task.get("blocked_by") or []),
+        *(task.get("completion_blocked_by") or []),
+    ]
 
 
 def main():
@@ -140,15 +149,16 @@ def main():
             key = spec.split()[-1] if spec else ""
             if key and key not in bodies[plan]:
                 problems.append(f"task {tid}: spec {t.get('spec')!r} not found in {plan}")
-        for dep in t.get("blocked_by") or []:
-            if dep not in tasks:
-                problems.append(f"task {tid}: blocked_by unknown task {dep}")
+        for field in ("blocked_by", "completion_blocked_by"):
+            for dep in t.get(field) or []:
+                if dep not in tasks:
+                    problems.append(f"task {tid}: {field} unknown task {dep}")
         evidence_file = t.get("evidence_file")
         if evidence_file and t.get("status") in {"done", "blocked"}:
             if not os.path.isfile(evidence_file):
                 problems.append(f"task {tid}: evidence_file does not exist: {evidence_file}")
 
-    # cycle detection
+    # cycle detection across both start and completion dependencies
     colour = {}
 
     def visit(n, trail):
@@ -158,7 +168,7 @@ def main():
         if colour.get(n) == 2:
             return
         colour[n] = 1
-        for dep in tasks.get(n, {}).get("blocked_by") or []:
+        for dep in task_dependencies(tasks.get(n, {})):
             if dep in tasks:
                 visit(dep, trail + [n])
         colour[n] = 2
@@ -168,10 +178,13 @@ def main():
 
     for tid, t in tasks.items():
         if t.get("status") == "done":
-            for dep in t.get("blocked_by") or []:
+            for dep in task_dependencies(t):
                 if tasks.get(dep, {}).get("status") != "done":
                     problems.append(f"task {tid}: done but depends on unfinished {dep}")
 
+    # Claim/start readiness deliberately considers only blocked_by. A task may
+    # have completion_blocked_by dependencies when its issue permits research or
+    # design to proceed before later production integration is allowed.
     dependency_ready = [
         tid
         for tid, t in sorted(tasks.items())

@@ -12,6 +12,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -73,8 +74,13 @@ class ArchiveLimits:
             if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
                 raise ArchiveResourceLimitError(f"{field} must be a positive integer")
         ratio = self.max_compression_ratio
-        if isinstance(ratio, bool) or not isinstance(ratio, (int, float)) or ratio <= 0:
-            raise ArchiveResourceLimitError("max_compression_ratio must be positive")
+        if (
+            isinstance(ratio, bool)
+            or not isinstance(ratio, (int, float))
+            or (isinstance(ratio, float) and not math.isfinite(ratio))
+            or ratio <= 0
+        ):
+            raise ArchiveResourceLimitError("max_compression_ratio must be positive and finite")
 
 
 @dataclass(frozen=True)

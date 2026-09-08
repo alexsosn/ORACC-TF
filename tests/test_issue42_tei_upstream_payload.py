@@ -69,6 +69,20 @@ def test_payload_type_check_does_not_read_or_decompress_members(monkeypatch) -> 
     assert verified.sha256 == hashlib.sha256(payload).hexdigest()
 
 
+def test_payload_type_check_does_not_enumerate_archive_structure(monkeypatch) -> None:
+    module = api()
+    payload = valid_zip_bytes()
+
+    def forbidden_infolist(*args, **kwargs):
+        raise AssertionError("ISSUE-42 must not enumerate ZIP structure; PH3 owns that")
+
+    monkeypatch.setattr(zipfile.ZipFile, "infolist", forbidden_infolist)
+
+    verified = module.verify_candidate_bytes(candidate(module), payload)
+
+    assert verified.sha256 == hashlib.sha256(payload).hexdigest()
+
+
 def test_verified_candidate_rejects_non_candidate_identity() -> None:
     module = api()
 

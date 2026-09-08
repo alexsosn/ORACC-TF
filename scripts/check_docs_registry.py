@@ -12,6 +12,8 @@ Verifies:
   * every front-matter id is unique and matches its filename prefix
   * every depends_on / blocks target exists
   * registry documents match the files on disk, field for field
+  * every registered document has exactly one structurally valid fact-policy entry
+  * research/plan snapshot evidence has a real ISO date and non-empty evidence basis
   * every task's plan exists and its spec section is findable in that plan
   * the task graph is acyclic and every dependency id exists
   * no task is 'done' while a start or completion dependency is not
@@ -24,9 +26,12 @@ Exit code 1 on any problem.
 """
 
 import argparse
+from collections.abc import Mapping
+from datetime import date
 import glob
 import json
 import os
+from pathlib import Path
 import re
 import sys
 
@@ -39,6 +44,9 @@ REQUIRED = ("id", "title", "type", "status", "priority")
 STATUSES = {"draft", "active", "done", "blocked", "superseded"}
 PRIORITIES = {"P0", "P1", "P2"}
 TASK_STATUSES = {"todo", "blocked", "done"}
+FACT_POLICY_SCHEMA = 1
+SNAPSHOT_TYPES = {"research", "plan"}
+OPERATIONAL_TYPES = {"guide", "index"}
 
 
 def front_matter(path):
@@ -64,6 +72,83 @@ def front_matter(path):
             pending_list = key
         out[key] = val
     return out, body
+
+
+def fact_policy_problems(path: Path, meta: Mapping[str, object], body: str) -> list[str]:
+    """Validate fact provenance structurally without guessing from numeric tokens."""
+    del body  # Numeric literals are intentionally not scanned; policy is semantic metadata.
+    problems: list[str] = []
+    doc_type = meta.get("type")
+    policy = meta.get("fact_policy")
+
+    if doc_type in SNAPSHOT_TYPES:
+        if policy != "snapshot-evidence":
+            problems.append(
+                f"{path}: {doc_type} document requires fact_policy 'snapshot-evidence'"
+            )
+        raw_date = meta.get("evidence_date")
+        valid_date = isinstance(raw_date, str) and bool(raw_date) and raw_date == raw_date.strip()
+        if valid_date:
+            try:
+                date.fromisoformat(raw_date)
+            except ValueError:
+                valid_date = False
+        if not valid_date:
+            problems.append(f"{path}: snapshot evidence requires a valid evidence_date (YYYY-MM-DD)")
+
+        basis = meta.get("evidence_basis")
+        if not isinstance(basis, str) or not basis.strip():
+            problems.append(f"{path}: snapshot evidence requires non-empty evidence_basis")
+        elif any(ord(char) < 0x20 for char in basis):
+            problems.append(f"{path}: evidence_basis contains control characters")
+    elif doc_type in OPERATIONAL_TYPES:
+        if policy != "operational":
+            problems.append(f"{path}: {doc_type} document requires fact_policy 'operational'")
+    else:
+        problems.append(f"{path}: unsupported fact-policy document type {doc_type!r}")
+
+    return problems
+
+
+def fact_policy_table_problems(
+    registry_docs: Mapping[str, Mapping[str, object]],
+    policies: Mapping[str, object],
+) -> list[str]:
+    """Require one fact-policy record for every and only registered document id."""
+    problems: list[str] = []
+    registry_ids = set(registry_docs)
+    policy_ids = set(policies)
+
+    for did in sorted(registry_ids - policy_ids):
+        problems.append(f"fact policy: missing registered document {did}")
+    for did in sorted(policy_ids - registry_ids):
+        problems.append(f"fact policy: orphan document {did} is not registered")
+
+    for did in sorted(registry_ids & policy_ids):
+        reg_doc = registry_docs[did]
+        policy = policies[did]
+        if not isinstance(policy, Mapping):
+            problems.append(f"fact policy: {did} entry must be an object")
+            continue
+
+        doc_type = reg_doc.get("type")
+        expected_fields = (
+            {"fact_policy", "evidence_date", "evidence_basis"}
+            if doc_type in SNAPSHOT_TYPES
+            else {"fact_policy"}
+            if doc_type in OPERATIONAL_TYPES
+            else set()
+        )
+        if expected_fields and set(policy) != expected_fields:
+            problems.append(
+                f"fact policy: {did} fields must be exactly {sorted(expected_fields)!r}"
+            )
+
+        path = Path(str(reg_doc.get("path") or did))
+        merged = {"type": doc_type, **dict(policy)}
+        problems.extend(fact_policy_problems(path, merged, ""))
+
+    return problems
 
 
 def task_dependencies(task):
@@ -134,6 +219,32 @@ def main():
                     problems.append(
                         f"registry: {did}.{field} is {reg_docs[did].get(field)!r}, "
                         f"document says {docs[did].get(field)!r}")
+
+    fact_policy_path = os.path.join(a.docs, "fact-policy.json")
+    if not os.path.isfile(fact_policy_path):
+        problems.append(f"{fact_policy_path}: missing")
+    else:
+        try:
+            fact_policy = json.load(open(fact_policy_path, encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            problems.append(f"{fact_policy_path}: unreadable: {exc}")
+        else:
+            if not isinstance(fact_policy, Mapping):
+                problems.append(f"{fact_policy_path}: root must be an object")
+            elif fact_policy.get("schema_version") != FACT_POLICY_SCHEMA:
+                problems.append(
+                    f"{fact_policy_path}: unsupported schema {fact_policy.get('schema_version')!r}"
+                )
+            elif set(fact_policy) != {"schema_version", "documents"}:
+                problems.append(
+                    f"{fact_policy_path}: fields must be exactly ['documents', 'schema_version']"
+                )
+            elif not isinstance(fact_policy.get("documents"), Mapping):
+                problems.append(f"{fact_policy_path}: documents must be an object")
+            else:
+                problems.extend(
+                    fact_policy_table_problems(reg_docs, fact_policy["documents"])
+                )
 
     tasks = {t["id"]: t for t in reg.get("tasks", [])}
     for tid, t in tasks.items():

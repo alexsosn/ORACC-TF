@@ -186,6 +186,38 @@ def test_identical_snapshot_has_empty_semantic_diff_and_stable_serialization():
     assert decoded["after"]["source_state"] == "sha256:" + "a" * 64
 
 
+def test_equal_source_state_with_different_text_facts_fails_closed():
+    module = api()
+    before = snapshot(
+        module,
+        documents=[source(module, "p/a", doc("Q000001", word("a", cf="a")))],
+    )
+    after = snapshot(
+        module,
+        documents=[source(module, "p/a", doc("Q000001", word("b", cf="b")))],
+    )
+
+    with pytest.raises(module.SourceDiffError):
+        module.diff_snapshots(before, after)
+
+
+@pytest.mark.parametrize(
+    ("licence", "timestamp"),
+    [
+        ("CC BY-SA 3.0", "2026-08-07T12:00:00"),
+        ("CC0", "2026-08-08T12:00:00"),
+    ],
+)
+def test_equal_source_state_with_different_metadata_fails_closed(licence, timestamp):
+    module = api()
+    documents = [source(module, "p/a", doc("Q000001", word("a", cf="a")))]
+    before = snapshot(module, documents=documents)
+    after = snapshot(module, documents=documents, licence=licence, timestamp=timestamp)
+
+    with pytest.raises(module.SourceDiffError):
+        module.diff_snapshots(before, after)
+
+
 def test_cross_archive_diff_and_duplicate_or_mismatched_identity_fail_closed():
     module = api()
     good = source(module, "p/a", doc("Q000001", word("a")))

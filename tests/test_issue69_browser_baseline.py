@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
+import subprocess
+import sys
 
 from oracc_tf import corpus, loader, metadata
 
@@ -85,6 +88,24 @@ def test_issue69_captures_current_generic_tf_browser_routes(tmp_path: Path) -> N
         "/query": True,
         "/export": True,
     }
+
+
+def test_issue69_browser_cli_stdout_is_machine_readable_json(tmp_path: Path) -> None:
+    """TF/Flask diagnostics must not corrupt the JSON artifact channel."""
+    tf_root = tmp_path / "tf"
+    _build_fixture(tf_root)
+
+    completed = subprocess.run(
+        [sys.executable, str(SCRIPT), "browser", str(tf_root)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    result = json.loads(completed.stdout)
+    assert result["browser_setup"] is True
+    assert result["probe_path"] == "advanced-app->kernel->factory"
+    assert set(result["routes"]) == {"/", "/passage", "/query", "/export"}
 
 
 def test_issue69_research_workflow_records_real_corpus_browser_baseline() -> None:

@@ -4,6 +4,7 @@ from io import BytesIO
 import json
 import math
 from pathlib import Path
+import struct
 import zipfile
 
 import pytest
@@ -47,6 +48,15 @@ def write_archive(tmp_path: Path, payload: bytes) -> Path:
     path = tmp_path / "source.zip"
     path.write_bytes(payload)
     return path
+
+
+def forge_eocd_member_count(payload: bytes, count: int) -> bytes:
+    data = bytearray(payload)
+    position = data.rfind(b"PK\x05\x06")
+    assert position >= 0
+    struct.pack_into("<H", data, position + 8, count)
+    struct.pack_into("<H", data, position + 10, count)
+    return bytes(data)
 
 
 @pytest.mark.parametrize("ratio", [math.nan, math.inf, -math.inf])
@@ -132,6 +142,27 @@ def test_member_limit_is_checked_before_zipfile_materializes_central_directory(
 
     def forbidden_zipfile(*args: object, **kwargs: object) -> object:
         raise AssertionError("ZipFile materialized before member-count precheck")
+
+    monkeypatch.setattr("oracc_tf.archive_security.zipfile.ZipFile", forbidden_zipfile)
+
+    with pytest.raises(ArchiveResourceLimitError):
+        preflight_archive(path, limits(max_members=1))
+
+
+def test_member_limit_does_not_trust_forged_eocd_entry_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A forged low EOCD count must not bypass the pre-allocation member ceiling."""
+    payload = archive_with(
+        [
+            ("safe/project/a.json", b"a"),
+            ("safe/project/b.json", b"b"),
+        ]
+    )
+    path = write_archive(tmp_path, forge_eocd_member_count(payload, 1))
+
+    def forbidden_zipfile(*args: object, **kwargs: object) -> object:
+        raise AssertionError("ZipFile materialized after forged EOCD count")
 
     monkeypatch.setattr("oracc_tf.archive_security.zipfile.ZipFile", forbidden_zipfile)
 

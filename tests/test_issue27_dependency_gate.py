@@ -1,4 +1,4 @@
-"""Issue #27 blocker synchronization after the empty-slot architecture change."""
+"""Issue #27 dependency synchronization after the empty-slot architecture change."""
 
 from __future__ import annotations
 
@@ -14,9 +14,10 @@ def _task(task_id: str) -> dict[str, object]:
     return next(task for task in registry["tasks"] if task["id"] == task_id)
 
 
-def test_p003_ph1_waits_for_translation_layer() -> None:
+def test_p003_ph1_may_start_before_translation_but_waits_to_finish() -> None:
     task = _task("P-003.PH1")
-    assert "P-001.M9" in task["blocked_by"]
+    assert "P-001.M9" not in task["blocked_by"]
+    assert "P-001.M9" in task["completion_blocked_by"]
 
 
 def test_p003_phase1_model_contract_tracks_empty_slot_architecture() -> None:

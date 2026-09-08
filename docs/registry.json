@@ -344,7 +344,8 @@
       "plan": "P-002",
       "spec": "§Phase 2",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH1"
       ],
       "status": "todo",
@@ -357,7 +358,8 @@
       "plan": "P-002",
       "spec": "§Phase 3",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH2"
       ],
       "status": "todo",
@@ -370,7 +372,8 @@
       "plan": "P-002",
       "spec": "§Phase 4",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH3",
         "P-001.M6"
       ],
@@ -384,7 +387,8 @@
       "plan": "P-002",
       "spec": "§Phase 5",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH4"
       ],
       "status": "todo",
@@ -397,7 +401,8 @@
       "plan": "P-002",
       "spec": "§Phase 6",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH5"
       ],
       "status": "todo",
@@ -410,7 +415,8 @@
       "plan": "P-002",
       "spec": "§Phase 7",
       "priority": "P1",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH6"
       ],
       "status": "todo",
@@ -423,8 +429,10 @@
       "plan": "P-002",
       "spec": "§Phase 8",
       "priority": "P1",
-      "blocked_by": [
-        "P-002.PH7"
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-002.PH7",
+        "P-002.PH9"
       ],
       "status": "todo",
       "issue": 24,
@@ -436,7 +444,8 @@
       "plan": "P-002",
       "spec": "§Phase 9",
       "priority": "P0",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-002.PH5"
       ],
       "status": "todo",
@@ -468,8 +477,10 @@
       "priority": "P1",
       "blocked_by": [
         "P-001.M6",
-        "P-001.M9",
         "P-003.PH0"
+      ],
+      "completion_blocked_by": [
+        "P-001.M9"
       ],
       "status": "todo",
       "issue": 27,
@@ -481,7 +492,8 @@
       "plan": "P-003",
       "spec": "§Phase 2",
       "priority": "P1",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-003.PH1",
         "P-002.PH1"
       ],
@@ -511,8 +523,10 @@
       "plan": "P-003",
       "spec": "§Phase 4",
       "priority": "P2",
-      "blocked_by": [
-        "P-003.PH1"
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-003.PH1",
+        "P-001.M9"
       ],
       "status": "todo",
       "issue": 30,
@@ -524,7 +538,8 @@
       "plan": "P-003",
       "spec": "§Phase 5",
       "priority": "P2",
-      "blocked_by": [
+      "blocked_by": [],
+      "completion_blocked_by": [
         "P-003.PH1"
       ],
       "status": "todo",
@@ -551,12 +566,277 @@
       "blocked_by": [
         "P-001.M6"
       ],
-      "status": "todo",
+      "status": "done",
       "issue": 60,
       "evidence_file": "docs/task-state/P-005.PH0.json"
+    },
+    {
+      "id": "ISSUE-32",
+      "title": "ETCSRI morphology-rich TF dataset",
+      "plan": "P-004",
+      "spec": "§ISSUE-32",
+      "priority": "P1",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 32,
+      "evidence_file": "docs/task-state/ISSUE-32.json"
+    },
+    {
+      "id": "ISSUE-33",
+      "title": "ASBP/NINMED re-conversion and cross-validation",
+      "plan": "P-004",
+      "spec": "§ISSUE-33",
+      "priority": "P1",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 33,
+      "evidence_file": "docs/task-state/ISSUE-33.json"
+    },
+    {
+      "id": "ISSUE-34",
+      "title": "Translation-source policy for future corpora",
+      "plan": "P-004",
+      "spec": "§ISSUE-34",
+      "priority": "P1",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 34,
+      "evidence_file": "docs/task-state/ISSUE-34.json"
+    },
+    {
+      "id": "ISSUE-35",
+      "title": "Tier-2 ORACC-TF corpus-wave research",
+      "plan": "P-004",
+      "spec": "§ISSUE-35",
+      "priority": "P2",
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "ISSUE-34"
+      ],
+      "status": "todo",
+      "issue": 35,
+      "evidence_file": "docs/task-state/ISSUE-35.json"
+    },
+    {
+      "id": "ISSUE-36",
+      "title": "RINAP witnesses and alignment limits",
+      "plan": "P-004",
+      "spec": "§ISSUE-36",
+      "priority": "P2",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 36,
+      "evidence_file": "docs/task-state/ISSUE-36.json"
+    },
+    {
+      "id": "ISSUE-38",
+      "title": "Cross-check TEI translations against index-tra",
+      "plan": "P-004",
+      "spec": "§ISSUE-38",
+      "priority": "P2",
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-001.M9"
+      ],
+      "status": "todo",
+      "issue": 38,
+      "evidence_file": "docs/task-state/ISSUE-38.json"
+    },
+    {
+      "id": "ISSUE-40",
+      "title": "QPN proper-name entity-layer research",
+      "plan": "P-004",
+      "spec": "§ISSUE-40",
+      "priority": "P2",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 40,
+      "evidence_file": "docs/task-state/ISSUE-40.json"
+    },
+    {
+      "id": "ISSUE-41",
+      "title": "Tier-3 small coherent corpus-wave evaluation",
+      "plan": "P-004",
+      "spec": "§ISSUE-41",
+      "priority": "P2",
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "ISSUE-34"
+      ],
+      "status": "todo",
+      "issue": 41,
+      "evidence_file": "docs/task-state/ISSUE-41.json"
+    },
+    {
+      "id": "ISSUE-42",
+      "title": "Independent TEI translation-upstream discovery",
+      "plan": "P-004",
+      "spec": "§ISSUE-42",
+      "priority": "P0",
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-002.PH1"
+      ],
+      "status": "todo",
+      "issue": 42,
+      "evidence_file": "docs/task-state/ISSUE-42.json"
+    },
+    {
+      "id": "ISSUE-44",
+      "title": "Reconcile legacy extraction with locked acquisition",
+      "plan": "P-004",
+      "spec": "§ISSUE-44",
+      "priority": "P1",
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-002.PH1",
+        "P-002.PH3"
+      ],
+      "status": "todo",
+      "issue": 44,
+      "evidence_file": "docs/task-state/ISSUE-44.json"
+    },
+    {
+      "id": "ISSUE-46",
+      "title": "Audit translations from pinned TEI source state",
+      "plan": "P-004",
+      "spec": "§ISSUE-46",
+      "priority": "P2",
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "P-001.M9"
+      ],
+      "status": "todo",
+      "issue": 46,
+      "evidence_file": "docs/task-state/ISSUE-46.json"
+    },
+    {
+      "id": "ISSUE-47",
+      "title": "Generated-statistics documentation policy",
+      "plan": "P-004",
+      "spec": "§ISSUE-47",
+      "priority": "P1",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 47,
+      "evidence_file": "docs/task-state/ISSUE-47.json"
+    },
+    {
+      "id": "ISSUE-58",
+      "title": "Source-faithful OBABAT TF conversion",
+      "plan": "P-004",
+      "spec": "§ISSUE-58",
+      "priority": "P1",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 58,
+      "evidence_file": "docs/task-state/ISSUE-58.json"
+    },
+    {
+      "id": "ISSUE-69",
+      "title": "BHSA/Text-Fabric app/browser gap research",
+      "plan": "P-004",
+      "spec": "§ISSUE-69",
+      "priority": "P1",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 69,
+      "evidence_file": "docs/task-state/ISSUE-69.json"
+    },
+    {
+      "id": "ISSUE-70",
+      "title": "Per-dataset Text-Fabric app/browser plan",
+      "plan": "P-004",
+      "spec": "§ISSUE-70",
+      "priority": "P1",
+      "blocked_by": [
+        "ISSUE-69"
+      ],
+      "status": "todo",
+      "issue": 70,
+      "evidence_file": "docs/task-state/ISSUE-70.json"
+    },
+    {
+      "id": "ISSUE-71",
+      "title": "Per-dataset app packaging and discovery",
+      "plan": "P-004",
+      "spec": "§ISSUE-71",
+      "priority": "P1",
+      "blocked_by": [
+        "ISSUE-69",
+        "ISSUE-70"
+      ],
+      "status": "todo",
+      "issue": 71,
+      "evidence_file": "docs/task-state/ISSUE-71.json"
+    },
+    {
+      "id": "ISSUE-72",
+      "title": "Source-faithful TF display formats",
+      "plan": "P-004",
+      "spec": "§ISSUE-72",
+      "priority": "P1",
+      "blocked_by": [
+        "ISSUE-69",
+        "ISSUE-70",
+        "ISSUE-71"
+      ],
+      "status": "todo",
+      "issue": 72,
+      "evidence_file": "docs/task-state/ISSUE-72.json"
+    },
+    {
+      "id": "ISSUE-73",
+      "title": "Browser presentation policy and docs integration",
+      "plan": "P-004",
+      "spec": "§ISSUE-73",
+      "priority": "P1",
+      "blocked_by": [
+        "ISSUE-69",
+        "ISSUE-70",
+        "ISSUE-71"
+      ],
+      "status": "todo",
+      "issue": 73,
+      "evidence_file": "docs/task-state/ISSUE-73.json"
+    },
+    {
+      "id": "ISSUE-74",
+      "title": "Generated app provenance and ORACC source links",
+      "plan": "P-004",
+      "spec": "§ISSUE-74",
+      "priority": "P1",
+      "blocked_by": [],
+      "completion_blocked_by": [
+        "ISSUE-69",
+        "ISSUE-70",
+        "ISSUE-71",
+        "ISSUE-73"
+      ],
+      "status": "todo",
+      "issue": 74,
+      "evidence_file": "docs/task-state/ISSUE-74.json"
+    },
+    {
+      "id": "ISSUE-75",
+      "title": "End-to-end Text-Fabric browser acceptance tests",
+      "plan": "P-004",
+      "spec": "§ISSUE-75",
+      "priority": "P1",
+      "blocked_by": [
+        "ISSUE-69",
+        "ISSUE-70",
+        "ISSUE-71",
+        "ISSUE-72",
+        "ISSUE-73",
+        "ISSUE-74"
+      ],
+      "status": "todo",
+      "issue": 75,
+      "evidence_file": "docs/task-state/ISSUE-75.json"
     }
   ],
-  "selection_rule": "enumerate every dependency-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; losing sessions reselect unrelated ready work",
+  "selection_rule": "enumerate every claim/start-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; completion_blocked_by gates finalization without suppressing explicitly permitted early research/design; losing sessions reselect unrelated ready work",
   "stop_conditions": [
     "coordination reconciliation reports conflict",
     "a stale lease exists without explicit recovery",

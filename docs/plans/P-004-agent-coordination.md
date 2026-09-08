@@ -6,7 +6,7 @@ status: active
 priority: P0
 depends_on:
   - R-004
-updated: 2026-09-05
+updated: 2026-09-07
 ---
 
 # Parallel-safe research-design-TDD-review task loop
@@ -54,14 +54,23 @@ Independent review:
 <!-- oracc-tf:review {"task":"P-004.PH0","review_session":"REVIEW_SESSION","implementation_session":"IMPLEMENTATION_SESSION","head_sha":"SHA","verdict":"pass"} -->
 ```
 
+## Dependency semantics
+
+Registry dependencies have two distinct meanings:
+
+- `blocked_by`: **claim/start dependencies**. Every referenced task must be `done` before the task becomes `ready` and can be claimed.
+- `completion_blocked_by`: **completion-only dependencies**. These do not prevent claiming when the issue explicitly permits research, design, fixture preparation, or other bounded work to start early. They must all be `done` before `validate_completion()` can pass and the task can be finalized.
+
+Use `completion_blocked_by` only when the mapped issue explicitly defines what may proceed early and where production integration or merge must stop. A dependency that prevents any useful source-grounded work belongs in `blocked_by` instead. Both dependency sets participate in static existence, cycle, and completed-task validation.
+
 ## Runtime states
 
 The durable registry uses `todo`, `blocked`, and `done`. Reconciliation computes runtime states:
 
-- `ready`: dependencies are complete, issue is open, and no ownership event blocks selection;
+- `ready`: claim/start dependencies are complete, issue is open, and no ownership event blocks selection;
 - `claimed`: one session owns the live winning lease and no implementation PR is active;
 - `review`: the winning session has the active implementation PR;
-- `blocked`: the durable task is blocked or a dependency is incomplete;
+- `blocked`: the durable task is blocked or a claim/start dependency is incomplete;
 - `stale`: an expired claim still requires explicit recovery;
 - `conflict`: registry/GitHub disagreement, malformed coordination data, competing live sessions, duplicate unsuperseded PRs, or invalid ownership.
 
@@ -93,7 +102,7 @@ A task has at most one active implementation PR. When an old PR must remain open
 
 Before a task is finalized, the worker re-reads current state and verifies:
 
-- every dependency is still `done`;
+- every claim/start dependency and every completion-only dependency is still `done`;
 - the task has one valid winning claim and one active implementation PR;
 - PR task/issue/session metadata agrees with the registry and claim;
 - tests and required external gates pass on the exact candidate head;
@@ -138,3 +147,71 @@ Issue: #43.
 - current duplicate/in-flight work is reconciled or explicitly documented for migration;
 - exact-head CI passes;
 - an independent review of the exact final head passes, with any blockers resolved through the dev/review sub-loop.
+
+## Issue-backed executable backlog bridge
+
+Open executable tickets created outside the original P-001–P-005 task lists are also registered here so P-004 can select them. Their GitHub issue bodies remain the authoritative research/design/TDD/review specification; this section supplies stable task/spec anchors only. Issue #48 is the dispatcher/meta issue and is deliberately not selectable.
+
+For tickets whose issue explicitly permits research/design before a later production dependency, put only the true claim/start gate in `blocked_by` and put later integration/finalization dependencies in `completion_blocked_by`. The worker must still obey all issue-local integration, merge, and stop conditions.
+
+### ISSUE-32
+ETCSRI morphology-rich TF dataset research/design/TDD — GitHub #32.
+
+### ISSUE-33
+ASBP/NINMED re-conversion and pinned cross-validation — GitHub #33.
+
+### ISSUE-34
+Translation-source policy for future corpus expansion — GitHub #34.
+
+### ISSUE-35
+Tier-2 ORACC-TF corpus-wave research and sequencing — GitHub #35.
+
+### ISSUE-36
+RINAP witnesses, exemplar linkage, and alignment-limit research — GitHub #36.
+
+### ISSUE-38
+TEI translation token cross-check against `index-tra` — GitHub #38.
+
+### ISSUE-40
+QPN glossary/proper-name entity-layer research — GitHub #40.
+
+### ISSUE-41
+Tier-3 small coherent corpus-wave evaluation — GitHub #41.
+
+### ISSUE-42
+Independent TEI translation-upstream discovery/versioning — GitHub #42.
+
+### ISSUE-44
+Legacy extraction workflow reconciliation with P-002 acquisition — GitHub #44.
+
+### ISSUE-46
+Pinned TEI ZIP/source-state support in translation auditing — GitHub #46.
+
+### ISSUE-47
+Generated-statistics documentation policy reconciliation — GitHub #47.
+
+### ISSUE-58
+Source-faithful OBABAT TF conversion — GitHub #58.
+
+### ISSUE-69
+BHSA/Text-Fabric application/browser gap research — GitHub #69.
+
+### ISSUE-70
+Per-dataset Text-Fabric application/browser implementation plan — GitHub #70.
+
+### ISSUE-71
+Per-dataset app packaging and Text-Fabric discovery — GitHub #71.
+
+### ISSUE-72
+Source-faithful cuneiform/transliteration/lexeme display formats — GitHub #72.
+
+### ISSUE-73
+Browser presentation policy, feature visibility, and docs integration — GitHub #73.
+
+### ISSUE-74
+Generated app provenance and collision-safe ORACC source links — GitHub #74.
+
+### ISSUE-75
+End-to-end Text-Fabric browser acceptance tests — GitHub #75.
+
+When one of these workstreams gains a dedicated normative R/P document, move its registry task to that document without changing the task id or GitHub issue mapping unless an explicit migration says otherwise. When an issue closes, reconcile registry status/evidence in the same merge window so closed work cannot remain falsely selectable.

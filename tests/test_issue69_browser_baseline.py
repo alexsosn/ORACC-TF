@@ -8,6 +8,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+import tf.browser.command as browser_command
+
 from oracc_tf import corpus, loader, metadata
 
 
@@ -88,6 +90,35 @@ def test_issue69_captures_current_generic_tf_browser_routes(tmp_path: Path) -> N
         "/query": True,
         "/export": True,
     }
+
+
+def test_issue69_browser_cli_support_is_derived_from_installed_parser(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """The artifact must observe TF's parser, not freeze today's unsupported result."""
+    module = _research_module()
+    tf_root = tmp_path / "tf"
+    _build_fixture(tf_root)
+    calls: list[tuple[tuple[str, ...], bool]] = []
+
+    def supported_arg_app(cargs, simple):
+        calls.append((tuple(cargs), simple))
+        return {"appName": "characterized-by-test"}
+
+    monkeypatch.setattr(browser_command, "argApp", supported_arg_app)
+    result = module.probe_browser_routes(tf_root)
+
+    assert calls == [((f"data:{tf_root.resolve()}",), False)]
+    assert result["data_only_browser_cli_supported"] is True
+
+
+def test_issue69_pinned_tf_parser_rejects_data_only_browser_cli(tmp_path: Path) -> None:
+    """Pinned TF 13.1 currently drops data-only browser input at argApp()."""
+    tf_root = tmp_path / "tf"
+    _build_fixture(tf_root)
+
+    assert browser_command.argApp((f"data:{tf_root.resolve()}",), False) is None
 
 
 def test_issue69_browser_cli_stdout_is_machine_readable_json(tmp_path: Path) -> None:

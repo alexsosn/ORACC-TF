@@ -69,6 +69,14 @@ def test_issue70_plan_freezes_generated_app_and_dependency_boundaries() -> None:
 
     # Phase A is the production foundation; B/C may proceed only after A.
     assert "#71 -> (#72 || #73)" in text
+    # Phase D consumes browser/config structure, not rendering semantics; do not
+    # unnecessarily serialize provenance work behind #72.
+    assert "#73 -> #74" in text
+    assert "#72 does not block #74" in text
+    # Final browser acceptance joins the independently developed rendering and
+    # provenance lanes.
+    assert "#72 -> #75" in text
+    assert "#74 -> #75" in text
     # Distribution support paths are an interface gate, not an excuse to weaken P-005.
     assert "#79 -> #71" in text
     # Browser E2E closes only after the standalone docs/distribution surface is real.

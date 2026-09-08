@@ -18,15 +18,33 @@ from pathlib import Path
 import re
 import shutil
 import stat
+import struct
 import tempfile
 import unicodedata
 import zipfile
 
 
 _ZIP_LOCAL_MAGIC = b"PK\x03\x04"
+_ZIP_EOCD_SIGNATURE = b"PK\x05\x06"
+_ZIP_EOCD = struct.Struct("<4s4H2LH")
+_ZIP_EOCD_MAX_SEARCH = 65_535 + _ZIP_EOCD.size
+_ZIP16_SENTINEL = 0xFFFF
+_ZIP32_SENTINEL = 0xFFFFFFFF
 _SUPPORTED_COMPRESSION = {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
 _DRIVE_RE = re.compile(r"^[A-Za-z]:")
 _PROJECT_COMPONENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+_WINDOWS_FORBIDDEN_RE = re.compile(r'[<>:"|?*\x00-\x1f]')
+_WINDOWS_RESERVED = {
+    "aux",
+    "clock$",
+    "con",
+    "conin$",
+    "conout$",
+    "nul",
+    "prn",
+    *(f"com{number}" for number in range(1, 10)),
+    *(f"lpt{number}" for number in range(1, 10)),
+}
 _COPY_CHUNK = 64 * 1024
 
 
@@ -186,6 +204,14 @@ def _safe_components(value: str, *, field: str) -> tuple[str, ...]:
     parts = tuple(value.split("/"))
     if any(part in {"", ".", ".."} for part in parts):
         raise ArchiveStructureError(f"{field} contains an unsafe path component")
+    for part in parts:
+        if _WINDOWS_FORBIDDEN_RE.search(part):
+            raise ArchiveStructureError(f"{field} contains a non-portable path character")
+        if part.endswith((" ", ".")):
+            raise ArchiveStructureError(f"{field} contains a non-portable path suffix")
+        device_stem = part.split(".", 1)[0].casefold()
+        if device_stem in _WINDOWS_RESERVED:
+            raise ArchiveStructureError(f"{field} contains a reserved Windows device name")
     return parts
 
 
@@ -266,6 +292,51 @@ def _read_metadata(archive: zipfile.ZipFile, member: _Member) -> Mapping[str, ob
     return value
 
 
+def _declared_member_count(path: Path) -> int:
+    """Read the classic EOCD member count without materializing the central directory."""
+    try:
+        archive_size = path.stat().st_size
+        read_size = min(archive_size, _ZIP_EOCD_MAX_SEARCH)
+        with path.open("rb") as handle:
+            handle.seek(archive_size - read_size)
+            tail = handle.read(read_size)
+    except OSError as exc:
+        raise ArchiveStructureError("archive EOCD cannot be read") from exc
+
+    position = tail.rfind(_ZIP_EOCD_SIGNATURE)
+    while position >= 0:
+        if len(tail) - position >= _ZIP_EOCD.size:
+            fields = _ZIP_EOCD.unpack_from(tail, position)
+            (
+                _signature,
+                disk_number,
+                central_directory_disk,
+                entries_on_disk,
+                entries_total,
+                central_directory_size,
+                central_directory_offset,
+                comment_length,
+            ) = fields
+            if position + _ZIP_EOCD.size + comment_length == len(tail):
+                if disk_number != 0 or central_directory_disk != 0:
+                    raise ArchiveStructureError("multi-disk ZIP archives are unsupported")
+                if entries_on_disk != entries_total:
+                    raise ArchiveStructureError("multi-disk ZIP member counts are unsupported")
+                if (
+                    entries_total == _ZIP16_SENTINEL
+                    or central_directory_size == _ZIP32_SENTINEL
+                    or central_directory_offset == _ZIP32_SENTINEL
+                ):
+                    raise ArchiveStructureError("ZIP64 archives require an explicit research update")
+                absolute_eocd = archive_size - read_size + position
+                if central_directory_offset + central_directory_size > absolute_eocd:
+                    raise ArchiveStructureError("ZIP central-directory bounds are invalid")
+                return entries_total
+        position = tail.rfind(_ZIP_EOCD_SIGNATURE, 0, position)
+
+    raise ArchiveStructureError("archive EOCD is missing or invalid")
+
+
 def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLayout, tuple[_Member, ...]]:
     if not isinstance(limits, ArchiveLimits):
         raise ArchiveStructureError("limits must be an ArchiveLimits instance")
@@ -278,6 +349,12 @@ def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLa
         raise
     except OSError as exc:
         raise ArchiveStructureError("archive cannot be opened") from exc
+
+    declared_members = _declared_member_count(archive_path)
+    if declared_members == 0:
+        raise ArchiveStructureError("archive contains no members")
+    if declared_members > limits.max_members:
+        raise ArchiveResourceLimitError("archive exceeds member-count ceiling")
     if not zipfile.is_zipfile(archive_path):
         raise ArchiveStructureError("archive is not a complete ZIP file")
 
@@ -291,10 +368,8 @@ def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLa
             infos = archive.infolist()
         except zipfile.BadZipFile as exc:
             raise ArchiveStructureError("archive central directory is invalid") from exc
-        if not infos:
-            raise ArchiveStructureError("archive contains no members")
-        if len(infos) > limits.max_members:
-            raise ArchiveResourceLimitError("archive exceeds member-count ceiling")
+        if len(infos) != declared_members:
+            raise ArchiveStructureError("ZIP member count disagrees with EOCD")
 
         members: list[_Member] = []
         literal: dict[str, bool] = {}

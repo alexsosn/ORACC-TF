@@ -16,7 +16,8 @@ import shutil
 import time
 
 from tf.app import use
-from tf.browser.web import setup as setup_browser
+from tf.browser.kernel import makeTfKernel
+from tf.browser.web import Web, factory as browser_factory
 
 from oracc_tf import corpus
 
@@ -78,16 +79,34 @@ def profile_advanced_app(
 
 
 def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
-    """Exercise the supported Text-Fabric browser routes without opening a server."""
+    """Exercise Text-Fabric's real browser kernel/routes without opening a server.
+
+    Text-Fabric 13.1 documents ``data:/path`` as a browser CLI source, but its
+    ``argApp()`` currently rejects the data-only form before ``web.setup()`` can
+    construct the app.  The advanced ``use(data:...)`` path does work, so the
+    probe feeds that real AdvancedApp into the same browser kernel and Flask
+    factory used by ``web.setup()``.  This keeps the measurement on Text-Fabric's
+    supported rendering/search/export stack while recording the CLI discrepancy.
+    """
     root = Path(tf_root).resolve()
-    webapp = setup_browser(False, f"data:{root}")
-    if webapp is None:
+    advanced_app = use(f"data:{root}", silent="deep")
+    if advanced_app is None or advanced_app.api is None:
         return {
             "schema_version": SCHEMA_VERSION,
             "browser_setup": False,
             "routes": {},
             "responses_nonempty": {},
         }
+
+    kernel_api = makeTfKernel(advanced_app, f"data:{root}")
+    if not kernel_api:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "browser_setup": False,
+            "routes": {},
+            "responses_nonempty": {},
+        }
+    webapp = browser_factory(Web(kernel_api))
 
     route_names = ("/", "/passage", "/query", "/export")
     routes: dict[str, int] = {}

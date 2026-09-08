@@ -16,6 +16,7 @@ import shutil
 import time
 
 from tf.app import use
+from tf.browser.web import setup as setup_browser
 
 from oracc_tf import corpus
 
@@ -73,6 +74,35 @@ def profile_advanced_app(
         "max_slot": api.F.otype.maxSlot,
         "loaded_node_features": sorted(api.Fall()),
         "loaded_edge_features": sorted(api.Eall()),
+    }
+
+
+def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
+    """Exercise the supported Text-Fabric browser routes without opening a server."""
+    root = Path(tf_root).resolve()
+    webapp = setup_browser(False, f"data:{root}")
+    if webapp is None:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "browser_setup": False,
+            "routes": {},
+            "responses_nonempty": {},
+        }
+
+    route_names = ("/", "/passage", "/query", "/export")
+    routes: dict[str, int] = {}
+    responses_nonempty: dict[str, bool] = {}
+    with webapp.test_client() as client:
+        for route in route_names:
+            response = client.get(route)
+            routes[route] = response.status_code
+            responses_nonempty[route] = bool(response.data)
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "browser_setup": True,
+        "routes": routes,
+        "responses_nonempty": responses_nonempty,
     }
 
 

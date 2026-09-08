@@ -4,13 +4,35 @@
   "issue": 74,
   "session": "gpt56sol-20260908-1253-74-provenance",
   "base_sha": "b096e75483a3a07e2bcaa948da9ffdd3fc56bf77",
-  "stage": "red",
+  "stage": "partial-green",
   "research": {
     "text_fabric": "13.1.0 / dd227ce62b5536de53a0e20eac98c0459da8fd3d",
     "source_link_policy": "source-provided ORACC project URL plus qualified text id; document links only",
     "lexeme_links": "omitted: no stable official external lexeme identity established",
     "passage_links": "omitted: no stable source-supported line-anchor contract established"
   },
-  "red_commit": "a3fc0ad6e94f5a0b7b9617456c167c0a35cf87a3",
-  "completion_blocked_by": ["ISSUE-69", "ISSUE-70", "ISSUE-71", "ISSUE-73"]
+  "design": {
+    "provenance_authority": "distribution manifest schema 3 current release record cross-checked against immutable ledger and visible-root ownership",
+    "tf_version_validation": "reuse programs/oracc_tf/paths.py canonical SemVer/path validator",
+    "source_url_validation": "official oracc.org HTTP(S) project URL must match qualified subproject and contain no userinfo, port, query, fragment, encoding ambiguity, backslash, or control characters"
+  },
+  "tdd": {
+    "initial_red_commit": "a3fc0ad6e94f5a0b7b9617456c167c0a35cf87a3",
+    "initial_red_result": "focused ISSUE-74 contract failed solely because oracc_tf.app_provenance did not exist",
+    "review_red_commit": "d5341ed0a12a75478aa47d7a3afc89c866d83379",
+    "review_red_workflow": 34221728649,
+    "review_red_result": "2 intended failures, 14 focused tests passed; pinned noncanonical TF version and URL control-character acceptance",
+    "green_head": "10ebbc2da2e00897fee98e1f1a74d87ab6ce753b",
+    "focused_green_workflow": 34222279982,
+    "focused_green_result": "ISSUE-74 focused provenance/link contract passed",
+    "m8_green_workflow": 34222279972,
+    "m8_green_result": "retained oldbabylonian cross-validation passed"
+  },
+  "delivered_partial_capability": {
+    "release_provenance": "deterministic app-facing dataset/repository/release/tf-version/builder/source-state/tree-digest record from immutable distribution state; no fabricated DOI or licence claims",
+    "document_links": "collision-safe official ORACC document URLs derived from source-provided project identity; missing URL is omitted and malformed/mismatched source state fails closed",
+    "not_delivered": "no app packaging/config integration, no line anchors, no lexeme links, and no full browser exposure"
+  },
+  "completion_blocked_by": ["ISSUE-69", "ISSUE-70", "ISSUE-71", "ISSUE-73"],
+  "resume_gate": "After the dependent app research/plan/packaging/presentation tasks land, integrate this core into generated app provenance and browser source links, run clean-distribution/browser E2E acceptance, and perform another exact-head independent review before marking ISSUE-74 complete."
 }

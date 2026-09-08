@@ -11,9 +11,12 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import json
+from pathlib import Path
 import re
 from typing import Mapping
 from urllib.parse import urlsplit
+
+from . import paths
 
 
 _MANIFEST_SCHEMA_VERSION = 3
@@ -47,10 +50,14 @@ class ReleaseProvenance:
     tree_digest: str
 
 
+def _has_http_control(value: str) -> bool:
+    return any(ord(char) < 0x20 or ord(char) == 0x7F for char in value)
+
+
 def _require_string(value: object, field: str) -> str:
     if not isinstance(value, str) or not value or value != value.strip():
         raise AppProvenanceError(f"{field} must be a non-empty trimmed string")
-    if any(ord(char) < 0x20 for char in value):
+    if _has_http_control(value):
         raise AppProvenanceError(f"{field} contains control characters")
     return value
 
@@ -74,7 +81,11 @@ def _validate_release_record(
 
     tf_version = _require_string(record.get("tf_version"), "tf_version")
     tf_root = _require_string(record.get("tf_root"), "tf_root")
-    if tf_root != f"{dataset}/tf/{tf_version}":
+    try:
+        canonical_root = paths.publishable_tf_root(Path("."), dataset, tf_version).as_posix()
+    except (TypeError, ValueError) as exc:
+        raise AppProvenanceError(f"invalid TF version in release {release_id!r}") from exc
+    if tf_root != canonical_root:
         raise AppProvenanceError("release TF root is not canonical for dataset/version")
 
     builder_commit = record.get("builder_commit")
@@ -181,6 +192,8 @@ def official_document_url(
         return None
     if not isinstance(source_url, str) or not source_url or source_url != source_url.strip():
         raise AppProvenanceError("source URL must be a non-empty trimmed string when present")
+    if _has_http_control(source_url):
+        raise AppProvenanceError("source URL contains control characters")
 
     reported_project = _validate_project(source_project, "source_project")
     if reported_project != project:

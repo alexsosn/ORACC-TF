@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Deterministic measurement helpers for ISSUE-33 NINMED A/B research.
 
-This module is intentionally research-only.  It compares source identities and
+This module is intentionally research-only. It compares source identities and
 lexical evidence without treating either ORACC or the archived Nino-cunei
 corpus as normative ground truth.
 """
 
 from __future__ import annotations
 
+import argparse
 from collections.abc import Iterable, Mapping, Sequence
 from hashlib import sha256
 import json
@@ -160,10 +161,6 @@ def oracc_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[str,
             features = _oracc_features(node)
 
             for field in _ORACC_FIELDS:
-                # Real ORACC occurrence signatures commonly keep ``inst`` on the
-                # word object, while fixtures/derived representations may expose
-                # it inside ``f``.  Count presence once per word, without moving
-                # or normalizing the source value.
                 value = features.get(field)
                 if field == "inst" and not _nonempty(value):
                     value = node.get("inst")
@@ -494,11 +491,45 @@ def canonical_report_bytes(report: object) -> bytes:
     return (text + "\n").encode("utf-8")
 
 
+def main(argv: Sequence[str] | None = None) -> int:
+    """Generate one canonical report from explicit, already-pinned inputs."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--oracc-dir", required=True)
+    parser.add_argument("--reference-dir", required=True)
+    parser.add_argument("--reference-tf-dir", required=True)
+    parser.add_argument("--oracc-revision", required=True)
+    parser.add_argument("--reference-revision", required=True)
+    parser.add_argument("--oracc-licence", required=True)
+    parser.add_argument("--reference-repository-licence", required=True)
+    parser.add_argument("--reference-source-provenance", required=True)
+    parser.add_argument("--output", required=True)
+    args = parser.parse_args(argv)
+
+    report = build_report(
+        oracc_dir=args.oracc_dir,
+        reference_dir=args.reference_dir,
+        reference_tf_dir=args.reference_tf_dir,
+        oracc_revision=args.oracc_revision,
+        reference_revision=args.reference_revision,
+        oracc_licence=args.oracc_licence,
+        reference_repository_licence=args.reference_repository_licence,
+        reference_source_provenance=args.reference_source_provenance,
+    )
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        output.write_bytes(canonical_report_bytes(report))
+    except OSError as exc:
+        raise ResearchError(f"cannot write report {output}") from exc
+    return 0
+
+
 __all__ = [
     "ResearchError",
     "build_report",
     "canonical_report_bytes",
     "identity_overlap",
+    "main",
     "oracc_document_ids",
     "oracc_lexical_census",
     "oracc_structure_census",
@@ -508,3 +539,7 @@ __all__ = [
     "reference_structure_census",
     "tf_feature_names",
 ]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

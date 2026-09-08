@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "issue": 95,
+  "parent_issue": 21,
+  "kind": "research-design-contract",
+  "status": "reviewed-design-normative-sync-pending",
+  "base_main": "5fa3062632d0971345f5435c6db12adfc379eb67",
+  "scope": "Resolve P-002 PH5 finding identity, approval evidence binding, gate staging, accepted baselines, project-inventory evidence, translation evidence, and cross-archive semantics. No gate evaluator implementation is authorized by this artifact.",
+  "research_findings": [
+    "The tuple (archive sha256, text id, condition) cannot identify archive-, project-, subproject-, and dataset-scoped findings without fabricating text identities.",
+    "Required gates must always execute. Approval applies to an emitted finding; it must never mean skipping or disabling a gate.",
+    "word-count-unexplained requires independent post-rebuild converter output and is circular if evaluated only from PH4 source arithmetic before rebuild.",
+    "project-disappeared requires a durable previous accepted projects.json public-project set; the per-archive lock is not that state.",
+    "translation-coverage-drop requires validated TEI evidence. Historical snapshot percentages are not a current automation baseline, and missing evidence is not unchanged evidence.",
+    "GDL novelty and bare-text-id collision classes are dataset-wide properties. Evaluating only the changed archive produces false positives and false negatives across unchanged contributor archives.",
+    "The comparison baseline is the last accepted dataset-wide state, never the last observed or blocked candidate state.",
+    "A dataset contributor-set change is a policy/configuration change and must fail closed outside ordinary upstream-content comparison."
+  ],
+  "finding_contract": {
+    "required_fields": [
+      "gate_id",
+      "stage",
+      "blocking",
+      "status",
+      "dataset",
+      "subject.scope",
+      "subject.id",
+      "affected_text_ids",
+      "condition",
+      "condition_sha256",
+      "evidence_refs",
+      "explanation",
+      "approval_id"
+    ],
+    "subject_scopes": ["text", "subproject", "archive", "project", "dataset"],
+    "statuses": ["blocking", "approved", "observation", "evaluation-error"],
+    "rule": "Use real typed subject identities. Never create pseudo-Q numbers for non-text findings."
+  },
+  "approval_contract": {
+    "evidence_ref": "EvidenceRef(kind, id, sha256)",
+    "expected_evidence_kinds": ["archive", "dataset-source-state", "project-inventory", "tei-archive", "build-report"],
+    "evidence_fingerprint": "SHA256(canonical sorted evidence_refs)",
+    "approval_key": ["gate_id", "subject.scope", "subject.id", "condition_sha256", "evidence_fingerprint"],
+    "matching": "Exact only. Any relevant evidence digest or accepted baseline change makes the approval stale.",
+    "suppression": "Run the gate, emit the finding, exact-match an approval, retain the finding as approved with audit metadata, and only then remove that finding from the blocking set.",
+    "non_approvable": ["missing-required-input", "evaluator-exception", "malformed-evidence", "dataset-contributor-set-drift"]
+  },
+  "stages": {
+    "prebuild": [
+      "gdl-shape-unknown",
+      "chunk-type-unknown",
+      "lemma-coverage-drop",
+      "q-collision-new-class",
+      "project-disappeared",
+      "licence-changed",
+      "translation-coverage-drop"
+    ],
+    "postbuild": ["word-count-unexplained"],
+    "observations": ["texts-added", "texts-modified"]
+  },
+  "gate_semantics": {
+    "gdl-shape-unknown": "Compare the full candidate dataset-wide GDL shape set with the full last-accepted dataset-wide shape set. A shape already present in any unchanged contributor is not new. Include affected qualified text witnesses from typed PH4 snapshots.",
+    "chunk-type-unknown": "Policy is new c.type only. PH4 may observe (type, subtype); a new subtype under an accepted type is a non-blocking observation unless later research widens policy.",
+    "lemma-coverage-drop": "Evaluate exact subproject numerator/denominator facts using P-001 lexical-evidence semantics and block only when accepted coverage minus candidate coverage is strictly greater than 0.02. Do not round. New scopes create a baseline observation; zero-word or missing denominators are evaluation errors when comparison is required.",
+    "q-collision-new-class": "Build bare text-id to qualified-subproject membership classes over the full accepted and candidate dataset states. Block a newly colliding id or strict membership expansion. Unchanged or shrinking collision classes are not new collisions.",
+    "project-disappeared": "Compare candidate public-project inventory with the last accepted project-inventory evidence. A blocked candidate cannot become the next baseline.",
+    "licence-changed": "Compare verbatim archive licence evidence at archive scope and bind approval to exact before/after evidence.",
+    "translation-coverage-drop": "Compare exact validated joined/eligible counts from accepted and candidate TEI evidence. Any real fall blocks. Missing or unauthenticated evidence is an evaluation error, never implicit zero or unchanged.",
+    "word-count-unexplained": "After rebuild, compare PH4 source-expected word totals/deltas with independent converter/build output including zero-span sidecar words. Differences not reconciled by source text deltas block."
+  },
+  "baseline_contract": {
+    "source": "last accepted release/update state",
+    "candidate": "complete candidate dataset state assembled from changed and unchanged contributor archives",
+    "promotion": "Only a fully accepted update may replace accepted source, project-inventory, translation, and gate baselines.",
+    "blocked_candidate": "Reports/findings only; must not advance any accepted baseline.",
+    "toctou": "Immediately before promotion, recompute/verify candidate evidence fingerprints and the canonical contributor tuple/dataset-manifest digest. Any drift invalidates readiness."
+  },
+  "review_attacks_passed": [
+    "stale approval after candidate bytes change",
+    "stale approval after accepted baseline change",
+    "blocked candidate baseline laundering",
+    "cross-archive GDL novelty false positive",
+    "cross-archive Q-collision false negative",
+    "missing translation/project evidence",
+    "new subproject without prior lemma denominator",
+    "zero-word lemma denominator",
+    "shrinking collision membership",
+    "dataset contributor-set drift",
+    "approval matching across mixed finding scopes"
+  ],
+  "dependencies": {
+    "ph4_source_diff": "PH5 production implementation remains blocked until PH4 completion criteria and accepted dataset-wide source-state inputs are available.",
+    "translations": "translation-coverage-drop cannot become a validated automation gate until P-001.M9 has authenticated real-source evidence.",
+    "transport": "Current ORACC normal-TLS acquisition remains externally blocked under P-002.PH1; no evidence rule in this contract relaxes that trust boundary."
+  },
+  "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation baselines before PH5 evaluator TDD begins.",
+  "independent_review": {
+    "rounds": 2,
+    "result": "accepted research/design after corrections; no remaining known ambiguity in the issue-level contract",
+    "final_issue_comment": 5587972646
+  }
+}

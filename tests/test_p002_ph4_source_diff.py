@@ -186,6 +186,21 @@ def test_identical_snapshot_has_empty_semantic_diff_and_stable_serialization():
     assert decoded["after"]["source_state"] == "sha256:" + "a" * 64
 
 
+def test_archive_snapshot_text_mapping_is_immutable():
+    module = api()
+    snap = snapshot(
+        module,
+        documents=[source(module, "p/a", doc("Q000001", word("a", cf="a")))],
+    )
+    original_keys = tuple(snap.texts)
+
+    with pytest.raises(TypeError):
+        snap.texts["p/a:Q999999"] = snap.texts["p/a:Q000001"]
+
+    assert tuple(snap.texts) == original_keys
+    assert module.diff_snapshots(snap, snap).empty is True
+
+
 def test_equal_source_state_with_different_text_facts_fails_closed():
     module = api()
     before = snapshot(

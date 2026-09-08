@@ -191,9 +191,10 @@ def newest_candidate_cohort(
 def verify_candidate_bytes(candidate: TeiCandidate, payload: bytes) -> VerifiedTeiCandidate:
     """Validate that supplied bytes are a readable ZIP and record their identity.
 
-    No extraction occurs here.  This is a narrow type boundary preventing an
-    HTTP soft-404 or other non-ZIP body from becoming a source state; stronger
-    remote-download integrity and extraction checks remain owned by PH3.
+    No extraction or member decompression occurs here.  This is a narrow type
+    boundary preventing an HTTP soft-404 or other non-ZIP body from becoming a
+    source state; stronger remote-download integrity and extraction checks
+    remain owned by PH3.
     """
     if not isinstance(candidate, TeiCandidate):
         raise TeiDiscoveryError("verified payload lacks a valid TEI candidate")
@@ -211,15 +212,10 @@ def verify_candidate_bytes(candidate: TeiCandidate, payload: bytes) -> VerifiedT
                 raise TeiDiscoveryError(
                     f"TEI candidate {candidate.name!r} is an empty ZIP archive"
                 )
-            bad_member = archive.testzip()
     except (zipfile.BadZipFile, RuntimeError, OSError) as exc:
         raise TeiDiscoveryError(
             f"TEI candidate {candidate.name!r} is not a readable ZIP archive"
         ) from exc
-    if bad_member is not None:
-        raise TeiDiscoveryError(
-            f"TEI candidate {candidate.name!r} has corrupt ZIP member {bad_member!r}"
-        )
 
     return VerifiedTeiCandidate(
         candidate=candidate,

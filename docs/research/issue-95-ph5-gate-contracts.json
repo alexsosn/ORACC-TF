@@ -62,17 +62,30 @@
   "gate_semantics": {
     "gdl-shape-unknown": "Compare the full candidate dataset-wide GDL shape set with the full last-accepted dataset-wide shape set. A shape already present in any unchanged contributor is not new. Include affected qualified text witnesses from typed PH4 snapshots.",
     "chunk-type-unknown": "Policy is new c.type only. PH4 may observe (type, subtype); a new subtype under an accepted type is a non-blocking observation unless later research widens policy.",
-    "lemma-coverage-drop": "Evaluate exact subproject numerator/denominator facts using P-001 lexical-evidence semantics and block only when accepted coverage minus candidate coverage is strictly greater than 0.02. Do not round. New scopes create a baseline observation; zero-word or missing denominators are evaluation errors when comparison is required.",
+    "lemma-coverage-drop": "Aggregate exact subproject numerator/denominator facts over the complete accepted and candidate dataset contexts using P-001 lexical-evidence semantics. For comparable nonzero baselines, block only when accepted coverage minus candidate coverage is strictly greater than 0.02 using exact rational arithmetic; never round.",
     "q-collision-new-class": "Build bare text-id to qualified-subproject membership classes over the full accepted and candidate dataset states. Block a newly colliding id or strict membership expansion. Unchanged or shrinking collision classes are not new collisions.",
     "project-disappeared": "Compare candidate public-project inventory with the last accepted project-inventory evidence. A blocked candidate cannot become the next baseline.",
     "licence-changed": "Compare verbatim archive licence evidence at archive scope and bind approval to exact accepted/candidate archive evidence.",
     "translation-coverage-drop": "Compare exact validated joined/eligible counts from accepted and candidate TEI evidence. Any real fall blocks. Evidence binds both JSON dataset source states and every TEI archive digest used by each measurement. Missing or unauthenticated evidence is an evaluation error, never implicit zero or unchanged.",
     "word-count-unexplained": "After rebuild, compare PH4 source-expected word totals/deltas with independent converter/build output including zero-span sidecar words. Differences not reconciled by source text deltas block."
   },
+  "lemma_coverage_scope_lifecycle": {
+    "new_scope": "Accepted subproject absent, candidate present: emit non-blocking lemma-coverage-baseline-created with candidate integer counts; do not fabricate 0% and do not emit an error merely because the scope is new.",
+    "comparable": "Accepted and candidate both have word_count > 0: compare exact lemma_count/word_count and block only for a strict drop > 0.02.",
+    "lost_candidate_denominator": "Accepted word_count > 0 and candidate scope is absent or has word_count == 0: emit non-approvable lemma-coverage-drop evaluation-error with stable code candidate-coverage-denominator-zero.",
+    "no_prior_quantitative_baseline": "Accepted scope exists with word_count == 0: if candidate gains words emit baseline-created; if candidate remains zero emit no coverage finding. Never invent a percentage."
+  },
+  "project_inventory_contract": {
+    "state": "deterministic accepted public-project snapshot, e.g. upstream.inventory.lock.json with schema_version, sorted exact public paths, and SHA256 of the canonical sorted public list",
+    "identity": "No wall-clock field participates in project-inventory identity.",
+    "comparison": "project-disappeared compares last-accepted and candidate inventory digests/sets; network or inventory uncertainty is evaluation-error.",
+    "promotion": "Observed/blocked candidate inventory never replaces the accepted inventory baseline."
+  },
   "baseline_contract": {
     "source": "last accepted release/update state",
     "candidate": "complete candidate dataset state assembled from changed and unchanged contributor archives",
     "dataset_context": "Both accepted and candidate contexts contain the same validated canonical contributor tuple plus archive-name to typed PH4 ArchiveSnapshot mapping. Construction fails closed on a missing/duplicate contributor or archive/source-state mismatch.",
+    "dataset_input_set": "Accepted contributor tuple comes from the last accepted release manifest; candidate contributors come from current validated datasets.toml. Ordinary upstream evaluation requires exact tuple equality. Difference emits non-approvable dataset-input-set-changed before normal gates.",
     "promotion": "Only a fully accepted update may replace accepted source, project-inventory, translation, and gate baselines.",
     "blocked_candidate": "Reports/findings only; must not advance any accepted baseline.",
     "toctou": "Immediately before promotion, recompute/verify candidate evidence fingerprints and the canonical contributor tuple/dataset-manifest digest. Any drift invalidates readiness."
@@ -97,8 +110,9 @@
   },
   "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation baselines before PH5 evaluator TDD begins.",
   "independent_review": {
-    "rounds": 2,
-    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received a separate stale-approval review and explicit accepted+candidate dataset-state binding fix",
+    "issue_review_rounds": 2,
+    "serialization_review_rounds": 1,
+    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received a separate stale-approval/baseline-lifecycle review and explicit fixes",
     "final_issue_comment": 5587972646
   }
 }

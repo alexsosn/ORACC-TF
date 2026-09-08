@@ -23,6 +23,7 @@ import zipfile
 
 _ARCHIVE_RE = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\.zip$")
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+_STRONG_ETAG_RE = re.compile(r'^"[\x21\x23-\x7e\x80-\xff]*"$')
 _ZIP_MAGIC = b"PK\x03\x04"
 T = TypeVar("T")
 
@@ -269,9 +270,9 @@ def _strong_etag(value: str | None) -> str | None:
     if not isinstance(value, str):
         return None
     token = value.strip()
-    if len(token) < 2 or token[:2].lower() == "w/":
+    if token[:2].lower() == "w/":
         return None
-    if not (token.startswith('"') and token.endswith('"')):
+    if _STRONG_ETAG_RE.fullmatch(token) is None:
         return None
     return token
 

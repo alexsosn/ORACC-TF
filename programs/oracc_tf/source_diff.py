@@ -304,6 +304,12 @@ def diff_snapshots(before: ArchiveSnapshot, after: ArchiveSnapshot) -> SourceDif
         raise SourceDiffError("both inputs must be ArchiveSnapshot records")
     if before.dataset != after.dataset or before.archive != after.archive:
         raise SourceDiffError("source snapshots belong to different dataset/archive identities")
+    if before.source_state == after.source_state and (
+        before.oracc_utc_timestamp != after.oracc_utc_timestamp
+        or before.licence != after.licence
+        or before.texts != after.texts
+    ):
+        raise SourceDiffError("equal source_state cannot describe contradictory snapshot facts")
 
     before_keys = set(before.texts)
     after_keys = set(after.texts)

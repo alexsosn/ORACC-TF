@@ -312,7 +312,7 @@ def test_valid_download_records_own_hash_and_does_not_inspect_zip_members(monkey
     module = api()
     payload = valid_zip_bytes()
     entry = archive_entry(module)
-    current = head(module, etag='"etag-new"')
+    current = head(module, etag='"etag-new"', length=len(payload))
 
     def forbidden(*args, **kwargs):
         raise AssertionError("PH2 must not enumerate/read/decompress ZIP members")

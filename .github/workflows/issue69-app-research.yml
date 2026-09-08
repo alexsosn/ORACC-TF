@@ -7,6 +7,9 @@ on:
       - ".github/workflows/issue69-app-research.yml"
       - "scripts/research_issue69_tf_app.py"
       - "tests/test_issue69_app_research.py"
+      - "tests/test_issue69_format_evidence.py"
+      - "docs/research/R-006-tf-application-browser.md"
+      - "docs/registry.json"
   workflow_dispatch:
 
 jobs:
@@ -94,6 +97,13 @@ jobs:
           for run in (*baseline, *excluded):
               assert run["app_loaded"] is True
               assert run["max_slot"] == 793340
+
+          assert formats["synthetic_slot_count"] == 689
+          assert formats["synthetic_slot_utf8"] is None
+          assert formats["synthetic_slot_cuneiform"] == ""
+          assert formats["synthetic_slot_transliteration"] == ""
+          assert formats["semantic_line_cuneiform"]
+          assert formats["semantic_line_transliteration"].strip()
 
           baseline_loaded = set.intersection(*(set(run["loaded_node_features"]) for run in baseline))
           excluded_loaded = set.union(*(set(run["loaded_node_features"]) for run in excluded))

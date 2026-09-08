@@ -286,11 +286,26 @@ def _project_path(value: object, *, field: str) -> str:
 
 
 def _read_metadata(archive: zipfile.ZipFile, member: _Member) -> Mapping[str, object]:
+    payload = bytearray()
     try:
         with archive.open(member.info, "r") as handle:
-            payload = handle.read()
+            while True:
+                chunk = handle.read(_COPY_CHUNK)
+                if not chunk:
+                    break
+                payload.extend(chunk)
+                if len(payload) > member.info.file_size:
+                    raise ArchiveStructureError(
+                        f"metadata member exceeds declared size: {member.path!r}"
+                    )
+    except ArchiveSecurityError:
+        raise
     except (OSError, RuntimeError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
         raise ArchiveStructureError(f"cannot read metadata member {member.path!r}") from exc
+    if len(payload) != member.info.file_size:
+        raise ArchiveStructureError(
+            f"metadata member length disagrees with ZIP metadata: {member.path!r}"
+        )
     try:
         decoded = payload.decode("utf-8")
         value = json.loads(decoded)
@@ -418,10 +433,13 @@ def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLa
         raise ArchiveStructureError("limits must be an ArchiveLimits instance")
     archive_path = Path(path)
     try:
+        archive_size = archive_path.stat().st_size
+        if archive_size > limits.max_download_bytes:
+            raise ArchiveResourceLimitError("archive exceeds configured byte ceiling")
         with archive_path.open("rb") as handle:
             if handle.read(4) != _ZIP_LOCAL_MAGIC:
                 raise ArchiveStructureError("archive does not start with a ZIP local-file header")
-    except ArchiveStructureError:
+    except ArchiveSecurityError:
         raise
     except OSError as exc:
         raise ArchiveStructureError("archive cannot be opened") from exc

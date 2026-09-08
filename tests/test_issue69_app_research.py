@@ -15,6 +15,7 @@ from oracc_tf import corpus, loader, metadata
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "research_issue69_tf_app.py"
+WORKFLOW = ROOT / ".github" / "workflows" / "issue69-app-research.yml"
 
 
 def _research_module():
@@ -152,3 +153,9 @@ def test_issue69_censuses_none_values_without_copying_bhsa_policy(tmp_path: Path
     assert "form" in positive["features"]["a"]
     assert positive["counts"]["missing"] == 0
     assert positive["features"]["missing"] == []
+
+
+def test_issue69_measurement_workflow_pins_text_fabric_13_1_0() -> None:
+    """The version-specific research baseline must remain reproducible over time."""
+    payload = WORKFLOW.read_text(encoding="utf-8")
+    assert 'text-fabric==13.1.0' in payload

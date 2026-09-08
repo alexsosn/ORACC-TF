@@ -24,7 +24,7 @@ The comparison was reproduced against the following current surfaces rather than
 - Text-Fabric `v13.1.0` / API version 3, pinned during the audit to tag commit `dd227ce62b5536de53a0e20eac98c0459da8fd3d`;
 - ETCBC/BHSA `master` `4db00e2157915495e1a4d3d57e41223df24775da` (2026-01-18).
 
-Text-Fabric 13.1 supplies the browser/server and the advanced app runtime. A corpus app configures that runtime; it does not need its own Flask/server implementation. `config.yaml` and `app.py` are both optional. `data:/path/to/data` loads a vanilla local dataset, while repository-style loading discovers a conventional app next to the TF data location. Text-Fabric also loads app CSS/static assets and supports optional Python specialization where declarative configuration is insufficient.
+Text-Fabric 13.1 supplies the browser/server and the advanced app runtime. A corpus app configures that runtime; it does not need its own Flask/server implementation. `config.yaml` and `app.py` are both optional. `data:/path/to/data` works with the advanced-app loader, while repository-style loading discovers a conventional app next to the TF data location. Text-Fabric also loads app CSS/static assets and supports optional Python specialization where declarative configuration is insufficient.
 
 BHSA confirms the intended pattern. Its current app consists primarily of `app/config.yaml`, one static logo, and a very small `app.py` whose only corpus-specific method is `getLexId`. Its text/lexeme formats are declared in `tf/2021/otext.tf`; the app config mainly controls display, feature preloading, missing-value presentation, documentation, provenance/web links, and writing-system policy.
 
@@ -77,12 +77,22 @@ The initial real-corpus probe exposed an important research-harness defect: choo
 
 The real-corpus research workflow enforces the same separation and the known whole-corpus `synthetic_slot_count == 689`. Thus synthetic anchors remain positionally present in TF but are not fabricated into visible cuneiform or transliteration.
 
+### Browser-stack baseline and a Text-Fabric 13.1 data-only discrepancy
+
+The advanced-app call `tf.app.use("data:<tf-root>")` works on both the fixture and the real ORACC-TF corpus. The public browser setup path is different in pinned Text-Fabric 13.1: `tf.browser.command.argParam()` recognizes `data:<path>`, but `argApp()` returns no app specification when `appName` is absent, so `tf.browser.web.setup()` reports `No TF dataset specified` / `Could not set up TF` for the data-only browser form. Research must not describe that CLI/discovery route as working.
+
+To characterize the browser stack without disguising that limitation, `probe_browser_routes()` starts from the successfully loaded real `AdvancedApp`, passes it through `makeTfKernel()`, and then uses Text-Fabric's browser Flask `factory`. The research workflow records this separately as `browser.json`. This is evidence about rendering/query/export route behavior **inside the Text-Fabric browser stack**, not proof that a clean published repository will be discovered correctly by the public browser command.
+
+On the fixture, the vanilla data-only AdvancedApp has no corpus-specific header: `/passage` and `/query` return 200, while `/` and `/export` currently return 500 during header rendering. That is useful baseline behavior, not the desired product contract. Production repository-style app discovery and all-route browser acceptance remain mandatory in #71/#75.
+
 ## Capability matrix
 
 | Capability | Current evidence | Decision |
 |---|---|---|
 | Generic browser/server | Text-Fabric 13.1 `tf.browser` supplies it | Reuse upstream TF; no ORACC-TF server |
 | Vanilla advanced app | Real local corpus loads through `data:<tf-root>` | Use as baseline/failure comparison |
+| Data-only public browser setup | Pinned TF 13.1 parser/setup behavior | Does not work; do not rely on it |
+| Browser stack below discovery | `AdvancedApp -> makeTfKernel -> browser factory` fixture/real probe | Characterization only; not production discovery proof |
 | Declarative app config | TF 13.1 + current BHSA | Default mechanism |
 | Sign-level original text | Real `utf8` feature + TF format prototype | `text-orig-full={utf8}` |
 | Word-level transliteration over sign slots | TF `nodeType#template` + fixture/real probe | `text-trans-full=word#{form}`; no sign duplication |
@@ -144,13 +154,15 @@ Never route by bare Q-number, and do not infer lexeme/glossary URLs from `cf/gw/
 
 ## Distribution boundary
 
+P-005 has accepted the **semantic boundary**: each published distribution represents one semantic dataset. It has **not** yet accepted the final internal app/docs path layout. That canonical-path and manifest-ownership decision remains #79's review gate.
+
 The central builder should keep per-dataset hand-maintained app policy isolated under a dataset-keyed source path such as:
 
 ```text
 apps/<dataset>/...
 ```
 
-Publication must follow the accepted P-005 semantic dataset boundary and the path/ownership extension owned by #79. For a **dedicated one-dataset distribution repository**, the repository root is the semantic distribution root:
+For the generated one-dataset repository, R-006 recommends that #79 explicitly test the simple repository-root hypothesis:
 
 ```text
 README.md
@@ -160,7 +172,7 @@ tf/<tf-version>/
 docs/
 ```
 
-Central local staging may still be `<output-base>/<dataset>/...`; that does not justify publishing an extra redundant `<dataset>/` level inside a repository that already represents exactly one semantic dataset.
+That layout is a **research recommendation/hypothesis**, not an already accepted #79 decision. #79 must verify Text-Fabric discovery, Agora/GitStore loading, manifest ownership and backwards compatibility before it becomes normative. Central local staging may still use `<output-base>/<dataset>/...`; local staging shape does not by itself determine the published repository paths.
 
 P-005.PH0 deliberately rejects unowned staged content. Therefore #71/#79 must make the generated app tree (and later docs/support files) explicit manifest-owned, integrity-checked release artifacts. They must **not** weaken the existing unowned-path, transactional replacement, replay, symlink, or path-overlap protections merely to make copying `app/` convenient.
 

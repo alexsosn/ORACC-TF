@@ -330,6 +330,19 @@ def _inspect_archive(path: Path | str, limits: ArchiveLimits) -> tuple[ArchiveLa
             members.append(_Member(info=info, path=name, is_dir=is_dir))
 
         all_paths = set(literal)
+        folded_prefixes: dict[str, str] = {}
+        for member_path in all_paths:
+            components = member_path.split("/")
+            for index in range(1, len(components) + 1):
+                prefix = "/".join(components[:index])
+                alias = prefix.casefold()
+                previous = folded_prefixes.get(alias)
+                if previous is not None and previous != prefix:
+                    raise ArchiveStructureError(
+                        f"cross-platform ZIP path alias collision: {previous!r} vs {prefix!r}"
+                    )
+                folded_prefixes[alias] = prefix
+
         for file_path in file_paths:
             components = file_path.split("/")
             for index in range(1, len(components)):

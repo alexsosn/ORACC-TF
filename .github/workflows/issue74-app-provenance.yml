@@ -1,0 +1,24 @@
+name: issue74-app-provenance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "programs/oracc_tf/app_provenance.py"
+      - "tests/test_issue74_app_provenance.py"
+      - "docs/task-state/ISSUE-74.json"
+      - ".github/workflows/issue74-app-provenance.yml"
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project
+        run: pip install -e ".[dev]"
+      - name: ISSUE-74 focused contract
+        run: pytest -q tests/test_issue74_app_provenance.py

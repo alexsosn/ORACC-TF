@@ -44,7 +44,10 @@
     "approval_key": ["gate_id", "subject.scope", "subject.id", "condition_sha256", "evidence_fingerprint"],
     "matching": "Exact only. Any relevant evidence digest or accepted baseline change makes the approval stale.",
     "suppression": "Run the gate, emit the finding, exact-match an approval, retain the finding as approved with audit metadata, and only then remove that finding from the blocking set.",
-    "non_approvable": ["missing-required-input", "evaluator-exception", "malformed-evidence", "dataset-contributor-set-drift"]
+    "non_approvable_statuses": ["evaluation-error"],
+    "evaluation_error_rule": "Every finding with status=evaluation-error is categorically non-approvable, regardless of its stable error code or subject. Resolution requires restoring valid evidence/evaluator behavior and rerunning; changing this rule requires new reviewed research.",
+    "non_approvable_error_examples": ["missing-required-input", "evaluator-exception", "malformed-evidence", "dataset-contributor-set-drift"],
+    "error_identity_rule": "Evaluation-error conditions use stable gate-specific codes and canonical typed fields. Raw exception text, environment paths, and library wording are diagnostics only and never participate in condition or evidence hashes."
   },
   "stages": {
     "prebuild": [
@@ -67,7 +70,7 @@
     "project-disappeared": "Compare candidate public-project inventory with the last accepted project-inventory evidence. Evidence refs must bind both accepted and candidate project-inventory digests as well as the required dataset-context refs. A blocked candidate cannot become the next baseline.",
     "licence-changed": "Compare verbatim archive licence evidence at archive scope and bind approval to exact accepted/candidate archive evidence.",
     "translation-coverage-drop": "Compare exact validated joined/eligible counts from accepted and candidate TEI evidence. Any real fall blocks. Evidence binds both JSON dataset source states, both canonical dataset-manifest/contributor-tuple digests, and every TEI archive digest used by each measurement. Missing or unauthenticated evidence is an evaluation error, never implicit zero or unchanged.",
-    "word-count-unexplained": "After rebuild, compare PH4 source-expected word totals/deltas with independent converter/build output including zero-span sidecar words. Differences not reconciled by source text deltas block."
+    "word-count-unexplained": "After rebuild, compare accepted and candidate PH4 dataset source totals/deltas with independent accepted and candidate converter/build reports including zero-span sidecar words. Evidence refs must bind both dataset-source-state contexts, both canonical dataset-manifest/contributor-tuple contexts, and both accepted and candidate build-report digests. Differences not reconciled by source text deltas block; missing build evidence is a non-approvable evaluation error."
   },
   "lemma_coverage_scope_lifecycle": {
     "new_scope": "Accepted subproject absent, candidate present: emit non-blocking lemma-coverage-baseline-created with candidate integer counts; do not fabricate 0% and do not emit an error merely because the scope is new.",
@@ -87,9 +90,9 @@
     "candidate": "complete candidate dataset state assembled from changed and unchanged contributor archives",
     "dataset_context": "Both accepted and candidate contexts contain the same validated canonical contributor tuple plus archive-name to typed PH4 ArchiveSnapshot mapping. Construction fails closed on a missing/duplicate contributor or archive/source-state mismatch.",
     "dataset_input_set": "Accepted contributor tuple comes from the last accepted release manifest; candidate contributors come from current validated datasets.toml. Ordinary upstream evaluation requires exact tuple equality. Difference emits non-approvable dataset-input-set-changed before normal gates. The accepted and candidate canonical tuple/dataset-manifest digests participate in evidence fingerprints even when equal.",
-    "promotion": "Only a fully accepted update may replace accepted source, project-inventory, translation, and gate baselines.",
+    "promotion": "Only a fully accepted update may replace accepted source, project-inventory, translation, build, and gate baselines.",
     "blocked_candidate": "Reports/findings only; must not advance any accepted baseline.",
-    "toctou": "Immediately before promotion, recompute/verify candidate evidence fingerprints and the canonical contributor tuple/dataset-manifest digest. Any drift invalidates readiness."
+    "toctou": "Immediately before promotion, recompute/verify candidate evidence fingerprints and the canonical contributor tuple/dataset-manifest digest, and recheck accepted baseline identities. Any drift invalidates readiness."
   },
   "review_attacks_passed": [
     "stale approval after candidate bytes change",
@@ -97,23 +100,24 @@
     "blocked candidate baseline laundering",
     "cross-archive GDL novelty false positive",
     "cross-archive Q-collision false negative",
-    "missing translation/project evidence",
+    "missing translation/project/build evidence",
     "new subproject without prior lemma denominator",
     "zero-word lemma denominator",
     "shrinking collision membership",
     "dataset contributor-set drift",
-    "approval matching across mixed finding scopes"
+    "approval matching across mixed finding scopes",
+    "unlisted evaluation-error approval laundering"
   ],
   "dependencies": {
     "ph4_source_diff": "PH5 production implementation remains blocked until PH4 completion criteria and accepted dataset-wide source-state inputs are available.",
     "translations": "translation-coverage-drop cannot become a validated automation gate until P-001.M9 has authenticated real-source evidence.",
     "transport": "Current ORACC normal-TLS acquisition remains externally blocked under P-002.PH1; no evidence rule in this contract relaxes that trust boundary."
   },
-  "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation baselines before PH5 evaluator TDD begins.",
+  "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation/build baselines before PH5 evaluator TDD begins.",
   "independent_review": {
     "issue_review_rounds": 2,
-    "serialization_review_rounds": 2,
-    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received separate stale-approval, baseline-lifecycle, and evidence-fingerprint reviews with explicit fixes",
+    "serialization_review_rounds": 3,
+    "result": "accepted issue-level research/design after two correction rounds; PR serialization then received separate stale-approval, baseline-lifecycle, evidence-fingerprint, and categorical-evaluation-error reviews with explicit fixes",
     "final_issue_comment": 5587972646
   }
 }

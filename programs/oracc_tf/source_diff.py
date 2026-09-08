@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from hashlib import sha256
 import json
 import re
@@ -19,7 +20,6 @@ _STATE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$")
 _ID_COMPONENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _TEXT_ID_RE = re.compile(r"^[PQX][0-9]+$")
-_GDL_CHILD_KEYS = ("group", "seq", "qualified", "mods")
 
 
 class SourceDiffError(ValueError):
@@ -162,23 +162,24 @@ def _gdl_object_shapes(value: object) -> set[tuple[str, ...]]:
     shapes: set[tuple[str, ...]] = set()
 
     def visit(obj: object) -> None:
-        if not isinstance(obj, Mapping):
-            raise SourceDiffError("GDL entries and children must be objects")
-        shapes.add(tuple(sorted(str(key) for key in obj.keys())))
-        for key in _GDL_CHILD_KEYS:
-            if key not in obj:
-                continue
-            children = obj[key]
-            if not isinstance(children, list):
-                raise SourceDiffError(f"GDL child field {key!r} must be a list")
-            for child in children:
-                visit(child)
+        if isinstance(obj, Mapping):
+            shapes.add(tuple(sorted(str(key) for key in obj.keys())))
+            for child in obj.values():
+                if isinstance(child, (Mapping, list)):
+                    visit(child)
+            return
+        if isinstance(obj, list):
+            for child in obj:
+                if isinstance(child, (Mapping, list)):
+                    visit(child)
 
     if value is None:
         return shapes
     if not isinstance(value, list):
         raise SourceDiffError("word GDL must be a list when present")
     for item in value:
+        if not isinstance(item, Mapping):
+            raise SourceDiffError("GDL entries must be objects")
         visit(item)
     return shapes
 
@@ -248,6 +249,10 @@ def snapshot_archive(
         raise SourceDiffError("source_state must be a canonical sha256: digest")
     if not isinstance(oracc_utc_timestamp, str) or _TIMESTAMP_RE.fullmatch(oracc_utc_timestamp) is None:
         raise SourceDiffError("oracc_utc_timestamp must use YYYY-MM-DDTHH:MM:SS")
+    try:
+        datetime.strptime(oracc_utc_timestamp, "%Y-%m-%dT%H:%M:%S")
+    except ValueError as exc:
+        raise SourceDiffError("oracc_utc_timestamp is not a valid calendar timestamp") from exc
     if not isinstance(licence, str) or not licence or licence != licence.strip():
         raise SourceDiffError("licence must be a non-empty verbatim source string")
     if isinstance(documents, (str, bytes, bytearray)) or not isinstance(documents, Sequence):

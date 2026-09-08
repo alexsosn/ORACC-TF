@@ -18,6 +18,7 @@ import sys
 import time
 
 from tf.app import use
+import tf.browser.command as browser_command
 from tf.browser.kernel import makeTfKernel
 from tf.browser.web import Web, factory as browser_factory
 
@@ -83,31 +84,34 @@ def profile_advanced_app(
 def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
     """Exercise Text-Fabric's browser kernel/routes without opening a server.
 
-    Text-Fabric 13.1 accepts ``data:/path`` in ``tf.app.use()``, but its browser
-    CLI parser drops the data-only source before ``tf.browser.web.setup()`` can
-    construct an app.  This probe therefore starts from that real AdvancedApp and
-    feeds it into the same browser kernel and Flask factory.  It characterises the
-    browser stack only; it is not proof of repository-style production discovery.
+    Text-Fabric 13.1 accepts ``data:/path`` in ``tf.app.use()``.  Browser CLI
+    support is measured through the installed parser instead of being frozen in
+    the harness: pinned 13.1.0 currently rejects the data-only source, while a
+    future compatible parser may accept it.  The route probe still starts from a
+    real AdvancedApp and feeds it into the same browser kernel and Flask factory.
     """
     root = Path(tf_root).resolve()
-    advanced_app = use(f"data:{root}", silent="deep")
+    data_spec = f"data:{root}"
+    cli_supported = browser_command.argApp((data_spec,), False) is not None
+
+    advanced_app = use(data_spec, silent="deep")
     if advanced_app is None or advanced_app.api is None:
         return {
             "schema_version": SCHEMA_VERSION,
             "browser_setup": False,
             "probe_path": "advanced-app->kernel->factory",
-            "data_only_browser_cli_supported": False,
+            "data_only_browser_cli_supported": cli_supported,
             "routes": {},
             "responses_nonempty": {},
         }
 
-    kernel_api = makeTfKernel(advanced_app, f"data:{root}")
+    kernel_api = makeTfKernel(advanced_app, data_spec)
     if not kernel_api:
         return {
             "schema_version": SCHEMA_VERSION,
             "browser_setup": False,
             "probe_path": "advanced-app->kernel->factory",
-            "data_only_browser_cli_supported": False,
+            "data_only_browser_cli_supported": cli_supported,
             "routes": {},
             "responses_nonempty": {},
         }
@@ -126,7 +130,7 @@ def probe_browser_routes(tf_root: Path | str) -> dict[str, object]:
         "schema_version": SCHEMA_VERSION,
         "browser_setup": True,
         "probe_path": "advanced-app->kernel->factory",
-        "data_only_browser_cli_supported": False,
+        "data_only_browser_cli_supported": cli_supported,
         "routes": routes,
         "responses_nonempty": responses_nonempty,
     }

@@ -214,6 +214,18 @@ def test_missing_or_changed_validator_metadata_requires_download(
     assert decision.requires_download is True
 
 
+@pytest.mark.parametrize("etag", ["", "   "])
+def test_empty_or_whitespace_etag_never_authorizes_unchanged(etag: str) -> None:
+    module = api()
+    decision = module.decide_probe(
+        fingerprint(module, etag=etag),
+        head(module, etag=etag, length=123),
+    )
+
+    assert decision.action == "download-required"
+    assert decision.requires_download is True
+
+
 def test_missing_content_length_is_insufficient_not_zero_or_unchanged() -> None:
     module = api()
     current = module.head_from_response(200, {"ETag": '"etag-a"'})
@@ -284,6 +296,16 @@ def test_soft_404_and_junk_prefixed_zip_are_rejected() -> None:
         module.verify_downloaded_archive(entry, b"404\n", current)
     with pytest.raises(module.UpstreamDiscoveryError):
         module.verify_downloaded_archive(entry, b"404\n" + valid_zip_bytes(), current)
+
+
+def test_download_length_must_match_head_content_length() -> None:
+    module = api()
+    payload = valid_zip_bytes()
+    entry = archive_entry(module)
+    current = head(module, etag='"etag-new"', length=len(payload) + 1)
+
+    with pytest.raises(module.UpstreamProtocolError):
+        module.verify_downloaded_archive(entry, payload, current)
 
 
 def test_valid_download_records_own_hash_and_does_not_inspect_zip_members(monkeypatch) -> None:

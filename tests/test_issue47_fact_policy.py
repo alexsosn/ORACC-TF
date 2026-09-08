@@ -74,3 +74,31 @@ def test_guide_and_index_reject_snapshot_policy():
             "",
         )
         assert any("operational" in problem for problem in problems)
+
+
+def test_policy_table_must_match_registry_document_ids_exactly():
+    checker = _load_checker()
+    registry_docs = {
+        "R-X": {"id": "R-X", "type": "research", "path": "docs/research/R-X.md"},
+        "G-X": {"id": "G-X", "type": "guide", "path": "docs/guides/G-X.md"},
+    }
+    complete = {
+        "R-X": {
+            "fact_policy": "snapshot-evidence",
+            "evidence_date": "2026-09-07",
+            "evidence_basis": "measured report",
+        },
+        "G-X": {"fact_policy": "operational"},
+    }
+
+    assert checker.fact_policy_table_problems(registry_docs, complete) == []
+
+    missing = dict(complete)
+    del missing["G-X"]
+    problems = checker.fact_policy_table_problems(registry_docs, missing)
+    assert any("missing" in problem and "G-X" in problem for problem in problems)
+
+    extra = dict(complete)
+    extra["ORPHAN"] = {"fact_policy": "operational"}
+    problems = checker.fact_policy_table_problems(registry_docs, extra)
+    assert any("orphan" in problem.lower() and "ORPHAN" in problem for problem in problems)

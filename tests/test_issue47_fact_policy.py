@@ -40,6 +40,14 @@ def test_snapshot_policy_requires_dated_reproducible_evidence():
     problems = checker.fact_policy_problems(Path("docs/research/R-X.md"), bad_date, "")
     assert any("evidence_date" in problem for problem in problems)
 
+    compact_date = {
+        **base,
+        "evidence_date": "20260908",
+        "evidence_basis": "python scripts/measure.py --json report.json",
+    }
+    problems = checker.fact_policy_problems(Path("docs/research/R-X.md"), compact_date, "")
+    assert any("evidence_date" in problem for problem in problems)
+
 
 def test_valid_snapshot_and_operational_documents_pass_without_digit_scanning():
     checker = _load_checker()

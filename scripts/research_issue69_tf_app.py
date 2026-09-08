@@ -9,10 +9,12 @@ create an isolated copy with candidate display formats for behavior probes.
 from __future__ import annotations
 
 import argparse
+from contextlib import redirect_stdout
 import json
 from pathlib import Path
 import resource
 import shutil
+import sys
 import time
 
 from tf.app import use
@@ -357,7 +359,12 @@ def main() -> int:
     elif args.command == "prototype":
         inject_prototype_formats(args.source, args.target)
     elif args.command == "browser":
-        print(json.dumps(probe_browser_routes(args.tf_root), sort_keys=True))
+        # Text-Fabric writes informational and browser diagnostics to stdout.
+        # Keep the research artifact channel machine-readable by forwarding only
+        # those diagnostics to stderr and reserving stdout for one JSON document.
+        with redirect_stdout(sys.stderr):
+            result = probe_browser_routes(args.tf_root)
+        print(json.dumps(result, sort_keys=True))
     else:
         print(json.dumps(probe_text_formats(args.tf_root), sort_keys=True, ensure_ascii=False))
     return 0

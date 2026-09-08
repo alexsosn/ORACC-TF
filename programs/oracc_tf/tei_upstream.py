@@ -24,6 +24,7 @@ _CANDIDATE_RE = re.compile(
     r"^(?P<prefix>[A-Za-z0-9][A-Za-z0-9._-]*)-teiCorpus-(?P<date>[0-9]{8})\.zip$"
 )
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+_ZIP_LOCAL_FILE_MAGIC = b"PK\x03\x04"
 
 
 class TeiDiscoveryError(ValueError):
@@ -58,6 +59,10 @@ class VerifiedTeiCandidate:
     bytes: int
 
     def __post_init__(self) -> None:
+        if not isinstance(self.candidate, TeiCandidate):
+            raise TeiDiscoveryError("verified TEI candidate lacks a valid candidate identity")
+        if not isinstance(self.sha256, str):
+            raise TeiDiscoveryError("verified TEI candidate sha256 must be 64 hex digits")
         digest = self.sha256.lower()
         if not _SHA256_RE.fullmatch(digest):
             raise TeiDiscoveryError("verified TEI candidate sha256 must be 64 hex digits")
@@ -115,23 +120,10 @@ def _candidate_from_href(href: str, listing_url: str) -> TeiCandidate | None:
     except ValueError as exc:
         raise TeiDiscoveryError(f"invalid TEI archive publication date in {name!r}") from exc
 
-    url = urljoin(listing_url, href)
-    listing_parts = urlsplit(listing_url)
-    candidate_parts = urlsplit(url)
-    if (
-        listing_parts.scheme
-        and listing_parts.netloc
-        and (candidate_parts.scheme, candidate_parts.netloc)
-        != (listing_parts.scheme, listing_parts.netloc)
-    ):
-        raise TeiDiscoveryError(
-            f"TEI archive candidate escapes listing origin: {url!r}"
-        )
-
     return TeiCandidate(
         published_date=published_date,
         name=name,
-        url=url,
+        url=urljoin(listing_url, href),
         listing_url=listing_url,
         source_prefix=match.group("prefix"),
     )
@@ -202,6 +194,10 @@ def verify_candidate_bytes(candidate: TeiCandidate, payload: bytes) -> VerifiedT
         raise TeiDiscoveryError("TEI candidate payload must be bytes")
     if not payload:
         raise TeiDiscoveryError("TEI candidate payload is empty")
+    if not payload.startswith(_ZIP_LOCAL_FILE_MAGIC):
+        raise TeiDiscoveryError(
+            f"TEI candidate {candidate.name!r} does not begin with ZIP local-file magic"
+        )
 
     buffer = BytesIO(payload)
     if not zipfile.is_zipfile(buffer):

@@ -175,7 +175,7 @@ def inject_prototype_formats(source: Path | str, target: Path | str) -> None:
 
 
 def probe_text_formats(tf_root: Path | str) -> dict[str, object]:
-    """Exercise candidate original/transliteration formats on a real TF graph."""
+    """Exercise candidate formats on synthetic and semantic TF positions separately."""
     api = corpus.load_tf(Path(tf_root))
     synthetic_slots = [
         slot
@@ -183,29 +183,59 @@ def probe_text_formats(tf_root: Path | str) -> dict[str, object]:
         if api.F.synthetic.v(slot) == 1
     ]
 
-    lines = list(api.F.otype.s("line"))
-    if not lines:
-        raise ValueError("TF prototype has no line nodes")
-    chosen = next(
-        (
-            line
-            for line in lines
-            if any(api.F.synthetic.v(slot) == 1 for slot in api.L.d(line, otype="sign"))
-        ),
-        lines[0],
-    )
-
     first_synthetic = synthetic_slots[0] if synthetic_slots else None
     synthetic_utf8 = (
         api.F.utf8.v(first_synthetic) if first_synthetic is not None else None
     )
+    synthetic_cuneiform = (
+        api.T.text(first_synthetic, fmt="text-orig-full")
+        if first_synthetic is not None
+        else None
+    )
+    synthetic_transliteration = (
+        api.T.text(first_synthetic, fmt="text-trans-full")
+        if first_synthetic is not None
+        else None
+    )
+
+    semantic_slot = next(
+        (
+            slot
+            for slot in range(1, api.F.otype.maxSlot + 1)
+            if api.F.synthetic.v(slot) != 1
+            and isinstance(api.F.utf8.v(slot), str)
+            and api.F.utf8.v(slot)
+        ),
+        None,
+    )
+    if semantic_slot is None:
+        raise ValueError("TF prototype has no semantic slot with source Unicode")
+
+    semantic_lines = tuple(api.L.u(semantic_slot, otype="line"))
+    if not semantic_lines:
+        raise ValueError(f"semantic slot {semantic_slot} has no containing line")
+    semantic_line = semantic_lines[0]
+    semantic_cuneiform = api.T.text(semantic_line, fmt="text-orig-full")
+    semantic_transliteration = api.T.text(semantic_line, fmt="text-trans-full")
+    if not semantic_cuneiform:
+        raise ValueError(f"semantic line {semantic_line} rendered empty cuneiform")
+    if not semantic_transliteration.strip():
+        raise ValueError(f"semantic line {semantic_line} rendered empty transliteration")
+
     return {
         "schema_version": SCHEMA_VERSION,
-        "line_node": chosen,
+        "line_node": semantic_line,
+        "semantic_slot": semantic_slot,
+        "synthetic_slot": first_synthetic,
         "synthetic_slot_count": len(synthetic_slots),
         "synthetic_slot_utf8": synthetic_utf8,
-        "cuneiform": api.T.text(chosen, fmt="text-orig-full"),
-        "transliteration": api.T.text(chosen, fmt="text-trans-full"),
+        "synthetic_slot_cuneiform": synthetic_cuneiform,
+        "synthetic_slot_transliteration": synthetic_transliteration,
+        "semantic_line_cuneiform": semantic_cuneiform,
+        "semantic_line_transliteration": semantic_transliteration,
+        # Backwards-compatible aliases used by the original issue-69 fixture probe.
+        "cuneiform": semantic_cuneiform,
+        "transliteration": semantic_transliteration,
     }
 
 

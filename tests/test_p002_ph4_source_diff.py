@@ -206,3 +206,50 @@ def test_cross_archive_diff_and_duplicate_or_mismatched_identity_fail_closed():
     )
     with pytest.raises(module.SourceDiffError):
         module.diff_snapshots(left, right)
+
+
+def test_timestamp_validation_rejects_calendar_and_clock_impossibilities():
+    module = api()
+    documents = [source(module, "p/a", doc("Q000001", word("a")))]
+
+    for impossible in ("2026-02-30T12:00:00", "2026-08-07T24:00:00", "2026-13-01T00:00:00"):
+        with pytest.raises(module.SourceDiffError):
+            snapshot(module, documents=documents, timestamp=impossible)
+
+
+def test_unknown_nested_gdl_objects_are_enumerated_recursively():
+    module = api()
+    before = snapshot(
+        module,
+        documents=[source(module, "p/a", doc("Q000001", word("a", gdl=[{"v": "a"}])))],
+    )
+    after = snapshot(
+        module,
+        state="sha256:" + "b" * 64,
+        documents=[
+            source(
+                module,
+                "p/a",
+                doc(
+                    "Q000001",
+                    word(
+                        "a",
+                        gdl=[
+                            {
+                                "v": "a",
+                                "future_children": [
+                                    {"novel_leaf": {"deep": "value"}}
+                                ],
+                            }
+                        ],
+                    ),
+                ),
+            )
+        ],
+    )
+
+    diff = module.diff_snapshots(before, after)
+
+    assert ("future_children", "v") in diff.new_gdl_shapes
+    assert ("novel_leaf",) in diff.new_gdl_shapes
+    assert ("deep",) in diff.new_gdl_shapes

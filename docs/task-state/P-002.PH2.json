@@ -1,0 +1,58 @@
+{
+  "task": "P-002.PH2",
+  "issue": 18,
+  "implementation_pr": 90,
+  "registry_status": "todo",
+  "runtime_status": "completion-blocked",
+  "research": {
+    "base_head": "b096e75483a3a07e2bcaa948da9ffdd3fc56bf77",
+    "summary": "Discovery is a fail-closed, network-independent core: /json/ archive inventory and projects.json retain separate semantics; only active datasets.toml JSON archives are tracked; uncertain HTTP observations require download; exact downloaded bytes are ZIP-validated and SHA-256 identified; extraction and live transport remain outside PH2."
+  },
+  "design": {
+    "module": "programs/oracc_tf/upstream_discovery.py",
+    "boundary": "Pure inventory/HEAD/retry/download-verification/content-state functions only; no live HTTP adapter, no archive extraction, no workflow/CLI ownership.",
+    "decision_rule": "Only a syntactically valid strong ETag plus matching Content-Length may authorize unchanged without downloading. Weak, missing, malformed, or changed validators require byte verification."
+  },
+  "tdd": {
+    "initial_red": {
+      "head": "f87d4061114c2c1965a8ab40e81181e68bd36163",
+      "workflow": 34209803105,
+      "result": "27 intended PH2 failures; 248 existing fast tests passed, 1 skipped, 11 deselected; failures were the missing upstream_discovery module."
+    },
+    "review_reds": [
+      {
+        "workflow": 34216731139,
+        "result": "2 intended failures; 278 existing fast tests passed, 1 skipped, 11 deselected; pinned SHA-text case normalization and shared-archive deduplication."
+      },
+      {
+        "workflow": 34217966341,
+        "result": "4 intended failures; 281 existing fast tests passed, 1 skipped, 11 deselected; pinned weak-ETag and inventory-boundary escape paths."
+      },
+      {
+        "head": "8f5de07d6d0a046c27c82c683d044acfab3f380f",
+        "workflow": 34221152970,
+        "result": "3 intended failures; 285 existing fast tests passed, 1 skipped, 11 deselected; pinned malformed quoted ETags that could falsely authorize unchanged."
+      }
+    ],
+    "functional_green": {
+      "head": "98a11f6060ab9869f56f695e72f69215d679d2bb",
+      "tests_workflow": 34221501487,
+      "result": "288 fast tests passed, 1 skipped, 11 deselected; 11 whole-corpus invariant tests passed, 289 deselected; docs-registry passed.",
+      "m8_cross_validation_workflow": 34221501545,
+      "m8_result": "Pinned real oldbabylonian cross-validation passed.",
+      "generated_reference_workflow": 34221501482,
+      "generated_reference_result": "Real checked-in corpus build and generated-reference consistency passed."
+    }
+  },
+  "behavior": {
+    "tracked_scope": "Active JSON archive inputs from datasets.toml; shared inputs are polled once; TEI remains a separate upstream.",
+    "fail_closed": "5xx is retryable unavailable; unresolved redirects/client errors are protocol failures; missing/weak/malformed validators require download; soft-404 and non-ZIP bodies are rejected; HEAD/GET byte-length disagreement is rejected; archive links cannot escape the configured listing origin/directory.",
+    "content_identity": "SHA-256 over exact downloaded bytes; byte-identical republication refreshes metadata without rebuild; changed SHA requires rebuild; equivalent SHA hexadecimal case is canonicalized rather than treated as a content change."
+  },
+  "completion_blocker": {
+    "task": "P-002.PH1",
+    "issue": 17,
+    "reason": "PH2's independent discovery semantics are implemented and tested, but live integration must consume the PH1 upstream configuration/lock and authenticated normal-TLS transport before PH2 can be finalized."
+  },
+  "resume_gate": "When P-002.PH1 is done, integrate the real transport/configuration without weakening TLS or PH2 fail-closed rules, run real upstream observations, refresh this evidence with the integration run, and perform a fresh exact-head adversarial review before merge."
+}

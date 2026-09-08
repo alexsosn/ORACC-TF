@@ -102,14 +102,22 @@ values.
 R-001's figures have been corrected twice and both corrections came from
 measuring rather than reasoning from an earlier document.
 
-**Numbers live in code, not prose.** No hand-written count in any Markdown
-file; see [R-003](../research/R-003-documentation.md) §4.
+**Generate current facts; preserve dated evidence.** Current corpus counts,
+percentages, and value-domain summaries in operational/user documentation must
+come from generated or otherwise reproducibly checked sources such as
+`docs/reference`. Reviewed research and plan documents may preserve measured
+snapshot numbers when their fact-policy record supplies the evidence date and
+basis. Identifiers, versions, dates, examples, and recorded CI evidence are not
+prohibited merely because they contain digits. `docs/fact-policy.json` is
+checked bijectively against the registered document set by
+`scripts/check_docs_registry.py`; see [R-003](../research/R-003-documentation.md)
+§4 for the generated-current-state documentation rule.
 
 ## Reporting
 
 ```bash
 python -m oracc_tf.loader --list-unreadable   # the four edition cardinalities
-python scripts/check_docs_registry.py         # registry vs documents
+python scripts/check_docs_registry.py         # registry vs documents and fact policy
 python scripts/scan_annotation.py --csv       # annotation depth per corpus
 python scripts/audit_translations.py --tei DIR
 ```

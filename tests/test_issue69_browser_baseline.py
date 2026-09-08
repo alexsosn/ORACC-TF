@@ -1,4 +1,4 @@
-"""Issue #69 RED contract for the real Text-Fabric browser baseline."""
+"""Issue #69 contracts for the real Text-Fabric browser baseline."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from oracc_tf import corpus, loader, metadata
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "research_issue69_tf_app.py"
+WORKFLOW = ROOT / ".github" / "workflows" / "issue69-app-research.yml"
 
 
 def _research_module():
@@ -59,7 +60,8 @@ def _build_fixture(root: Path) -> None:
     )
 
 
-def test_issue69_probes_supported_tf_browser_routes(tmp_path: Path) -> None:
+def test_issue69_captures_current_generic_tf_browser_routes(tmp_path: Path) -> None:
+    """Pin current no-app behavior instead of pretending the generic browser is healthy."""
     module = _research_module()
     tf_root = tmp_path / "tf"
     _build_fixture(tf_root)
@@ -68,11 +70,14 @@ def test_issue69_probes_supported_tf_browser_routes(tmp_path: Path) -> None:
 
     assert result["schema_version"] == 1
     assert result["browser_setup"] is True
+    # Text-Fabric 13.1's vanilla data AdvancedApp has no corpus header. Passage
+    # and query work, while root/export currently fail in app.header(). The
+    # production app acceptance ticket is responsible for making all four 200.
     assert result["routes"] == {
-        "/": 200,
+        "/": 500,
         "/passage": 200,
         "/query": 200,
-        "/export": 200,
+        "/export": 500,
     }
     assert result["responses_nonempty"] == {
         "/": True,
@@ -80,3 +85,12 @@ def test_issue69_probes_supported_tf_browser_routes(tmp_path: Path) -> None:
         "/query": True,
         "/export": True,
     }
+
+
+def test_issue69_research_workflow_records_real_corpus_browser_baseline() -> None:
+    """The reproducible artifact must include browser behavior, not only fixture evidence."""
+    payload = WORKFLOW.read_text(encoding="utf-8")
+    assert "browser.json" in payload
+    assert " browser /tmp/oracc-tf" in payload
+    assert 'browser = json.loads((root / "browser.json").read_text())' in payload
+    assert '"browser": browser' in payload

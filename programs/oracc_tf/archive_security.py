@@ -226,8 +226,11 @@ def _safe_components(value: str, *, field: str) -> tuple[str, ...]:
 
 def _member_path(info: zipfile.ZipInfo) -> tuple[str, bool]:
     raw = info.filename
+    original = info.orig_filename
     if not isinstance(raw, str) or not raw:
         raise ArchiveStructureError("ZIP member name must be non-empty")
+    if not isinstance(original, str) or original != raw:
+        raise ArchiveStructureError("ZIP member name was transformed by zipfile")
     is_dir = raw.endswith("/")
     value = raw[:-1] if is_dir else raw
     if not value:
@@ -567,22 +570,45 @@ def preflight_archive(path: Path | str, limits: ArchiveLimits) -> ArchiveLayout:
     return layout
 
 
-def extract_archive(
-    path: Path | str, destination: Path | str, limits: ArchiveLimits
-) -> ArchiveLayout:
-    """Extract a fully preflighted archive through a sibling staging directory."""
-    destination_path = Path(destination)
+def _source_chunks(path: Path) -> Iterable[bytes]:
+    try:
+        with path.open("rb") as handle:
+            while True:
+                chunk = handle.read(_COPY_CHUNK)
+                if not chunk:
+                    return
+                yield chunk
+    except OSError as exc:
+        raise ArchiveExtractionError("archive source cannot be snapshotted") from exc
+
+
+def _snapshot_source(path: Path | str, *, parent: Path, limits: ArchiveLimits) -> StreamedArchive:
+    try:
+        return stream_to_temp(_source_chunks(Path(path)), temp_dir=parent, limits=limits)
+    except ArchiveSecurityError:
+        raise
+    except OSError as exc:
+        raise ArchiveExtractionError("archive source cannot be snapshotted") from exc
+
+
+def _destination(path: Path | str) -> tuple[Path, Path]:
+    destination_path = Path(path)
     if destination_path.exists() or destination_path.is_symlink():
         raise ArchiveExtractionError("destination must not already exist")
     parent = destination_path.parent
     if not parent.is_dir():
         raise ArchiveExtractionError("destination parent directory does not exist")
+    return destination_path, parent
 
-    layout, members = _inspect_archive(path, limits)
+
+def _extract_snapshot(
+    snapshot_path: Path, destination_path: Path, parent: Path, limits: ArchiveLimits
+) -> ArchiveLayout:
+    layout, members = _inspect_archive(snapshot_path, limits)
     stage = Path(tempfile.mkdtemp(prefix=f".{destination_path.name}.staging-", dir=parent))
     published = False
     try:
-        with zipfile.ZipFile(Path(path), "r") as archive:
+        with zipfile.ZipFile(snapshot_path, "r") as archive:
             actual_total = 0
             for member in sorted(members, key=lambda item: item.path):
                 target = stage.joinpath(*member.path.split("/"))
@@ -641,6 +667,36 @@ def extract_archive(
             shutil.rmtree(stage, ignore_errors=True)
 
 
+def extract_archive(
+    path: Path | str, destination: Path | str, limits: ArchiveLimits
+) -> ArchiveLayout:
+    """Extract one bounded private snapshot of trusted/pinned archive bytes."""
+    destination_path, parent = _destination(destination)
+    snapshot = _snapshot_source(path, parent=parent, limits=limits)
+    try:
+        return _extract_snapshot(snapshot.path, destination_path, parent, limits)
+    finally:
+        _unlink(snapshot.path)
+
+
+def extract_verified_archive(
+    source: StreamedArchive, destination: Path | str, limits: ArchiveLimits
+) -> ArchiveLayout:
+    """Extract only bytes that still match a previously corroborated source identity."""
+    if not isinstance(source, StreamedArchive):
+        raise ArchiveVerificationMismatch("verified archive identity is invalid")
+    destination_path, parent = _destination(destination)
+    snapshot = _snapshot_source(source.path, parent=parent, limits=limits)
+    try:
+        if (snapshot.bytes, snapshot.sha256) != (source.bytes, source.sha256):
+            raise ArchiveVerificationMismatch(
+                "archive bytes changed after independent-fetch verification"
+            )
+        return _extract_snapshot(snapshot.path, destination_path, parent, limits)
+    finally:
+        _unlink(snapshot.path)
+
+
 __all__ = [
     "ArchiveDownloadError",
     "ArchiveExtractionError",
@@ -653,6 +709,7 @@ __all__ = [
     "StreamedArchive",
     "acquire_unseen",
     "extract_archive",
+    "extract_verified_archive",
     "preflight_archive",
     "stream_to_temp",
 ]

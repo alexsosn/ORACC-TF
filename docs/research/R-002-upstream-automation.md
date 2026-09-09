@@ -246,7 +246,7 @@ becomes a gate:
 |---|---|
 | a GDL object shape not in P-001 §2.3's census | the sign ontology is decided per shape; an unknown shape means unclassified slots |
 | a new `c` chunk type | P-001 keeps all chunk types; a new one is unmodelled |
-| lemma coverage drops > 2 points for a project | suggests upstream regression or a parse failure, not an edition change |
+| lemma coverage drops > 2 points for a subproject | suggests upstream regression or a parse failure, not an edition change |
 | word count changes by more than the text-level diff explains | indicates a walker bug, not source change |
 | a new Q-number collision pattern beyond the last accepted dataset state | document identity is `subproject:Q`; membership expansion needs review |
 | a tracked project disappears from `projects.json` | §5 — could be rename or withdrawal |

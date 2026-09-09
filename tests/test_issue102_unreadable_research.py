@@ -6,6 +6,8 @@ from pathlib import Path
 
 
 SCRIPT = Path("scripts/research_issue102_unreadable.py")
+WORKFLOW = Path(".github/workflows/issue102-unreadable-research.yml")
+PINNED_REVISION = "dd6a657d15999288948a266c9eb17666f9790497"
 
 
 def load_harness():
@@ -115,3 +117,61 @@ def test_canonical_report_bytes_are_deterministic() -> None:
 
     assert module.canonical_report_bytes(left) == module.canonical_report_bytes(right)
     assert module.canonical_report_bytes(left).endswith(b"\n")
+
+
+def test_pinned_report_binds_repository_revision(tmp_path: Path) -> None:
+    module = load_harness()
+    tree = tmp_path / "data" / "fixture" / "corpusjson"
+    tree.mkdir(parents=True)
+    (tree / "x.json").write_text(
+        json.dumps({"type": "cdl", "textid": "X000001", "cdl": []}),
+        encoding="utf-8",
+    )
+
+    report = module.build_pinned_report(
+        tmp_path / "data", repository_revision=PINNED_REVISION
+    )
+
+    assert report["repository_revision"] == PINNED_REVISION
+    assert report["totals"]["source_members"] == 1
+    assert module.canonical_report_bytes(report) == module.canonical_report_bytes(
+        module.build_pinned_report(tmp_path / "data", repository_revision=PINNED_REVISION)
+    )
+
+
+def test_cli_writes_exact_pinned_canonical_report(tmp_path: Path) -> None:
+    module = load_harness()
+    tree = tmp_path / "data" / "fixture" / "corpusjson"
+    tree.mkdir(parents=True)
+    (tree / "x.json").write_text(
+        json.dumps({"type": "cdl", "textid": "X000001", "cdl": []}),
+        encoding="utf-8",
+    )
+    output = tmp_path / "report.json"
+
+    assert module.main(
+        [
+            "--data-root",
+            str(tmp_path / "data"),
+            "--repository-revision",
+            PINNED_REVISION,
+            "--output",
+            str(output),
+        ]
+    ) == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["repository_revision"] == PINNED_REVISION
+    assert output.read_bytes() == module.canonical_report_bytes(report)
+
+
+def test_research_workflow_scans_exact_source_revision_read_only() -> None:
+    assert WORKFLOW.is_file(), "ISSUE-102 exact-SHA research workflow is not implemented yet"
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "contents: read" in text
+    assert f"ref: {PINNED_REVISION}" in text
+    assert "path: .external/source" in text
+    assert "sparse-checkout: |\n            data" in text
+    assert "--data-root .external/source/data" in text
+    assert f"--repository-revision {PINNED_REVISION}" in text
+    assert "actions/upload-artifact@v4" in text
+    assert "artifacts/issue102-unreadable-report.json" in text

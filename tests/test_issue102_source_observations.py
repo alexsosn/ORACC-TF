@@ -70,13 +70,14 @@ def test_zero_byte_observation_is_typed_and_never_guesses_filename_identity(tmp_
     assert observation.source_id is None
 
 
-def test_invalid_utf8_invalid_json_and_missing_identity_are_distinct_hazards(tmp_path: Path) -> None:
+def test_invalid_utf8_json_root_and_missing_identity_are_distinct_hazards(tmp_path: Path) -> None:
     data = tmp_path / "data"
     root = _corpusjson(data)
     cases = (
         ("Q1.json", b"\xff", "invalid-utf8"),
         ("Q2.json", b"{broken", "invalid-json"),
-        ("Q3.json", b'{"type":"cdl","cdl":[]}', "missing-source-id"),
+        ("Q3.json", b"[]", "non-object-json"),
+        ("Q4.json", b'{"type":"cdl","cdl":[]}', "missing-source-id"),
     )
 
     observed = []
@@ -91,7 +92,7 @@ def test_invalid_utf8_invalid_json_and_missing_identity_are_distinct_hazards(tmp
         assert result.sha256 == sha256(payload).hexdigest()
         observed.append(result)
 
-    assert len({item.kind for item in observed}) == 3
+    assert len({item.kind for item in observed}) == 4
 
 
 def test_readable_source_uses_embedded_identity_not_filename(tmp_path: Path) -> None:

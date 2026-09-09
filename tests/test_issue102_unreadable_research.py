@@ -39,15 +39,16 @@ def test_classifies_bad_bytes_without_filename_identity() -> None:
 
 def test_readable_identity_comes_from_json_not_filename() -> None:
     module = load_harness()
+    payload = b'{"type":"cdl","textid":"Q000123","cdl":[]}'
     result = module.classify_source_bytes(
-        b'{"type":"cdl","textid":"Q000123","cdl":[]}',
+        payload,
         relative_path="misleading-Q999999.json",
     )
 
     assert result == {
         "status": "readable",
         "relative_path": "misleading-Q999999.json",
-        "bytes": 45,
+        "bytes": len(payload),
         "sha256": result["sha256"],
         "source_id": "Q000123",
     }

@@ -6,6 +6,8 @@ on:
       - programs/oracc_tf/distribution.py
       - scripts/benchmark_p005_agora.py
       - tests/test_p005_distribution.py
+      - tests/test_p005_distribution_adversarial.py
+      - tests/test_issue79_distribution_support_paths.py
       - docs/research/R-005-distribution-architecture.md
       - docs/plans/P-005-distribution-publishing.md
       - datasets.toml
@@ -147,12 +149,13 @@ jobs:
           trap 'kill $DAEMON_PID || true' EXIT
           sleep 1
           mkdir -p /tmp/p005-results
-          TF_PATH="assyrian-royal-inscriptions/tf/$TF_VERSION"
+          CENTRAL_TF_PATH="assyrian-royal-inscriptions/tf/$TF_VERSION"
+          MINIMAL_TF_PATH="tf/$TF_VERSION"
 
-          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/central-small.git --ref "$CENTRAL_SMALL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-central-small --cache-key central-small --label central-small --output /tmp/p005-results/central-small.json
-          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/minimal-small.git --ref "$MINIMAL_SMALL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-minimal-small --cache-key minimal-small --label minimal-small --output /tmp/p005-results/minimal-small.json
-          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/central-full.git --ref "$CENTRAL_FULL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-central-full --cache-key central-full --label central-full --output /tmp/p005-results/central-full.json
-          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/minimal-full.git --ref "$MINIMAL_FULL" --tf-path "$TF_PATH" --cache-dir /tmp/cache-minimal-full --cache-key minimal-full --label minimal-full --output /tmp/p005-results/minimal-full.json
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/central-small.git --ref "$CENTRAL_SMALL" --tf-path "$CENTRAL_TF_PATH" --cache-dir /tmp/cache-central-small --cache-key central-small --label central-small --output /tmp/p005-results/central-small.json
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/minimal-small.git --ref "$MINIMAL_SMALL" --tf-path "$MINIMAL_TF_PATH" --cache-dir /tmp/cache-minimal-small --cache-key minimal-small --label minimal-small --output /tmp/p005-results/minimal-small.json
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/central-full.git --ref "$CENTRAL_FULL" --tf-path "$CENTRAL_TF_PATH" --cache-dir /tmp/cache-central-full --cache-key central-full --label central-full --output /tmp/p005-results/central-full.json
+          python scripts/benchmark_p005_agora.py --repository git://127.0.0.1:9419/minimal-full.git --ref "$MINIMAL_FULL" --tf-path "$MINIMAL_TF_PATH" --cache-dir /tmp/cache-minimal-full --cache-key minimal-full --label minimal-full --output /tmp/p005-results/minimal-full.json
 
       - name: Validate equivalent payloads and summarize
         run: |

@@ -633,7 +633,8 @@ def stage_distribution(
     _check_path_overlap(source_path, stage_path, label="TF source and distribution stage")
 
     support_snapshot, support_sources = _support_snapshot(support_roots)
-    for kind, support_source in support_sources.items():
+    support_items = sorted(support_sources.items())
+    for kind, support_source in support_items:
         _check_path_overlap(
             support_source,
             stage_path,
@@ -644,6 +645,13 @@ def stage_distribution(
             source_path,
             label=f"support root {kind!r} and TF source",
         )
+    for index, (kind, support_source) in enumerate(support_items):
+        for other_kind, other_source in support_items[index + 1 :]:
+            _check_path_overlap(
+                support_source,
+                other_source,
+                label=f"support roots {kind!r} and {other_kind!r}",
+            )
 
     files = _validate_source(source_path)
     _validate_loadable(source_path)

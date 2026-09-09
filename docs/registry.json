@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-09-07",
+  "updated": "2026-09-09",
   "documents": [
     {
       "id": "G-001",
@@ -88,6 +88,18 @@
       ]
     },
     {
+      "id": "P-006",
+      "title": "Text-Fabric application and browser layer for ORACC-TF semantic datasets",
+      "type": "plan",
+      "status": "draft",
+      "priority": "P1",
+      "path": "docs/plans/P-006-tf-application-browser.md",
+      "depends_on": [
+        "R-006",
+        "P-005"
+      ]
+    },
+    {
       "id": "R-001",
       "title": "Which ORACC projects are worth converting to Text-Fabric",
       "type": "research",
@@ -137,6 +149,19 @@
       "path": "docs/research/R-005-distribution-architecture.md",
       "depends_on": [
         "P-001"
+      ]
+    },
+    {
+      "id": "R-006",
+      "title": "Text-Fabric application and browser architecture for ORACC-TF datasets",
+      "type": "research",
+      "status": "active",
+      "priority": "P1",
+      "path": "docs/research/R-006-tf-application-browser.md",
+      "depends_on": [
+        "P-001",
+        "R-003",
+        "R-005"
       ]
     }
   ],

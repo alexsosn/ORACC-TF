@@ -1,0 +1,167 @@
+name: issue69-app-research
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/issue69-app-research.yml"
+      - "scripts/research_issue69_tf_app.py"
+      - "tests/test_issue69_app_research.py"
+      - "tests/test_issue69_format_evidence.py"
+      - "tests/test_issue69_browser_baseline.py"
+      - "docs/research/R-006-tf-application-browser.md"
+      - "docs/registry.json"
+  workflow_dispatch:
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project
+        run: pip install -e ".[dev]" "text-fabric==13.1.0"
+
+      - name: Build representative real corpus
+        run: |
+          python -c "from oracc_tf import corpus; corpus.build_full_tf('/tmp/oracc-tf')"
+          mkdir -p /tmp/issue69-research
+
+      - name: Measure candidate feature bytes
+        run: |
+          python scripts/research_issue69_tf_app.py \
+            feature-bytes /tmp/oracc-tf \
+            > /tmp/issue69-research/feature-bytes.json
+
+      - name: Census BHSA none-value candidates
+        run: |
+          python scripts/research_issue69_tf_app.py \
+            census /tmp/oracc-tf \
+            > /tmp/issue69-research/none-values.json
+
+      - name: Cold-profile vanilla and excluded-feature advanced apps
+        shell: bash
+        run: |
+          set -euo pipefail
+          heavy="sign_json,gdl_json,catalogue_json"
+          for i in 1 2 3; do
+            if (( i % 2 == 1 )); then
+              order="baseline excluded"
+            else
+              order="excluded baseline"
+            fi
+            for mode in $order; do
+              rm -rf /tmp/oracc-tf/.tf
+              if [[ "$mode" == "baseline" ]]; then
+                python scripts/research_issue69_tf_app.py \
+                  profile /tmp/oracc-tf \
+                  > "/tmp/issue69-research/baseline-${i}.json"
+              else
+                python scripts/research_issue69_tf_app.py \
+                  profile /tmp/oracc-tf --exclude "$heavy" \
+                  > "/tmp/issue69-research/excluded-${i}.json"
+              fi
+            done
+          done
+
+      - name: Probe source-faithful text formats on real corpus
+        run: |
+          rm -rf /tmp/oracc-tf/.tf /tmp/oracc-tf-prototype
+          python scripts/research_issue69_tf_app.py \
+            prototype /tmp/oracc-tf /tmp/oracc-tf-prototype
+          python scripts/research_issue69_tf_app.py \
+            probe /tmp/oracc-tf-prototype \
+            > /tmp/issue69-research/formats.json
+
+      - name: Record current browser-stack baseline on real corpus
+        run: |
+          rm -rf /tmp/oracc-tf/.tf
+          python scripts/research_issue69_tf_app.py \
+            browser /tmp/oracc-tf \
+            > /tmp/issue69-research/browser.json
+
+      - name: Summarize measurements
+        env:
+          RESEARCH_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from statistics import median
+
+          root = Path("/tmp/issue69-research")
+          baseline = [json.loads((root / f"baseline-{i}.json").read_text()) for i in range(1, 4)]
+          excluded = [json.loads((root / f"excluded-{i}.json").read_text()) for i in range(1, 4)]
+          feature_bytes = json.loads((root / "feature-bytes.json").read_text())
+          none_values = json.loads((root / "none-values.json").read_text())
+          formats = json.loads((root / "formats.json").read_text())
+          browser = json.loads((root / "browser.json").read_text())
+          heavy = ("sign_json", "gdl_json", "catalogue_json")
+
+          for run in (*baseline, *excluded):
+              assert run["app_loaded"] is True
+              assert run["max_slot"] == 793340
+
+          assert formats["synthetic_slot_count"] == 689
+          assert formats["synthetic_slot_utf8"] is None
+          assert formats["synthetic_slot_cuneiform"] == ""
+          assert formats["synthetic_slot_transliteration"] == ""
+          assert formats["semantic_line_cuneiform"]
+          assert formats["semantic_line_transliteration"].strip()
+
+          assert browser["browser_setup"] is True
+          assert browser["probe_path"] == "advanced-app->kernel->factory"
+          assert browser["data_only_browser_cli_supported"] is False
+          assert set(browser["routes"]) == {"/", "/passage", "/query", "/export"}
+          assert all(browser["responses_nonempty"].values())
+
+          baseline_loaded = set.intersection(*(set(run["loaded_node_features"]) for run in baseline))
+          excluded_loaded = set.union(*(set(run["loaded_node_features"]) for run in excluded))
+
+          base_elapsed = median(run["elapsed_seconds"] for run in baseline)
+          excl_elapsed = median(run["elapsed_seconds"] for run in excluded)
+          base_rss = median(run["peak_rss_kib"] for run in baseline)
+          excl_rss = median(run["peak_rss_kib"] for run in excluded)
+
+          summary = {
+              "schema_version": 1,
+              "research_head_sha": os.environ.get("RESEARCH_HEAD_SHA", ""),
+              "profile_repetitions": 3,
+              "cold_cache_policy": "remove TF binary cache before each profile; alternate baseline/excluded order",
+              "baseline_elapsed_median_seconds": base_elapsed,
+              "excluded_elapsed_median_seconds": excl_elapsed,
+              "elapsed_saving_seconds": base_elapsed - excl_elapsed,
+              "elapsed_saving_fraction": (base_elapsed - excl_elapsed) / base_elapsed if base_elapsed else 0,
+              "baseline_peak_rss_median_kib": base_rss,
+              "excluded_peak_rss_median_kib": excl_rss,
+              "peak_rss_saving_kib": base_rss - excl_rss,
+              "peak_rss_saving_fraction": (base_rss - excl_rss) / base_rss if base_rss else 0,
+              "heavy_features_loaded_in_every_baseline": {
+                  feature: feature in baseline_loaded for feature in heavy
+              },
+              "heavy_features_loaded_in_any_excluded_run": {
+                  feature: feature in excluded_loaded for feature in heavy
+              },
+              "feature_bytes": feature_bytes,
+              "none_values": none_values,
+              "formats": formats,
+              "browser": browser,
+          }
+          (root / "summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False))
+          PY
+
+      - name: Upload research evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue69-app-research
+          path: /tmp/issue69-research/*.json
+          if-no-files-found: error

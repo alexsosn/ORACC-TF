@@ -207,3 +207,56 @@ def test_full_build_reconciles_source_members_with_typed_omissions(
     assert len(report.source_hazards) == 1
     assert report.source_hazards[0].kind == "empty-file"
     assert report.source_hazards[0].relative_path == "riao/ria1/corpusjson/empty.json"
+
+
+def test_observation_preserves_full_deep_corpusjson_tree_context(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    root = data / "aemw" / "alalakh" / "idrimi" / "corpusjson"
+    root.mkdir(parents=True)
+    path = root / "P999999.json"
+    path.write_bytes(b"")
+
+    observation = loader.observe_source(path, data=data)
+
+    assert isinstance(observation, loader.SourceHazard)
+    assert observation.subproject == "aemw/alalakh/idrimi"
+    assert observation.relative_path == "aemw/alalakh/idrimi/corpusjson/P999999.json"
+
+
+def test_canonical_hazard_bytes_are_independent_of_caller_order(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    root = _corpusjson(data)
+    first = root / "a.json"
+    second = root / "b.json"
+    first.write_bytes(b"")
+    second.write_bytes(b"{broken")
+    hazards = [
+        loader.observe_source(first, data=data),
+        loader.observe_source(second, data=data),
+    ]
+    assert all(isinstance(item, loader.SourceHazard) for item in hazards)
+
+    assert loader.canonical_hazard_bytes(hazards) == loader.canonical_hazard_bytes(
+        tuple(reversed(hazards))
+    )
+
+
+def test_low_level_build_does_not_misreport_unknown_source_accounting_as_zero(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    root = _corpusjson(data)
+    path = root / "good.json"
+    _write_doc(path, "Q000001")
+    edition = loader.load_edition(path)
+
+    report = corpus.build_tf(
+        tmp_path / "tf",
+        editions=(edition,),
+        metadata_index=metadata.MetadataIndex.empty(),
+    )
+
+    assert report.documents == 1
+    assert report.source_members is None
+    assert report.readable_source_members is None
+    assert report.unreadable_source_members is None
+    assert report.source_hazards is None
+    assert "source members" not in report.report()

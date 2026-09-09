@@ -32,34 +32,76 @@ def _read_json_object(path: Path) -> Mapping[str, object]:
     return value
 
 
-def _json_documents(directory: Path | str) -> tuple[Mapping[str, object], ...]:
+def _json_paths(directory: Path | str) -> tuple[Path, ...]:
     root = Path(directory)
     if not root.is_dir():
         raise ResearchError(f"source directory does not exist: {root}")
     paths = tuple(sorted(root.glob("*.json")))
     if not paths:
         raise ResearchError(f"source directory contains no JSON documents: {root}")
-    return tuple(_read_json_object(path) for path in paths)
+    return paths
 
 
-def _document_ids(directory: Path | str, field: str) -> tuple[str, ...]:
-    root = Path(directory)
-    if not root.is_dir():
-        raise ResearchError(f"source directory does not exist: {root}")
+def _json_documents(directory: Path | str) -> tuple[Mapping[str, object], ...]:
+    return tuple(_read_json_object(path) for path in _json_paths(directory))
 
+
+def _scan_json_documents(
+    directory: Path | str,
+) -> tuple[tuple[Mapping[str, object], ...], tuple[dict[str, object], ...]]:
+    """Read parseable objects while retaining byte-level evidence for bad members."""
+    documents: list[Mapping[str, object]] = []
+    hazards: list[dict[str, object]] = []
+    for path in _json_paths(directory):
+        try:
+            payload = path.read_bytes()
+        except OSError as exc:
+            raise ResearchError(f"cannot read source bytes {path}") from exc
+        if not payload:
+            hazards.append({"relative_path": path.name, "kind": "empty-file", "bytes": 0})
+            continue
+        try:
+            text = payload.decode("utf-8")
+        except UnicodeDecodeError:
+            hazards.append(
+                {"relative_path": path.name, "kind": "invalid-utf8", "bytes": len(payload)}
+            )
+            continue
+        try:
+            value = json.loads(text)
+        except json.JSONDecodeError:
+            hazards.append(
+                {"relative_path": path.name, "kind": "invalid-json", "bytes": len(payload)}
+            )
+            continue
+        if not isinstance(value, Mapping):
+            hazards.append(
+                {"relative_path": path.name, "kind": "non-object-json", "bytes": len(payload)}
+            )
+            continue
+        documents.append(value)
+    return tuple(documents), tuple(hazards)
+
+
+def _ids_from_documents(
+    documents: Iterable[Mapping[str, object]], field: str
+) -> tuple[str, ...]:
     seen: set[str] = set()
     ids: list[str] = []
-    for path in sorted(root.glob("*.json")):
-        document = _read_json_object(path)
+    for document in documents:
         value = document.get(field)
         if not isinstance(value, str) or not value.strip():
-            raise ResearchError(f"{path}: missing non-empty {field}")
+            raise ResearchError(f"document missing non-empty {field}")
         source_id = value.strip()
         if source_id in seen:
             raise ResearchError(f"duplicate source identity {source_id!r}")
         seen.add(source_id)
         ids.append(source_id)
     return tuple(sorted(ids))
+
+
+def _document_ids(directory: Path | str, field: str) -> tuple[str, ...]:
+    return _ids_from_documents(_json_documents(directory), field)
 
 
 def oracc_document_ids(directory: Path | str) -> tuple[str, ...]:
@@ -152,21 +194,18 @@ def oracc_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[str,
     """Count word-level ORACC lexical fields independently and source-faithfully."""
     words = 0
     field_nonempty = {field: 0 for field in _ORACC_FIELDS}
-
     for document in documents:
         for node in _walk_cdl(document):
             if node.get("node") != "l":
                 continue
             words += 1
             features = _oracc_features(node)
-
             for field in _ORACC_FIELDS:
                 value = features.get(field)
                 if field == "inst" and not _nonempty(value):
                     value = node.get("inst")
                 if _nonempty(value):
                     field_nonempty[field] += 1
-
     return {"words": words, "field_nonempty": field_nonempty}
 
 
@@ -176,7 +215,6 @@ def reference_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[
     words_with_unique_lemma = 0
     assignments = 0
     maximum = 0
-
     for document in documents:
         for line in _reference_lines(document):
             for item in _reference_content(line):
@@ -194,7 +232,6 @@ def reference_lexical_census(documents: Iterable[Mapping[str, object]]) -> dict[
                     words_with_unique_lemma += 1
                 assignments += count
                 maximum = max(maximum, count)
-
     return {
         "words": words,
         "words_with_unique_lemma": words_with_unique_lemma,
@@ -211,7 +248,6 @@ def oracc_structure_census(documents: Iterable[Mapping[str, object]]) -> dict[st
     gdl_entries = 0
     empty_gdl = 0
     missing_gdl = 0
-
     for document in documents:
         document_count += 1
         for node in _walk_cdl(document):
@@ -230,7 +266,6 @@ def oracc_structure_census(documents: Iterable[Mapping[str, object]]) -> dict[st
             if not gdl:
                 empty_gdl += 1
             gdl_entries += len(gdl)
-
     return {
         "documents": document_count,
         "line_starts": line_starts,
@@ -249,7 +284,6 @@ def reference_structure_census(documents: Iterable[Mapping[str, object]]) -> dic
     word_parts = 0
     empty_parts = 0
     empty_lines = 0
-
     for document in documents:
         document_count += 1
         lines = _reference_lines(document)
@@ -270,7 +304,6 @@ def reference_structure_census(documents: Iterable[Mapping[str, object]]) -> dic
                 if not parts:
                     empty_parts += 1
                 word_parts += len(parts)
-
     return {
         "documents": document_count,
         "lines": line_count,
@@ -323,7 +356,6 @@ def paired_transliteration_witness(
         raise ResearchError(
             f"paired source identities disagree: {oracc_id!r} != {reference_id!r}"
         )
-
     oracc_words = _oracc_forms(oracc_document)
     reference_words = _reference_forms(reference_document)
     first_difference: int | None = None
@@ -333,7 +365,6 @@ def paired_transliteration_witness(
             break
     if first_difference is None and len(oracc_words) != len(reference_words):
         first_difference = min(len(oracc_words), len(reference_words))
-
     return {
         "text_id": oracc_id,
         "oracc_words": oracc_words,
@@ -349,18 +380,15 @@ def tf_feature_names(directory: Path | str) -> tuple[str, ...]:
     root = Path(directory)
     if not root.is_dir():
         raise ResearchError(f"TF directory does not exist: {root}")
-    return tuple(sorted(path.stem for path in root.iterdir() if path.is_file() and path.suffix == ".tf"))
+    return tuple(
+        sorted(path.stem for path in root.iterdir() if path.is_file() and path.suffix == ".tf")
+    )
 
 
 def _json_tree_sha256(directory: Path | str) -> str:
-    root = Path(directory)
-    if not root.is_dir():
-        raise ResearchError(f"source directory does not exist: {root}")
-    files = tuple(sorted(root.glob("*.json")))
-    if not files:
-        raise ResearchError(f"source directory contains no JSON documents: {root}")
+    paths = _json_paths(directory)
     digest = sha256()
-    for path in files:
+    for path in paths:
         try:
             payload = path.read_bytes()
         except OSError as exc:
@@ -386,7 +414,6 @@ def _compact_witness(witness: Mapping[str, object]) -> dict[str, object]:
     first_difference = witness["first_difference"]
     if first_difference is not None and not isinstance(first_difference, int):
         raise ResearchError("paired witness first_difference must be an integer or null")
-
     left_value = None
     right_value = None
     if first_difference is not None:
@@ -394,7 +421,6 @@ def _compact_witness(witness: Mapping[str, object]) -> dict[str, object]:
             left_value = oracc_words[first_difference]
         if first_difference < len(reference_words):
             right_value = reference_words[first_difference]
-
     return {
         "text_id": witness["text_id"],
         "oracc_word_count": len(oracc_words),
@@ -431,10 +457,10 @@ def build_report(
         if not isinstance(value, str) or not value:
             raise ResearchError(f"{field} must be a non-empty string")
 
-    oracc_documents = _json_documents(oracc_dir)
-    reference_documents = _json_documents(reference_dir)
-    oracc_ids = oracc_document_ids(oracc_dir)
-    reference_ids = reference_document_ids(reference_dir)
+    oracc_documents, oracc_hazards = _scan_json_documents(oracc_dir)
+    reference_documents, reference_hazards = _scan_json_documents(reference_dir)
+    oracc_ids = _ids_from_documents(oracc_documents, "textid")
+    reference_ids = _ids_from_documents(reference_documents, "cdliNumber")
     identity = identity_overlap(oracc_ids, reference_ids)
 
     oracc_by_id = {_source_id(document, "textid"): document for document in oracc_documents}
@@ -466,6 +492,10 @@ def build_report(
             "reference_repository": reference_repository_licence,
         },
         "reference_source_provenance": reference_source_provenance,
+        "source_hazards": {
+            "oracc": oracc_hazards,
+            "reference": reference_hazards,
+        },
         "identity": identity,
         "oracc_lexical": oracc_lexical_census(oracc_documents),
         "reference_lexical": reference_lexical_census(reference_documents),

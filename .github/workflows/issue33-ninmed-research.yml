@@ -17,8 +17,19 @@ jobs:
   measure:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout ORACC-TF
+      - name: Checkout research harness
         uses: actions/checkout@v4
+
+      - name: Checkout exact ORACC source snapshot
+        uses: actions/checkout@v4
+        with:
+          repository: alexsosn/ORACC-TF
+          ref: 5fa3062632d0971345f5435c6db12adfc379eb67
+          path: .external/oracc-source
+          sparse-checkout: |
+            data/asbp/ninmed/corpusjson
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
 
       - name: Checkout pinned archived Nino comparator
         uses: actions/checkout@v4
@@ -37,13 +48,13 @@ jobs:
       - name: Generate canonical A/B evidence
         run: |
           python scripts/research_issue33_ninmed.py \
-            --oracc-dir data/asbp/ninmed/corpusjson \
+            --oracc-dir .external/oracc-source/data/asbp/ninmed/corpusjson \
             --reference-dir .external/ninmed/source/json/0.1 \
             --reference-tf-dir .external/ninmed/tf/0.3 \
             --oracc-revision 5fa3062632d0971345f5435c6db12adfc379eb67 \
             --reference-revision 9e413c41670117a96272ab2b2727ff9a1f9d3baf \
             --oracc-licence "This data is released under the CC0 license" \
-            --reference-repository-licence "MIT License (repository-level; source-data rights not inferred)" \
+            --reference-repository-licence "MIT License" \
             --reference-source-provenance "The JSON files have been handed over by personal communication from Cale Johnson to Dirk Roorda." \
             --output artifacts/issue33-ninmed-report.json
 

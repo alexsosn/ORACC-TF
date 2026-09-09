@@ -75,3 +75,12 @@ def test_p002_definition_of_done_rejects_stale_approval_and_missing_evidence():
         "TOCTOU",
     ):
         assert required in dod, required
+
+
+def test_lemma_coverage_scope_is_exact_subproject_not_project():
+    r002 = _text(R002)
+    p002 = _text(P002)
+    assert "lemma coverage drops > 2 points for a subproject" in r002
+    assert "- lemma-coverage delta per subproject" in p002
+    assert "lemma coverage drops > 2 points for a project" not in r002
+    assert "- lemma-coverage delta per project" not in p002

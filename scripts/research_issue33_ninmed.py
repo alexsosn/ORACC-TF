@@ -135,6 +135,100 @@ def identity_overlap(
     }
 
 
+def _layer_overlap(
+    left_ids: Sequence[str],
+    right_ids: Sequence[str],
+    *,
+    left_only_key: str,
+    right_only_key: str,
+) -> dict[str, tuple[str, ...]]:
+    base = identity_overlap(left_ids, right_ids)
+    return {
+        "overlap": base["overlap"],
+        left_only_key: base["oracc_only"],
+        right_only_key: base["reference_only"],
+    }
+
+
+def _nonempty(value: object) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (Sequence, Mapping)):
+        return bool(value)
+    return True
+
+
+def oracc_catalogue_census(path: Path | str) -> dict[str, object]:
+    """Census explicit ORACC catalogue membership without filename inference."""
+    catalogue = _read_json_object(Path(path))
+    if catalogue.get("type") != "catalogue":
+        raise ResearchError("ORACC catalogue has invalid type")
+    project = catalogue.get("project")
+    if not isinstance(project, str) or not project.strip():
+        raise ResearchError("ORACC catalogue project must be a non-empty string")
+    members = catalogue.get("members")
+    if not isinstance(members, Mapping):
+        raise ResearchError("ORACC catalogue members must be an object")
+
+    ids: list[str] = []
+    metadata_nonempty: dict[str, int] = {}
+    for key, raw_member in members.items():
+        if not isinstance(key, str) or not key.strip() or not isinstance(raw_member, Mapping):
+            raise ResearchError("ORACC catalogue member must have a string key and object value")
+        member_id = key.strip()
+        embedded = raw_member.get("id_text")
+        if not isinstance(embedded, str) or embedded.strip() != member_id:
+            raise ResearchError(f"catalogue member identity disagrees for {member_id!r}")
+        ids.append(member_id)
+        for field, value in raw_member.items():
+            if field == "id_text" or not _nonempty(value):
+                continue
+            metadata_nonempty[field] = metadata_nonempty.get(field, 0) + 1
+
+    if len(set(ids)) != len(ids):
+        raise ResearchError("duplicate catalogue member identity")
+    return {
+        "project": project.strip(),
+        "member_count": len(ids),
+        "member_ids": tuple(sorted(ids)),
+        "metadata_nonempty": dict(sorted(metadata_nonempty.items())),
+    }
+
+
+def reference_tf_document_ids(directory: Path | str) -> tuple[str, ...]:
+    """Read document P-numbers from the archived TF ``pnumber`` node feature."""
+    path = Path(directory) / "pnumber.tf"
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as exc:
+        raise ResearchError(f"cannot read TF pnumber feature {path}") from exc
+
+    seen: set[str] = set()
+    values: list[str] = []
+    in_data = False
+    for raw in lines:
+        line = raw.rstrip("\r\n")
+        if not in_data:
+            if not line:
+                in_data = True
+            continue
+        if not line or line.startswith("@"):
+            continue
+        value = line.split("\t", 1)[1] if "\t" in line else line
+        value = value.strip()
+        if not value:
+            raise ResearchError("TF pnumber contains an empty value")
+        if value in seen:
+            raise ResearchError(f"duplicate TF pnumber identity {value!r}")
+        seen.add(value)
+        values.append(value)
+    if not values:
+        raise ResearchError("TF pnumber feature contains no document identities")
+    return tuple(sorted(values))
+
+
 def _walk_cdl(node: object):
     if not isinstance(node, Mapping):
         raise ResearchError("ORACC CDL nodes must be objects")
@@ -146,16 +240,6 @@ def _walk_cdl(node: object):
         raise ResearchError("ORACC cdl field must be a list when present")
     for child in children:
         yield from _walk_cdl(child)
-
-
-def _nonempty(value: object) -> bool:
-    if value is None:
-        return False
-    if isinstance(value, str):
-        return bool(value.strip())
-    if isinstance(value, (Sequence, Mapping)):
-        return bool(value)
-    return True
 
 
 def _oracc_features(node: Mapping[str, object]) -> Mapping[str, object]:
@@ -399,6 +483,14 @@ def _json_tree_sha256(directory: Path | str) -> str:
     return digest.hexdigest()
 
 
+def _file_sha256(path: Path | str) -> str:
+    try:
+        payload = Path(path).read_bytes()
+    except OSError as exc:
+        raise ResearchError(f"cannot read source bytes {path}") from exc
+    return sha256(payload).hexdigest()
+
+
 def _sequence_sha256(values: Sequence[str | None]) -> str:
     payload = json.dumps(
         list(values), ensure_ascii=False, separators=(",", ":"), allow_nan=False
@@ -445,6 +537,7 @@ def build_report(
     oracc_licence: str,
     reference_repository_licence: str,
     reference_source_provenance: str,
+    oracc_catalogue: Path | str | None = None,
 ) -> dict[str, object]:
     """Assemble deterministic A/B evidence without merging the two source models."""
     for field, value in (
@@ -477,7 +570,7 @@ def build_report(
         for text_id in identity["overlap"]
     )
 
-    return {
+    report: dict[str, object] = {
         "schema_version": 1,
         "pins": {
             "oracc_revision": oracc_revision,
@@ -505,6 +598,46 @@ def build_report(
         "paired_witnesses": paired,
     }
 
+    if oracc_catalogue is not None:
+        catalogue = oracc_catalogue_census(oracc_catalogue)
+        catalogue_ids = catalogue["member_ids"]
+        if not isinstance(catalogue_ids, tuple):
+            raise ResearchError("catalogue census member ids must be a tuple")
+        tf_ids = reference_tf_document_ids(reference_tf_dir)
+        report["oracc_catalogue"] = catalogue
+        digests = report["input_digests"]
+        if not isinstance(digests, dict):
+            raise ResearchError("internal report digest container is invalid")
+        digests["oracc_catalogue_sha256"] = _file_sha256(oracc_catalogue)
+        report["identity_layers"] = {
+            "oracc_body_vs_catalogue": _layer_overlap(
+                oracc_ids,
+                catalogue_ids,
+                left_only_key="oracc_body_only",
+                right_only_key="catalogue_only",
+            ),
+            "reference_json_vs_catalogue": _layer_overlap(
+                reference_ids,
+                catalogue_ids,
+                left_only_key="reference_json_only",
+                right_only_key="catalogue_only",
+            ),
+            "reference_tf_vs_oracc_body": _layer_overlap(
+                tf_ids,
+                oracc_ids,
+                left_only_key="reference_tf_only",
+                right_only_key="oracc_body_only",
+            ),
+            "reference_tf_vs_reference_json": _layer_overlap(
+                tf_ids,
+                reference_ids,
+                left_only_key="reference_tf_only",
+                right_only_key="reference_json_only",
+            ),
+        }
+
+    return report
+
 
 def canonical_report_bytes(report: object) -> bytes:
     """Serialize research evidence deterministically as canonical UTF-8 JSON."""
@@ -525,6 +658,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Generate one canonical report from explicit, already-pinned inputs."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--oracc-dir", required=True)
+    parser.add_argument("--oracc-catalogue")
     parser.add_argument("--reference-dir", required=True)
     parser.add_argument("--reference-tf-dir", required=True)
     parser.add_argument("--oracc-revision", required=True)
@@ -537,6 +671,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     report = build_report(
         oracc_dir=args.oracc_dir,
+        oracc_catalogue=args.oracc_catalogue,
         reference_dir=args.reference_dir,
         reference_tf_dir=args.reference_tf_dir,
         oracc_revision=args.oracc_revision,
@@ -560,6 +695,7 @@ __all__ = [
     "canonical_report_bytes",
     "identity_overlap",
     "main",
+    "oracc_catalogue_census",
     "oracc_document_ids",
     "oracc_lexical_census",
     "oracc_structure_census",
@@ -567,6 +703,7 @@ __all__ = [
     "reference_document_ids",
     "reference_lexical_census",
     "reference_structure_census",
+    "reference_tf_document_ids",
     "tf_feature_names",
 ]
 

@@ -6,7 +6,7 @@ status: draft
 priority: P0
 depends_on: [R-002, P-001]
 blocks: [P-003]
-updated: 2026-09-05
+updated: 2026-09-09
 ---
 
 # Plan: automate ORACC upstream updates through ORACC-TF publication
@@ -20,6 +20,8 @@ decide.
 
 Grounded in [R-002](../research/R-002-upstream-automation.md). Read its §1
 first: ORACC supplies no version identity, so this plan manufactures one.
+The reviewed executable PH5 safety contract is
+[`issue-95-ph5-gate-contracts.json`](../research/issue-95-ph5-gate-contracts.json).
 
 ## Guiding rules
 
@@ -36,13 +38,21 @@ its SHA-256.
 rebuilding (R-002 §3).
 
 **4. Silence is never success.** A gate that cannot evaluate — network
-failure, missing TEI export, unparseable archive — blocks. It does not pass.
+failure, missing TEI export, unparseable archive — emits `evaluation-error`
+and blocks. It does not pass and cannot be approved.
 
-**5. Approvals attach to bytes.** An exception carries forward only while
-*(archive sha256, text id, condition)* is unchanged.
+**5. Approvals bind typed findings to exact evidence.** Every `GateFinding`
+uses a real `subject.scope`/subject id, canonical `condition_sha256`, and an
+`evidence_fingerprint` over the exact accepted/candidate evidence refs. An
+approval never disables gate execution, and any relevant evidence or baseline
+change makes it stale.
 
 **6. Rebuild the smallest thing that changed.** The unit is one dataset
 (R-002 §9), not the corpus.
+
+**7. Compare only with the last accepted state.** A blocked candidate may be
+reported and retried but never becomes the accepted baseline for the next
+candidate.
 
 ---
 
@@ -143,6 +153,10 @@ Do not silently overwrite `data/`.
 Parse `/json/` (208 archives) and `projects.json` (144 entries). Keep both;
 they answer different questions (R-002 §2.1).
 
+Persist a deterministic project-inventory candidate alongside the archive
+candidate state. The accepted project-inventory baseline advances only with a
+fully accepted update; a blocked candidate never overwrites it.
+
 ## 2.2 `HEAD` sweep
 
 For each tracked archive, record status, `ETag`, `Last-Modified`,
@@ -192,11 +206,15 @@ Per changed archive, produce:
 
 - text ids added / removed / modified (by per-text content hash)
 - word-count delta per text
-- lemma-coverage delta per project
+- lemma-coverage delta per subproject
 - new GDL object shapes not in P-001 §2.3's census
 - new `c` chunk types
 - licence string change
 - `UTC-timestamp` before → after
+
+PH4 is policy-free. PH5 assembles accepted and candidate dataset-wide contexts
+from all contributors, including unchanged archives, before deciding whether a
+shape, collision class, coverage change, or disappearance is new.
 
 **Acceptance:** the `etcsri` 2026-04 → 2026-08 change (Phase 1.3) produces a
 diff whose text-level numbers reconcile with the corpus totals.
@@ -205,25 +223,59 @@ diff whose text-level numbers reconcile with the corpus totals.
 
 # Phase 5 — gates
 
-Implement R-002 §7 as named, individually-suppressible gates:
+Implement R-002 §7 and the reviewed
+`issue-95-ph5-gate-contracts.json` as named gates. Every gate returns a typed
+`GateFinding` with `subject.scope`, subject id, canonical condition,
+`condition_sha256`, exact evidence refs and `evidence_fingerprint`. Required
+evidence includes both **accepted and candidate** dataset source/manifests for
+dataset-wide findings. A contributor-set mismatch emits non-approvable
+`dataset-input-set-changed` before normal gate evaluation.
 
-| gate | blocks publication |
-|---|---|
-| `gdl-shape-unknown` | yes |
-| `chunk-type-unknown` | yes |
-| `lemma-coverage-drop` (> 2 pts) | yes |
-| `word-count-unexplained` | yes |
-| `q-collision-new-class` | yes |
-| `project-disappeared` | yes |
-| `licence-changed` | yes |
-| `translation-coverage-drop` | yes |
-| `texts-added` / `texts-modified` | no — normal |
+| gate | stage | blocks publication |
+|---|---|---|
+| `gdl-shape-unknown` | PH5 prebuild | yes |
+| `chunk-type-unknown` | PH5 prebuild | yes |
+| `lemma-coverage-drop` (> 2 pts, exact rational arithmetic) | PH5 prebuild | yes |
+| `q-collision-new-class` | PH5 prebuild | yes |
+| `project-disappeared` | PH5 prebuild | yes |
+| `licence-changed` | PH5 prebuild | yes |
+| `translation-coverage-drop` | PH5 prebuild | yes |
+| `word-count-unexplained` | PH5 postbuild | yes |
+| `texts-added` / `texts-modified` | observation | no — normal |
 
-Each gate emits a machine-readable finding: gate id, dataset, archive sha256,
-affected text ids, and a one-line human explanation.
+Every applicable gate runs even after another blocker is found. Findings are
+serialized deterministically. Approval is applied only after a finding exists;
+it never suppresses execution. Every `evaluation-error` remains visible and is
+categorically non-approvable. The baseline for every comparison is the **last
+accepted** state, never the last observed or blocked candidate.
+
+Project disappearance binds accepted/candidate project-inventory evidence and
+derives tracked relevance from the accepted dataset→archive mapping plus each
+accepted `ArchiveLock.extract_paths`. Translation coverage independently binds
+authenticated TEI evidence. Missing inventory, TEI, source, manifest, or other
+required evidence is an evaluation-error rather than an implicit pass.
+
+**PH5 prebuild** runs after the complete candidate source/inventory/translation
+contexts are assembled and before conversion. If it has unresolved blockers,
+no publishable rebuild proceeds.
+
+**PH5 postbuild** runs after Phase 6 creates an independent build report. For
+`word-count-unexplained`, require both:
+
+```
+candidate_build_source_words == candidate_PH4_source_words
+candidate_build_source_words - accepted_build_source_words == ph4_text_word_delta_sum
+```
+
+The build totals include the TF warp plus zero-span sidecar domain. Both
+accepted/candidate build-report digests and both accepted/candidate dataset
+contexts participate in the evidence fingerprint. Missing build evidence is a
+non-approvable evaluation-error.
 
 **Acceptance:** a synthetic archive with one unknown GDL shape blocks; a
-synthetic archive adding 50 ordinary texts does not.
+synthetic archive adding 50 ordinary texts does not. Multiple simultaneous
+findings are all emitted. A stale approval cannot match after condition,
+evidence, contributor, candidate, or accepted baseline identity changes.
 
 ---
 
@@ -236,6 +288,11 @@ invariants, then compare against the previous release:
 - every P-001 M1 disposition still 100 %
 - TF loads, section addressing works, round-trip (M7) still passes
 - translation coverage delta (M9)
+- emit the independent accepted/candidate-compatible build report required by
+  PH5 postbuild word reconciliation
+
+After validation succeeds, run PH5 postbuild. A rebuild is not publication-ready
+until both PH5 stages have no unresolved blocker and no evaluation-error.
 
 **Acceptance:** rebuilding an unchanged archive set reproduces the previous
 release's counts exactly.
@@ -251,8 +308,15 @@ for exactly the contributing archives, the validation reports, and
 Publish an immutable GitHub Release per Phase 0.1. Blocked updates publish
 **reports only** — never a release.
 
+Immediately before promotion/publication, perform the PH5 **TOCTOU** check:
+re-read the last accepted baseline identities and recompute/verify candidate
+source, contributor/dataset-manifest, project-inventory, TEI/build and finding
+approval evidence. Any drift invalidates readiness. Only after this check may
+lock/inventory/translation/build baselines advance atomically with publication.
+
 **Acceptance:** reruns are idempotent; an existing tag fails rather than
-overwrites; publication aborts if `main` moved during the build.
+overwrites; publication aborts if `main` or any accepted/candidate evidence
+identity used by PH5 moved during the build.
 
 ---
 
@@ -263,7 +327,7 @@ overwrites; publication aborts if `main` moved during the build.
 - `inventory.yml` — weekly, full `/json/` + `projects.json` sweep; reports
   projects appearing or disappearing (R-002 §5).
 - `update.yml` — triggered by discovery or manually; full download → diff →
-  gates → build → validate → publish.
+  PH5 prebuild → build → validate → PH5 postbuild → TOCTOU → publish.
 
 Concurrency group per dataset so two updates cannot race.
 
@@ -272,14 +336,17 @@ Concurrency group per dataset so two updates cannot race.
 # Phase 9 — tests
 
 **Unit:** ETag/SHA decision table; ZIP traversal and bomb fixtures; the 4-byte
-`404` body; three-level archive-name mapping; gate evaluation.
+`404` body; three-level archive-name mapping; gate evaluation, exact approval
+matching, deterministic multi-finding order, missing-evidence errors, and
+accepted/candidate baseline lifecycle.
 
 **Integration:** replay `etcsri` 2026-04-28 → 2026-08-07 end to end and assert
 the diff, gates, rebuild and release notes are all correct. This is a real
 upstream change, not a synthetic one (R-002 §4).
 
 **Negative:** an archive that disappears; a licence string change; a lemma
-coverage drop — each must block with the right gate id.
+coverage drop; stale approval evidence; contributor-set drift; missing TEI or
+build evidence — each must block with the right finding/evaluation-error.
 
 ---
 
@@ -293,12 +360,18 @@ coverage drop — each must block with the right gate id.
 - [ ] `upstream.lock.json` records sha256, bytes, etag, mtime, `UTC-timestamp`, licence
 - [ ] the existing snapshot is backfilled and provenanced (Phase 1.3)
 - [ ] rebuilds are scoped to affected datasets only
-- [ ] every gate in Phase 5 exists, is named, and is individually suppressible
+- [ ] every gate in Phase 5 exists, is named, runs deterministically, and emits a typed subject
+- [ ] approvals match exact condition and evidence fingerprint only; stale approvals do not carry forward
+- [ ] every missing/malformed required input becomes a non-approvable evaluation-error
+- [ ] dataset-wide gates bind accepted/candidate source state and contributor/dataset-manifest evidence
+- [ ] blocked candidate evidence never advances the last accepted baseline
+- [ ] PH5 prebuild runs before conversion and PH5 postbuild independently reconciles build/source word totals
 - [ ] unknown GDL shapes and unknown chunk types block publication
 - [ ] a disappeared project blocks and is never auto-deleted
 - [ ] licence changes block
-- [ ] translation-coverage falls block; rises do not
-- [ ] approvals carry forward only for unchanged *(sha256, text id, condition)*
+- [ ] translation-coverage falls block; rises do not; missing authenticated TEI evidence does not pass
+- [ ] project-inventory and build-report evidence are versioned with accepted/candidate baselines
+- [ ] the final TOCTOU check revalidates accepted and candidate evidence before atomic promotion
 - [ ] green updates create immutable releases; blocked updates create reports only
 - [ ] reruns are idempotent and existing tags fail
 - [ ] the real `etcsri` 2026-04 → 2026-08 update replays green end to end

@@ -1,0 +1,77 @@
+{
+  "task": "ISSUE-71",
+  "issue": 71,
+  "pr": 106,
+  "runtime_status": "review-pending",
+  "scope": "generated per-dataset Text-Fabric app packaging and supported standalone discovery",
+  "research": {
+    "design_comment": 5607480866,
+    "base": "72ca36c96a5df0c2fad20da893798eb6f3551059",
+    "normative_plan": "docs/plans/P-006-tf-application-browser.md",
+    "dependencies": [
+      "accepted R-006/#69 app research",
+      "reviewed P-006/#70 plan",
+      "merged #79 manifest-v4 support-root ownership"
+    ]
+  },
+  "design": {
+    "generated_by_default": true,
+    "canonical_app_path": "app",
+    "canonical_tf_path": "tf/<tf_version>",
+    "minimal_config": [
+      "apiVersion=3",
+      "provenanceSpec.corpus=<registered dataset>",
+      "provenanceSpec.relative=/tf",
+      "provenanceSpec.version=<tf_version>"
+    ],
+    "override_surface": ["display_css"],
+    "default_app_py": false,
+    "publication": "distribution.stage_distribution(..., support_roots={app: generated_app}) remains the sole manifest ownership transaction",
+    "discovery": "Text-Fabric 13.1 app:<path> loading from canonical staged app path resolves sibling tf/<version>; the known data-only browser CLI parser limitation is not treated as product acceptance",
+    "deferred": [
+      "#72 text/lexeme formats",
+      "#73 typeDisplay/preload/docs policy",
+      "#74 release/source-link provenance",
+      "#75 public browser/server E2E"
+    ]
+  },
+  "tdd": {
+    "initial_red_commit": "18796cdb6a8ffa9d7171985c07b75bd70aaba8c4",
+    "initial_red_run": 34395298866,
+    "initial_red_result": "8 failed, 298 passed, 1 skipped, 11 corpus deselected; all eight new contracts failed because oracc_tf.app_generation did not exist",
+    "initial_green_commit": "17068b80f66c5a5a5d5dd5b933795b6b8542682f",
+    "initial_green_run": 34395840485,
+    "initial_green_result": "306 passed, 1 skipped fast/fixture plus 11/11 whole-corpus; generated-reference 34395840496 and M8 34395840505 green",
+    "hardening_red_commit": "034380e3f62d39f192254312fa747846a11c2d3d",
+    "hardening_red_run": 34396611305,
+    "hardening_red_result": "4 failed, 307 passed, 1 skipped, 11 corpus deselected; only three source/target overlap layouts and malformed-but-present TF warp remained unguarded",
+    "hardening_fix": "4098a43248835490fb84a2c6f9101a8606d2abf7",
+    "hardening_contracts": [
+      "reject source==target and either ancestry overlap before writes",
+      "validate source with the real Text-Fabric loader without creating cache in source",
+      "preserve source bytes on rejected generation",
+      "canonical manifest-owned stage/app loads sibling stage/tf/<version> through supported app:<path> discovery"
+    ]
+  },
+  "verification": {
+    "code_head": "4098a43248835490fb84a2c6f9101a8606d2abf7",
+    "tests": 34407186338,
+    "tests_result": "311 passed, 1 skipped, 11 deselected fast/fixture; 11 passed whole-corpus",
+    "generated_reference": 34407186225,
+    "generated_reference_result": "success",
+    "m8_cross_validation": 34407186398,
+    "m8_cross_validation_result": "success",
+    "final_head_verification": "pending after durable evidence commit"
+  },
+  "coordination": {
+    "current_session": "gpt56sol-20260910-0024-71-app-packaging",
+    "recover_comment": 5608967959,
+    "claim_comment": 5608969754,
+    "base": "72ca36c96a5df0c2fad20da893798eb6f3551059"
+  },
+  "review": {
+    "status": "pending",
+    "fresh_exact_head_review_required": true
+  },
+  "resume_gate": "Run exact-head required workflows on the evidence-final head, recheck main/head/claim ownership, then perform a fresh logically independent adversarial review. Any blocker requires a tests-only RED regression and re-review; a clean exact-head review may be followed only by PR metadata, merge, issue completion and claim release."
+}

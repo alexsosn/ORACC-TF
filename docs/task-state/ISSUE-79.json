@@ -1,0 +1,59 @@
+{
+  "task": "ISSUE-79",
+  "issue": 79,
+  "pr": 104,
+  "runtime_status": "review-pending",
+  "scope": "dedicated-repository path normalization and manifest-owned app/docs support roots",
+  "research": {
+    "design_comment": 5597864592,
+    "hardening_design_comment": 5605027507,
+    "base": "0ee2689cd6224dcfaeaa0a04e653444b7221c048",
+    "normative_plan": "docs/plans/P-005-distribution-publishing.md",
+    "normative_sync_commit": "4ca49242c1df8e193d4854e535137a389e1b4fbd"
+  },
+  "design": {
+    "dedicated_repository_tf_root": "tf/<tf_version>",
+    "central_local_tf_root": "<output-base>/<dataset>/tf/<tf_version>",
+    "manifest_schema": 4,
+    "support_roots": ["app", "docs"],
+    "support_semantics": "current-release, non-TF-versioned, digest-owned typed roots; content semantics delegated to downstream app/docs tickets",
+    "fail_closed": "unowned content, arbitrary support kinds, raw data/programs paths, symlinks, source/stage/support overlap, pairwise support-root overlap, support digest drift, and malformed manifest state are rejected"
+  },
+  "tdd": {
+    "initial_red_commit": "dd17ee80c34b6b235acc0222c109cef29b3cb222",
+    "initial_red_run": 34323504281,
+    "initial_red_result": "2 failed, 285 passed, 1 skipped; dedicated repository root normalization and manifest-owned app/docs contracts were absent",
+    "support_overlap_red_commit": "25b13ae7968607c3ddd6f65f08af67cb90c82823",
+    "support_overlap_red_run": 34375482947,
+    "support_overlap_red_result": "3 failed, 291 passed, 1 skipped, 11 corpus deselected; equal or nested app/docs support sources were accepted",
+    "support_overlap_fix": "6ecdcac99c4a1a18d951feabbe39cae0678ceb04",
+    "hardening_head": "a1a31c8fdf8a5e811a9a2e9c62c99624ff7f9de7",
+    "hardening_contracts": [
+      "current support digest corruption fails closed",
+      "stale support roots are removed by a new release",
+      "failed update preserves the prior valid distribution",
+      "multiple TF versions coexist with one current support snapshot"
+    ]
+  },
+  "verification": {
+    "pre_docs_code_head": "a1a31c8fdf8a5e811a9a2e9c62c99624ff7f9de7",
+    "tests": 34376453044,
+    "generated_reference": 34376453063,
+    "m8_cross_validation": 34376453058,
+    "agora_benchmark": 34376453088,
+    "pre_docs_result": "all four exact-head workflows green",
+    "final_head_verification": "pending after durable evidence commit"
+  },
+  "coordination": {
+    "current_session": "gpt56sol-20260909-2116-79-support-paths",
+    "recover_comment": 5606629654,
+    "claim_comment": 5606632061,
+    "base": "0ee2689cd6224dcfaeaa0a04e653444b7221c048"
+  },
+  "review": {
+    "precompletion_review": 5158177266,
+    "precompletion_verdict": "request_changes because normative P-005 synchronization and durable evidence were still missing",
+    "fresh_exact_head_review_required": true
+  },
+  "resume_gate": "Run exact-head tests, generated-reference, M8 and P-005 Agora benchmark on the final evidence head; perform a fresh logically independent adversarial review using the current implementation session; if clean, merge with expected_head_sha, close issue #79 and release the claim without changing the reviewed head."
+}

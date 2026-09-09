@@ -89,3 +89,28 @@ def test_unowned_support_root_still_fails_closed(tmp_path: Path, name: str) -> N
 
     with pytest.raises(distribution.InvalidDistribution):
         distribution.stage_distribution(source, stage, **_kwargs())
+
+
+@pytest.mark.parametrize("layout", ["same", "app-parent", "docs-parent"])
+def test_typed_support_sources_must_be_pairwise_disjoint(
+    tmp_path: Path, layout: str
+) -> None:
+    source = _minimal_tf(tmp_path / "source")
+    shared = _support(tmp_path, "shared", "root.txt")
+    if layout == "same":
+        app = shared
+        docs = shared
+    elif layout == "app-parent":
+        app = shared
+        docs = _support(shared, "nested-docs", "index.md")
+    else:
+        docs = shared
+        app = _support(shared, "nested-app", "config.yaml")
+
+    with pytest.raises(distribution.InvalidDistribution, match="support.*overlap"):
+        distribution.stage_distribution(
+            source,
+            tmp_path / "stage",
+            support_roots={"app": app, "docs": docs},
+            **_kwargs(),
+        )

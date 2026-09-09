@@ -6,7 +6,7 @@ status: active
 priority: P0
 depends_on: [R-001]
 informs: [P-002]
-updated: 2026-08-29
+updated: 2026-09-09
 ---
 
 # Research: automatic upstream discovery, rebuild, validation and publication for ORACC-TF
@@ -246,9 +246,9 @@ becomes a gate:
 |---|---|
 | a GDL object shape not in P-001 §2.3's census | the sign ontology is decided per shape; an unknown shape means unclassified slots |
 | a new `c` chunk type | P-001 keeps all chunk types; a new one is unmodelled |
-| lemma coverage drops > 2 points for a project | suggests upstream regression or a parse failure, not an edition change |
+| lemma coverage drops > 2 points for a subproject | suggests upstream regression or a parse failure, not an edition change |
 | word count changes by more than the text-level diff explains | indicates a walker bug, not source change |
-| a new Q-number collision pattern beyond `rinap5`/`rinap5p1` | document identity is `subproject:Q`; a new collision class needs review |
+| a new Q-number collision pattern beyond the last accepted dataset state | document identity is `subproject:Q`; membership expansion needs review |
 | a tracked project disappears from `projects.json` | §5 — could be rename or withdrawal |
 | licence string changes | §8 |
 | translation coverage falls | the TEI join is external to the JSON and can rot independently |
@@ -256,9 +256,55 @@ becomes a gate:
 Everything else — new texts, new lemmas, edition revisions, catalogue
 changes — should flow through unattended.
 
-Gates should carry forward per §5 of the TLHdig research: an approval attaches
-to *(archive sha256, text id, condition)*, so it survives an unrelated
-re-publication of the same archive but not a change to the text it approved.
+### 7.1 Reviewed PH5 finding and approval contract
+
+The normative safety boundary for Phase 5 is the reviewed structured contract
+[`issue-95-ph5-gate-contracts.json`](issue-95-ph5-gate-contracts.json). R-002
+states the invariants here; the JSON freezes the executable detail needed by
+P-002 and ticket #21.
+
+Every gate emits a typed `GateFinding`. Its real subject is carried by
+`subject.scope` and `subject.id`; text-, subproject-, archive-, project-, and
+dataset-scoped conditions must never fabricate a Q id. `condition_sha256`
+hashes the canonical gate-specific condition witness. The
+`evidence_fingerprint` hashes the canonical sorted evidence references.
+Approval matching is exact over gate id, typed subject, condition hash, and
+evidence fingerprint.
+
+The comparison baseline is always the **last accepted** release/update state.
+For dataset-wide gates, evaluation constructs a complete **accepted dataset**
+context and complete **candidate dataset** context from changed and unchanged
+contributors. Both contexts bind the canonical dataset source state and the
+canonical contributor/dataset-manifest digest. A contributor-set difference
+is `dataset-input-set-changed` and fails closed before ordinary upstream gates.
+A blocked candidate is evidence for review only and never becomes the next
+accepted baseline.
+
+Required gates always run; approval **never disables gate execution**. A gate
+emits its finding first, then an exact approval may change that finding from
+blocking to approved while retaining it in the audit report. Every
+`status=evaluation-error` is categorically non-approvable. Missing, malformed,
+ambiguous, or unauthenticated required evidence is therefore not success.
+
+PH5 has two evaluation stages. **prebuild** evaluates source/inventory/licence/
+translation conditions that can be decided before conversion. **postbuild**
+evaluates `word-count-unexplained` from an independent converter/build report
+after rebuild. The postbuild gate checks both the candidate build/source total
+and the independently derived PH4 delta relation; comparing PH4 arithmetic
+only with itself is not an independent publication gate.
+
+Project disappearance uses durable accepted and candidate `project-inventory`
+evidence. Relevance is derived from the accepted dataset-to-archive mapping
+plus each accepted contributor's `ArchiveLock.extract_paths`; archive filename
+prefix inference is forbidden. Translation coverage binds authenticated TEI
+evidence independently from JSON source state and fails closed if the required
+TEI evidence is unavailable.
+
+Immediately before promotion, orchestration performs a final **TOCTOU** check:
+accepted baseline identities, candidate source/manifests, project-inventory,
+TEI/build evidence, and the evidence used by every finding/approval must still
+match the evaluated identities. Only then may a later publication phase
+atomically promote the candidate state.
 
 ---
 
@@ -355,3 +401,4 @@ descriptive User-Agent, and back off on 5xx.
 - `data/*/metadata.json` — `UTC-timestamp` present in 140/140 projects
 - [R-001](R-001-corpus-selection.md) — corpus selection and annotation census
 - [P-001](../plans/P-001-riao-rinap-tf.md) — CDL format ground truth and gates
+- [issue-95 PH5 contract](issue-95-ph5-gate-contracts.json) — reviewed typed findings, evidence-bound approvals, stage/baseline and promotion semantics

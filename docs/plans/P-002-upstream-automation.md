@@ -206,7 +206,7 @@ Per changed archive, produce:
 
 - text ids added / removed / modified (by per-text content hash)
 - word-count delta per text
-- lemma-coverage delta per project
+- lemma-coverage delta per subproject
 - new GDL object shapes not in P-001 §2.3's census
 - new `c` chunk types
 - licence string change

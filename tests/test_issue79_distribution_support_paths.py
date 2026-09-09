@@ -71,8 +71,8 @@ def test_manifest_owned_app_and_docs_are_staged_at_repository_root(tmp_path: Pat
     assert manifest["schema_version"] == 4
     assert manifest["support_roots"]["app"]["path"] == "app"
     assert manifest["support_roots"]["docs"]["path"] == "docs"
-    assert (stage / "app" / "config.yaml").read_text(encoding="utf-8") == "app\n"
-    assert (stage / "docs" / "index.md").read_text(encoding="utf-8") == "docs\n"
+    assert (stage / "app" / "config.yaml").read_text(encoding="utf-8") == "app-source\n"
+    assert (stage / "docs" / "index.md").read_text(encoding="utf-8") == "docs-source\n"
     assert not (stage / DATASET / "app").exists()
     assert not (stage / DATASET / "docs").exists()
 

@@ -37,7 +37,7 @@ def _minimal_tf(root: Path) -> Path:
         Path("assyrian-royal-inscriptions") / "docs",
     ],
 )
-def test_replay_rejects_forbidden_payload_added_to_existing_stage(
+def test_replay_rejects_forbidden_or_unowned_payload_added_to_existing_stage(
     tmp_path: Path, relative: Path
 ) -> None:
     source = _minimal_tf(tmp_path / "source")
@@ -55,7 +55,7 @@ def test_replay_rejects_forbidden_payload_added_to_existing_stage(
     leaked.mkdir(parents=True)
     (leaked / "must-not-survive.txt").write_text("forbidden\n", encoding="utf-8")
 
-    with pytest.raises(distribution.InvalidDistribution, match="forbidden"):
+    with pytest.raises(distribution.InvalidDistribution, match="forbidden|unowned"):
         distribution.stage_distribution(source, stage, **kwargs)
 
 

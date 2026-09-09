@@ -192,7 +192,8 @@ def test_stage_distribution_is_minimal_deterministic_and_provenance_bound(tmp_pa
     assert manifest["tf_version"] == "0.2.0"
     assert manifest["builder_commit"] == "a" * 40
     assert manifest["source_state"] == "sha256:" + "b" * 64
-    assert manifest["tf_root"] == "assyrian-royal-inscriptions/tf/0.2.0"
+    assert manifest["tf_root"] == "tf/0.2.0"
+    assert manifest["support_roots"] == {}
     assert manifest["visible_roots"] == {manifest["tf_root"]: "release-a"}
     assert (stage / manifest["tf_root"] / "otype.tf").is_file()
     assert (stage / manifest["tf_root"] / "zero-span.json").is_file()

@@ -102,25 +102,21 @@ P-006 / #70 reviewed
        +-----------------------> #71 app packaging/discovery
                                   |
                         #71 -> (#72 || #73)
-                                  |
-                        +---------+---------+
-                        |                   |
-                       #72                 #73
-                        |                   |
-                        +---------+---------+
-                                  v
-                                 #74
-                                  |
-                       +----------+----------+
-                       |                     |
-                      #78                   #79
-                       |                     |
-                       +----------+----------+
-                                  v
-                                 #75
+                         /                 \
+                       #72                #73
+                        |                  |
+                        |             #73 -> #74
+                        |                  |
+                        |                 #74
+                        |                  |
+                        +---------> #75 <--+
+                                     ^
+                           +---------+---------+
+                           |                   |
+                          #78                 #79
 ```
 
-Completion edges are explicit: `#78 -> #75` and `#79 -> #75`. #75 is not a release-closing browser acceptance gate until both the standalone documentation surface and manifest-owned support paths are present in a clean generated distribution.
+The dependency contract is explicit: `#71 -> (#72 || #73)`, `#73 -> #74`, `#72 -> #75`, and `#74 -> #75`. **#72 does not block #74**: provenance/link work consumes the generated app/config and presentation-policy surface, not rendering semantics. Rendering and provenance therefore remain independently developable after their actual prerequisites. Completion edges are also explicit: `#78 -> #75` and `#79 -> #75`. #75 is not a release-closing browser acceptance gate until rendering, provenance, the standalone documentation surface, and manifest-owned support paths are all present in a clean generated distribution.
 
 ### Phase A — #71: generated app packaging and discovery
 
@@ -154,6 +150,8 @@ Implement reviewed `typeDisplay` and browser policy for every current node type:
 Generate app provenance from the same release state that produced the TF bytes and distribution manifest. No manually synchronized version/source/licence facts are allowed.
 
 Official ORACC links must be collision-safe and based on qualified document identity. Prefer declarative generated link data. Introduce a Python hook only for a demonstrated non-declarative requirement and cover it with direct tests plus independent review.
+
+Phase D integrates after #73's generated browser/config policy is accepted. It does not depend on completion of #72 rendering semantics.
 
 ### Phase E — #75: real browser/server acceptance
 

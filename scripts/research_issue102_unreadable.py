@@ -8,11 +8,16 @@ inferring source identity from filenames.
 
 from __future__ import annotations
 
+import argparse
 from collections import defaultdict
 from hashlib import sha256
 import json
 from pathlib import Path
-from typing import Mapping
+import re
+from typing import Mapping, Sequence
+
+
+_REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 def _digest(payload: bytes) -> str:
@@ -143,6 +148,28 @@ def scan_repository(data_root: Path | str) -> dict[str, object]:
     }
 
 
+def _validated_revision(repository_revision: str) -> str:
+    if not isinstance(repository_revision, str) or not _REVISION_RE.fullmatch(
+        repository_revision
+    ):
+        raise ValueError("repository_revision must be an exact lowercase 40-hex commit SHA")
+    return repository_revision
+
+
+def build_pinned_report(
+    data_root: Path | str, *, repository_revision: str
+) -> dict[str, object]:
+    """Build one census whose provenance is bound to an exact repository commit."""
+    revision = _validated_revision(repository_revision)
+    report = scan_repository(data_root)
+    return {
+        "schema_version": report["schema_version"],
+        "repository_revision": revision,
+        "totals": report["totals"],
+        "trees": report["trees"],
+    }
+
+
 def canonical_report_bytes(report: object) -> bytes:
     """Serialize derived census evidence deterministically."""
     return (
@@ -157,4 +184,30 @@ def canonical_report_bytes(report: object) -> bytes:
     ).encode("utf-8")
 
 
-__all__ = ["canonical_report_bytes", "classify_source_bytes", "scan_repository"]
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data-root", type=Path, required=True)
+    parser.add_argument("--repository-revision", required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args(argv)
+
+    report = build_pinned_report(
+        args.data_root,
+        repository_revision=args.repository_revision,
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_bytes(canonical_report_bytes(report))
+    return 0
+
+
+__all__ = [
+    "build_pinned_report",
+    "canonical_report_bytes",
+    "classify_source_bytes",
+    "main",
+    "scan_repository",
+]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

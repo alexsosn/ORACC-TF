@@ -57,6 +57,10 @@ class ArchiveSnapshot:
     licence: str
     texts: Mapping[str, TextState]
 
+    def __post_init__(self) -> None:
+        """Own and freeze measured text facts even for direct construction."""
+        object.__setattr__(self, "texts", MappingProxyType(dict(self.texts)))
+
 
 @dataclass(frozen=True)
 class SubprojectDelta:
@@ -85,6 +89,19 @@ class SourceDiff:
     licence_after: str
     oracc_utc_timestamp_before: str
     oracc_utc_timestamp_after: str
+
+    def __post_init__(self) -> None:
+        """Own and freeze externally supplied delta mappings."""
+        object.__setattr__(
+            self,
+            "text_word_deltas",
+            MappingProxyType(dict(self.text_word_deltas)),
+        )
+        object.__setattr__(
+            self,
+            "subproject_deltas",
+            MappingProxyType(dict(self.subproject_deltas)),
+        )
 
     @property
     def empty(self) -> bool:

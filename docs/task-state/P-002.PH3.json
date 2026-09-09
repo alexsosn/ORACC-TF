@@ -11,7 +11,7 @@
   "design": {
     "module": "programs/oracc_tf/archive_security.py",
     "boundary": "Bounded stream-to-temp acquisition, two-fetch corroboration, ZIP structural/resource preflight, portable path validation, structure-derived ORACC project roots, manual staged extraction, atomic destination publication, and cleanup only. No live HTTP client, discovery policy, lock mutation, source diff, rebuild, or release publication.",
-    "security_contract": "Reject unsafe/non-portable paths, duplicate/casefold/prefix aliases, symlinks and special files, encryption, unsupported compression, classic-ZIP structural inconsistencies, member/aggregate/ratio resource exhaustion, and extraction length disagreement before publishing any destination tree. ZIP64 requires an explicit research/design update rather than silent widening."
+    "security_contract": "Reject unsafe/non-portable paths, duplicate/casefold/prefix aliases, symlinks and special files, encryption, unsupported compression, classic-ZIP structural inconsistencies, member/aggregate/ratio resource exhaustion, and extraction length disagreement before publishing any destination tree. Direct/pinned preflight applies the configured archive-byte ceiling before ZipFile central-directory materialization, metadata decompression uses bounded reads and verifies declared length, and ZIP64 requires an explicit research/design update rather than silent widening."
   },
   "tdd": {
     "initial_red": {
@@ -44,27 +44,32 @@
         "head": "27d927a8670d3c4029b839c20edc19b597e8b462",
         "workflow": 34282566687,
         "result": "5 intended failures with 312 existing fast tests passing: the four prior review regressions plus malformed UTF-8 central-directory filenames leaking raw UnicodeDecodeError instead of the typed archive-security boundary."
+      },
+      {
+        "head": "3fc62c6f5c47e8c43a73b5a22159d15ce63e1f64",
+        "workflow": 34289957145,
+        "result": "2 intended failures with 329 existing fast tests passing, 1 skipped, 11 corpus tests deselected: direct/pinned preflight reached ZipFile before enforcing max_download_bytes, and metadata preflight called ZipExtFile.read() unbounded."
       }
     ],
     "functional_green": {
-      "head": "8d1b46321aeadf8552b6967f2546302d2d781228",
-      "tests_workflow": 34283144505,
-      "result": "317 fast tests passed, 1 skipped, 11 deselected; all 11 whole-corpus invariants passed; docs-registry passed.",
-      "m8_cross_validation_workflow": 34283144483,
-      "m8_result": "Pinned real oldbabylonian cross-validation passed.",
-      "generated_reference_workflow": 34283144512,
-      "generated_reference_result": "Real checked-in corpus build and generated-reference consistency passed."
+      "head": "ec8423fafdb80d8c326c05bf06cadeaf1c25b4ed",
+      "tests_workflow": 34290716304,
+      "result": "331 fast tests passed, 1 skipped, 11 deselected; all 11 whole-corpus invariants passed; docs-registry passed.",
+      "m8_cross_validation_workflow": 34290716281,
+      "m8_result": "Pinned real oldbabylonian TF 1.0.6 cross-validation passed.",
+      "generated_reference_workflow": 34290716278,
+      "generated_reference_result": "Real checked-in corpus build, generated reference evidence, and generated-doc consistency passed."
     }
   },
   "behavior": {
     "acquisition": "Download chunks are byte-capped while written once and hashed; unseen bytes are accepted only after two independently supplied streams agree in length and SHA-256; mismatch or second-fetch failure cleans temporary copies.",
-    "preflight": "Classic ZIP EOCD facts are bounded-read, the central directory is sequentially scanned and member-capped before ZipFile materialization, scanned count is cross-checked against EOCD and materialized entries, hybrid/ordinary ZIP64 and multidisk inputs fail closed pending explicit research, and malformed filename decoding remains a typed structure failure.",
+    "preflight": "Before ZipFile materialization, the on-disk archive size is checked against max_download_bytes, classic ZIP EOCD facts are bounded-read, and the central directory is sequentially scanned and member-capped. Scanned count is cross-checked against EOCD and materialized entries; hybrid/ordinary ZIP64 and multidisk inputs fail closed pending explicit research; malformed filename decoding remains a typed structure failure; metadata.json is decompressed with bounded reads and its actual length must equal declared ZIP metadata.",
     "paths": "Member/project components require NFC relative POSIX paths and reject traversal, backslashes, Windows forbidden characters, trailing dot/space, ordinary and superscript-digit Win32 reserved device names, casefold aliases at full-path and ancestor-prefix levels, and file/directory prefix collisions.",
     "extraction": "All members are manually copied only after complete preflight into an isolated sibling staging tree with actual decompressed byte accounting; destination publication is one final rename and failed staging trees are removed."
   },
   "independent_review": {
-    "reviewed_runtime_head": "f41f45fcc4f91cba934bf2a134d33e371fd9737a",
-    "result": "Fresh logically-independent review found hybrid ZIP64, superscript Win32 device aliases, and malformed-filename exception typing as blockers. Each blocker was reproduced RED-first and fixed on the later green runtime head. This evidence commit intentionally does not claim its own final review; exact-head CI plus a fresh PR review are required after this file is committed."
+    "reviewed_runtime_head": "c0629b51a58ee33eba320612ff9ed342e419a0f9",
+    "result": "The latest logically-independent review found two additional blockers: direct/pinned preflight did not enforce max_download_bytes before ZipFile materialization, and metadata parsing used an unbounded ZipExtFile.read(). Both findings were reproduced in the final test-only RED and fixed on green runtime head ec8423fafdb80d8c326c05bf06cadeaf1c25b4ed. This evidence commit does not claim final review; exact-head CI plus a fresh independent security review of the evidence head are still required before the offline core is finalized."
   },
   "completion_blocker": {
     "task": "P-002.PH2",

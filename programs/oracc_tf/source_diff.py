@@ -14,6 +14,7 @@ from datetime import datetime
 from hashlib import sha256
 import json
 import re
+from types import MappingProxyType
 
 
 _STATE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -154,7 +155,10 @@ def _word_stats(document: Mapping[str, object]) -> tuple[int, int]:
             raise SourceDiffError("word 'f' field must be an object when present")
         # Match the established P-001 word-layer rule: normalization alone is
         # editorial evidence, not proof that ORACC supplied a lexical analysis.
-        if any(features.get(key) is not None for key in ("cf", "gw", "sense")) or node.get("sig") is not None:
+        if (
+            any(features.get(key) is not None for key in ("cf", "gw", "sense"))
+            or node.get("sig") is not None
+        ):
             lemmas += 1
     return words, lemmas
 
@@ -219,7 +223,9 @@ def _source_shapes(document: Mapping[str, object]) -> tuple[
             if subtype is not None and not isinstance(subtype, str):
                 raise SourceDiffError("source chunk subtype must be a string or null")
             chunks.add((chunk_type, subtype))
-    return tuple(sorted(gdl)), tuple(sorted(chunks, key=lambda item: (item[0], item[1] or "")))
+    return tuple(sorted(gdl)), tuple(
+        sorted(chunks, key=lambda item: (item[0], item[1] or ""))
+    )
 
 
 def _text_state(source: SourceDocument) -> TextState:
@@ -261,15 +267,22 @@ def snapshot_archive(
     archive_id = _safe_name(archive, "archive")
     if not isinstance(source_state, str) or _STATE_RE.fullmatch(source_state) is None:
         raise SourceDiffError("source_state must be a canonical sha256: digest")
-    if not isinstance(oracc_utc_timestamp, str) or _TIMESTAMP_RE.fullmatch(oracc_utc_timestamp) is None:
+    if (
+        not isinstance(oracc_utc_timestamp, str)
+        or _TIMESTAMP_RE.fullmatch(oracc_utc_timestamp) is None
+    ):
         raise SourceDiffError("oracc_utc_timestamp must use YYYY-MM-DDTHH:MM:SS")
     try:
         datetime.strptime(oracc_utc_timestamp, "%Y-%m-%dT%H:%M:%S")
     except ValueError as exc:
-        raise SourceDiffError("oracc_utc_timestamp is not a valid calendar timestamp") from exc
+        raise SourceDiffError(
+            "oracc_utc_timestamp is not a valid calendar timestamp"
+        ) from exc
     if not isinstance(licence, str) or not licence or licence != licence.strip():
         raise SourceDiffError("licence must be a non-empty verbatim source string")
-    if isinstance(documents, (str, bytes, bytearray)) or not isinstance(documents, Sequence):
+    if isinstance(documents, (str, bytes, bytearray)) or not isinstance(
+        documents, Sequence
+    ):
         raise SourceDiffError("documents must be a sequence")
 
     measured: dict[str, TextState] = {}
@@ -285,11 +298,13 @@ def snapshot_archive(
         source_state=source_state,
         oracc_utc_timestamp=oracc_utc_timestamp,
         licence=licence,
-        texts=ordered,
+        texts=MappingProxyType(ordered),
     )
 
 
-def _all_shapes(snapshot: ArchiveSnapshot) -> tuple[set[tuple[str, ...]], set[tuple[str, str | None]]]:
+def _all_shapes(
+    snapshot: ArchiveSnapshot,
+) -> tuple[set[tuple[str, ...]], set[tuple[str, str | None]]]:
     gdl: set[tuple[str, ...]] = set()
     chunks: set[tuple[str, str | None]] = set()
     for text in snapshot.texts.values():
@@ -303,13 +318,17 @@ def diff_snapshots(before: ArchiveSnapshot, after: ArchiveSnapshot) -> SourceDif
     if not isinstance(before, ArchiveSnapshot) or not isinstance(after, ArchiveSnapshot):
         raise SourceDiffError("both inputs must be ArchiveSnapshot records")
     if before.dataset != after.dataset or before.archive != after.archive:
-        raise SourceDiffError("source snapshots belong to different dataset/archive identities")
+        raise SourceDiffError(
+            "source snapshots belong to different dataset/archive identities"
+        )
     if before.source_state == after.source_state and (
         before.oracc_utc_timestamp != after.oracc_utc_timestamp
         or before.licence != after.licence
         or before.texts != after.texts
     ):
-        raise SourceDiffError("equal source_state cannot describe contradictory snapshot facts")
+        raise SourceDiffError(
+            "equal source_state cannot describe contradictory snapshot facts"
+        )
 
     before_keys = set(before.texts)
     after_keys = set(after.texts)
@@ -335,16 +354,24 @@ def diff_snapshots(before: ArchiveSnapshot, after: ArchiveSnapshot) -> SourceDif
     subproject_deltas: dict[str, SubprojectDelta] = {}
     for subproject in subprojects:
         before_words = sum(
-            text.word_count for text in before.texts.values() if text.subproject == subproject
+            text.word_count
+            for text in before.texts.values()
+            if text.subproject == subproject
         )
         after_words = sum(
-            text.word_count for text in after.texts.values() if text.subproject == subproject
+            text.word_count
+            for text in after.texts.values()
+            if text.subproject == subproject
         )
         before_lemmas = sum(
-            text.lemma_count for text in before.texts.values() if text.subproject == subproject
+            text.lemma_count
+            for text in before.texts.values()
+            if text.subproject == subproject
         )
         after_lemmas = sum(
-            text.lemma_count for text in after.texts.values() if text.subproject == subproject
+            text.lemma_count
+            for text in after.texts.values()
+            if text.subproject == subproject
         )
         subproject_deltas[subproject] = SubprojectDelta(
             before_words=before_words,
@@ -365,11 +392,14 @@ def diff_snapshots(before: ArchiveSnapshot, after: ArchiveSnapshot) -> SourceDif
         added=added,
         removed=removed,
         modified=modified,
-        text_word_deltas=text_word_deltas,
-        subproject_deltas=subproject_deltas,
+        text_word_deltas=MappingProxyType(text_word_deltas),
+        subproject_deltas=MappingProxyType(subproject_deltas),
         new_gdl_shapes=tuple(sorted(after_gdl - before_gdl)),
         new_chunk_shapes=tuple(
-            sorted(after_chunks - before_chunks, key=lambda item: (item[0], item[1] or ""))
+            sorted(
+                after_chunks - before_chunks,
+                key=lambda item: (item[0], item[1] or ""),
+            )
         ),
         licence_before=before.licence,
         licence_after=after.licence,
@@ -401,13 +431,16 @@ def render_diff(diff: SourceDiff) -> bytes:
         "modified": list(diff.modified),
         "text_word_deltas": dict(sorted(diff.text_word_deltas.items())),
         "subproject_deltas": {
-            key: asdict(diff.subproject_deltas[key]) for key in sorted(diff.subproject_deltas)
+            key: asdict(diff.subproject_deltas[key])
+            for key in sorted(diff.subproject_deltas)
         },
         "new_gdl_shapes": [list(shape) for shape in diff.new_gdl_shapes],
         "new_chunk_shapes": [list(shape) for shape in diff.new_chunk_shapes],
         "empty": diff.empty,
     }
-    return (json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+    return (
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    ).encode("utf-8")
 
 
 __all__ = [

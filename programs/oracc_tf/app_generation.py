@@ -8,10 +8,12 @@ later P-006 phases.
 from __future__ import annotations
 
 from collections.abc import Mapping
+import os
 from pathlib import Path
 import shutil
 import tempfile
 
+from tf.fabric import Fabric
 import yaml
 
 from . import paths, releases
@@ -35,6 +37,42 @@ def _validate_registered_dataset(dataset: str, datasets_path: Path) -> None:
         raise AppGenerationError(f"unregistered dataset: {dataset!r}")
 
 
+def _validate_disjoint_paths(tf_root: Path, target: Path) -> None:
+    source = tf_root.resolve(strict=False)
+    output = target.resolve(strict=False)
+    if (
+        source == output
+        or source in output.parents
+        or output in source.parents
+    ):
+        raise AppGenerationError(
+            f"TF source and app target overlap: source={source}, target={output}"
+        )
+
+
+def _validate_tf_loadable(tf_root: Path) -> None:
+    """Load the source through Text-Fabric without creating cache files in it."""
+    with tempfile.TemporaryDirectory(prefix="oracc-tf-app-validate-") as temp_dir:
+        isolated = Path(temp_dir) / "tf"
+        isolated.mkdir()
+        for source_file in sorted(tf_root.glob("*.tf")):
+            if not source_file.is_file():
+                continue
+            target_file = isolated / source_file.name
+            try:
+                os.link(source_file, target_file)
+            except OSError:
+                shutil.copy2(source_file, target_file)
+
+        try:
+            tf = Fabric(locations=str(isolated), silent="deep")
+            good = tf.loadAll(silent="deep")
+        except Exception as exc:
+            raise AppGenerationError(f"Text-Fabric could not load TF source: {tf_root}") from exc
+        if not good or tf.api is None:
+            raise AppGenerationError(f"Text-Fabric could not load valid TF warp: {tf_root}")
+
+
 def _validate_tf_root(tf_root: Path, tf_version: str) -> None:
     try:
         repository_tf_root(Path("."), tf_version)
@@ -47,6 +85,7 @@ def _validate_tf_root(tf_root: Path, tf_version: str) -> None:
         path = tf_root / name
         if path.is_symlink() or not path.is_file():
             raise AppGenerationError(f"TF root is missing required warp feature: {name}")
+    _validate_tf_loadable(tf_root)
 
 
 def _validate_override(override: Mapping[str, object] | None) -> str | None:
@@ -135,6 +174,7 @@ def generate_app(
     output = Path(target)
     registry = Path(datasets_path)
 
+    _validate_disjoint_paths(source, output)
     _validate_registered_dataset(dataset, registry)
     _validate_tf_root(source, tf_version)
     css = _validate_override(override)

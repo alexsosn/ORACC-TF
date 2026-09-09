@@ -8,6 +8,7 @@ repository mutation belongs to a later phase.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -24,8 +25,11 @@ _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SOURCE_STATE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _TREE_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _REQUIRED_FILES = ("otype.tf", "oslots.tf", "otext.tf")
-_FORBIDDEN_PAYLOAD_PARTS = frozenset({"data", "programs", "docs"})
-_MANIFEST_SCHEMA_VERSION = 3
+_TF_SOURCE_FORBIDDEN_PARTS = frozenset({"data", "programs", "docs"})
+_STAGED_FORBIDDEN_PARTS = frozenset({"data", "programs"})
+_SUPPORT_KINDS = frozenset({"app", "docs"})
+_SUPPORT_RECORD_FIELDS = frozenset({"path", "tree_digest"})
+_MANIFEST_SCHEMA_VERSION = 4
 _RELEASE_RECORD_FIELDS = (
     "tf_version",
     "tf_root",
@@ -33,6 +37,7 @@ _RELEASE_RECORD_FIELDS = (
     "source_state",
     "provenance_complete",
     "tree_digest",
+    "support_roots",
 )
 _MANIFEST_FIELDS = frozenset(
     {
@@ -95,21 +100,42 @@ def distribution_identity(
 
 
 def distribution_root(output_base: Path | str, dataset: str, tf_version: str) -> Path:
-    """Return the canonical dataset/version root inside a distribution tree."""
+    """Return the central/local registered dataset/version output root.
+
+    This helper deliberately retains the dataset prefix used by the central
+    builder. Dedicated generated repositories use :func:`repository_tf_root`
+    because the repository itself already represents the semantic dataset.
+    """
     repository_name(dataset)
     return paths.publishable_tf_root(output_base, dataset, tf_version)
 
 
-def _canonical_tf_root(dataset: str, tf_version: str) -> str:
+def repository_tf_root(repository_root: Path | str, tf_version: str) -> Path:
+    """Return ``tf/<version>`` inside a dedicated semantic-dataset repository."""
     try:
-        root = distribution_root(Path("."), dataset, tf_version)
+        # Reuse the central path helper solely as the SemVer validator.
+        paths.publishable_tf_root(Path("."), "dataset", tf_version)
     except (TypeError, ValueError) as exc:
-        raise InvalidDistribution(f"invalid TF version in distribution manifest: {tf_version!r}") from exc
+        raise ValueError(f"invalid TF version: {tf_version!r}") from exc
+    return Path(repository_root) / "tf" / tf_version
+
+
+def _canonical_tf_root(tf_version: str) -> str:
+    try:
+        root = repository_tf_root(Path("."), tf_version)
+    except (TypeError, ValueError) as exc:
+        raise InvalidDistribution(
+            f"invalid TF version in distribution manifest: {tf_version!r}"
+        ) from exc
     return root.as_posix().removeprefix("./")
 
 
 def _validate_release_id(release_id: str) -> None:
-    if not isinstance(release_id, str) or not release_id or release_id != release_id.strip():
+    if (
+        not isinstance(release_id, str)
+        or not release_id
+        or release_id != release_id.strip()
+    ):
         raise ValueError(f"invalid release id: {release_id!r}")
     if any(ord(char) < 0x20 for char in release_id):
         raise ValueError(f"invalid release id: {release_id!r}")
@@ -125,9 +151,10 @@ def _validate_source(source: Path) -> tuple[Path, ...]:
     files: list[Path] = []
     for path in sorted(source.rglob("*")):
         relative = path.relative_to(source)
-        if relative.parts and relative.parts[0] in _FORBIDDEN_PAYLOAD_PARTS:
+        if relative.parts and relative.parts[0] in _TF_SOURCE_FORBIDDEN_PARTS:
             raise InvalidDistribution(
-                f"TF source contains forbidden distribution payload path: {relative.as_posix()}"
+                "TF source contains forbidden distribution payload path: "
+                f"{relative.as_posix()}"
             )
         if path.is_symlink():
             raise InvalidDistribution(f"TF source contains a symlink: {path}")
@@ -135,6 +162,26 @@ def _validate_source(source: Path) -> tuple[Path, ...]:
             continue
         if not path.is_file():
             raise InvalidDistribution(f"TF source contains unsupported entry: {path}")
+        files.append(path)
+    return tuple(files)
+
+
+def _validate_support_source(source: Path, *, kind: str) -> tuple[Path, ...]:
+    if source.is_symlink() or not source.is_dir():
+        raise InvalidDistribution(f"support root {kind!r} is not a regular directory: {source}")
+    files: list[Path] = []
+    for path in sorted(source.rglob("*")):
+        relative = path.relative_to(source)
+        if path.is_symlink():
+            raise InvalidDistribution(
+                f"support root {kind!r} contains a symlink: {relative.as_posix()}"
+            )
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            raise InvalidDistribution(
+                f"support root {kind!r} contains unsupported entry: {relative.as_posix()}"
+            )
         files.append(path)
     return tuple(files)
 
@@ -168,9 +215,40 @@ def _validate_provenance(builder_commit: str, source_state: str | None) -> None:
     if not isinstance(builder_commit, str) or not _COMMIT_RE.fullmatch(builder_commit):
         raise ValueError(f"invalid builder commit: {builder_commit!r}")
     if source_state is not None and (
-        not isinstance(source_state, str) or not _SOURCE_STATE_RE.fullmatch(source_state)
+        not isinstance(source_state, str)
+        or not _SOURCE_STATE_RE.fullmatch(source_state)
     ):
         raise ValueError(f"invalid source state: {source_state!r}")
+
+
+def _support_snapshot(
+    support_roots: Mapping[str, Path | str] | None,
+) -> tuple[dict[str, dict[str, str]], dict[str, Path]]:
+    if support_roots is None:
+        return {}, {}
+    if not isinstance(support_roots, Mapping):
+        raise InvalidDistribution("support_roots must be a mapping")
+
+    unknown = set(support_roots) - _SUPPORT_KINDS
+    if unknown:
+        raise InvalidDistribution(
+            f"unsupported distribution support roots: {sorted(unknown)!r}"
+        )
+
+    snapshot: dict[str, dict[str, str]] = {}
+    sources: dict[str, Path] = {}
+    for kind in sorted(support_roots):
+        raw_source = support_roots[kind]
+        if not isinstance(raw_source, (str, Path)):
+            raise InvalidDistribution(f"support root {kind!r} has invalid source path")
+        source = Path(raw_source)
+        files = _validate_support_source(source, kind=kind)
+        snapshot[kind] = {
+            "path": kind,
+            "tree_digest": _tree_digest(source, files),
+        }
+        sources[kind] = source
+    return snapshot, sources
 
 
 def _release_record(
@@ -180,6 +258,7 @@ def _release_record(
     builder_commit: str,
     source_state: str | None,
     tree_digest: str,
+    support_roots: dict[str, dict[str, str]],
 ) -> dict[str, object]:
     return {
         "tf_version": tf_version,
@@ -188,11 +267,14 @@ def _release_record(
         "source_state": source_state,
         "provenance_complete": source_state is not None,
         "tree_digest": tree_digest,
+        "support_roots": support_roots,
     }
 
 
 def _manifest_bytes(manifest: dict[str, object]) -> bytes:
-    return (json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    return (
+        json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+    ).encode("utf-8")
 
 
 def _read_existing_manifest(stage: Path) -> dict[str, object] | None:
@@ -201,7 +283,9 @@ def _read_existing_manifest(stage: Path) -> dict[str, object] | None:
     if not stage.exists():
         return None
     if not stage.is_dir():
-        raise InvalidDistribution(f"existing distribution stage is not a directory: {stage}")
+        raise InvalidDistribution(
+            f"existing distribution stage is not a directory: {stage}"
+        )
 
     _validate_distribution_boundary(stage)
     path = stage / "manifest.json"
@@ -214,48 +298,94 @@ def _read_existing_manifest(stage: Path) -> dict[str, object] | None:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise InvalidDistribution(f"existing distribution manifest is unreadable: {path}") from exc
+        raise InvalidDistribution(
+            f"existing distribution manifest is unreadable: {path}"
+        ) from exc
     if not isinstance(value, dict):
         raise InvalidDistribution("existing distribution manifest must be a JSON object")
     return value
 
 
+def _validate_support_record(value: object) -> dict[str, dict[str, str]]:
+    if not isinstance(value, dict):
+        raise InvalidDistribution("distribution support_roots must be a JSON object")
+    if set(value) - _SUPPORT_KINDS:
+        raise InvalidDistribution("distribution support_roots contains an unknown kind")
+
+    result: dict[str, dict[str, str]] = {}
+    for kind, raw_record in value.items():
+        if not isinstance(kind, str) or not isinstance(raw_record, dict):
+            raise InvalidDistribution("distribution support_roots has invalid entries")
+        if set(raw_record) != _SUPPORT_RECORD_FIELDS:
+            raise InvalidDistribution(
+                f"distribution support root {kind!r} has invalid fields"
+            )
+        path = raw_record.get("path")
+        digest = raw_record.get("tree_digest")
+        if path != kind:
+            raise InvalidDistribution(
+                f"distribution support root {kind!r} has non-canonical path"
+            )
+        if not isinstance(digest, str) or not _TREE_DIGEST_RE.fullmatch(digest):
+            raise InvalidDistribution(
+                f"distribution support root {kind!r} has invalid tree digest"
+            )
+        result[kind] = {"path": kind, "tree_digest": digest}
+    return result
+
+
 def _validate_manifest_release_record(
     release_id: str,
     value: object,
-    *,
-    dataset: str,
 ) -> dict[str, object]:
     try:
         _validate_release_id(release_id)
     except ValueError as exc:
-        raise InvalidDistribution(f"invalid release id in existing distribution: {release_id!r}") from exc
+        raise InvalidDistribution(
+            f"invalid release id in existing distribution: {release_id!r}"
+        ) from exc
     if not isinstance(value, dict) or set(value) != set(_RELEASE_RECORD_FIELDS):
-        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid fields")
+        raise InvalidDistribution(
+            f"existing distribution release {release_id!r} has invalid fields"
+        )
 
     tf_version = value.get("tf_version")
     tf_root = value.get("tf_root")
     if not isinstance(tf_version, str) or not isinstance(tf_root, str):
-        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid TF identity")
-    if tf_root != _canonical_tf_root(dataset, tf_version):
-        raise InvalidDistribution(f"existing distribution release {release_id!r} has non-canonical TF root")
+        raise InvalidDistribution(
+            f"existing distribution release {release_id!r} has invalid TF identity"
+        )
+    if tf_root != _canonical_tf_root(tf_version):
+        raise InvalidDistribution(
+            f"existing distribution release {release_id!r} has non-canonical TF root"
+        )
 
     builder_commit = value.get("builder_commit")
     source_state = value.get("source_state")
     try:
         _validate_provenance(builder_commit, source_state)  # type: ignore[arg-type]
     except (TypeError, ValueError) as exc:
-        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid provenance") from exc
+        raise InvalidDistribution(
+            f"existing distribution release {release_id!r} has invalid provenance"
+        ) from exc
 
     provenance_complete = value.get("provenance_complete")
-    if not isinstance(provenance_complete, bool) or provenance_complete != (source_state is not None):
+    if (
+        not isinstance(provenance_complete, bool)
+        or provenance_complete != (source_state is not None)
+    ):
         raise InvalidDistribution(
             f"existing distribution release {release_id!r} has inconsistent provenance state"
         )
     tree_digest = value.get("tree_digest")
     if not isinstance(tree_digest, str) or not _TREE_DIGEST_RE.fullmatch(tree_digest):
-        raise InvalidDistribution(f"existing distribution release {release_id!r} has invalid tree digest")
-    return dict(value)
+        raise InvalidDistribution(
+            f"existing distribution release {release_id!r} has invalid tree digest"
+        )
+    support = _validate_support_record(value.get("support_roots"))
+    result = dict(value)
+    result["support_roots"] = support
+    return result
 
 
 def _discover_tf_roots(stage: Path) -> set[str]:
@@ -268,13 +398,15 @@ def _discover_tf_roots(stage: Path) -> set[str]:
         try:
             relative = otype.parent.relative_to(stage).as_posix()
         except ValueError as exc:
-            raise InvalidDistribution(f"discoverable TF root escapes staging tree: {otype}") from exc
+            raise InvalidDistribution(
+                f"discoverable TF root escapes staging tree: {otype}"
+            ) from exc
         roots.add(relative)
     return roots
 
 
 def _validate_distribution_boundary(stage: Path) -> None:
-    """Reject injected build/research payload and symlinks anywhere in a staged tree."""
+    """Reject build/research payload and symlinks anywhere in a staged tree."""
     if stage.is_symlink():
         raise InvalidDistribution(f"existing distribution stage is a symlink: {stage}")
     for path in sorted(stage.rglob("*")):
@@ -283,7 +415,7 @@ def _validate_distribution_boundary(stage: Path) -> None:
             raise InvalidDistribution(
                 f"existing distribution contains a symlink: {relative.as_posix()}"
             )
-        forbidden = _FORBIDDEN_PAYLOAD_PARTS.intersection(relative.parts)
+        forbidden = _STAGED_FORBIDDEN_PARTS.intersection(relative.parts)
         if forbidden:
             raise InvalidDistribution(
                 "existing distribution contains forbidden payload path: "
@@ -291,12 +423,17 @@ def _validate_distribution_boundary(stage: Path) -> None:
             )
 
 
-def _is_owned_stage_path(relative: Path, visible_roots: dict[str, str]) -> bool:
-    """Return whether a staged path is manifest metadata or part of an owned TF root."""
+def _is_owned_stage_path(
+    relative: Path,
+    visible_roots: dict[str, str],
+    support_roots: dict[str, dict[str, str]],
+) -> bool:
+    """Return whether a staged path is explicitly manifest-owned."""
     if relative.as_posix() in {"README.md", "manifest.json"}:
         return True
-    for tf_root in visible_roots:
-        root = Path(tf_root)
+    owned_roots = [Path(root) for root in visible_roots]
+    owned_roots.extend(Path(record["path"]) for record in support_roots.values())
+    for root in owned_roots:
         if relative == root or relative in root.parents or root in relative.parents:
             return True
     return False
@@ -308,38 +445,42 @@ def _validate_manifest_state(
     *,
     dataset: str,
     repository: str,
-) -> tuple[dict[str, object], dict[str, str]]:
+) -> tuple[dict[str, object], dict[str, str], dict[str, dict[str, str]]]:
     _validate_distribution_boundary(stage)
     readme = stage / "README.md"
     if not readme.is_file():
-        raise InvalidDistribution("existing distribution README.md is missing or is not a regular file")
+        raise InvalidDistribution(
+            "existing distribution README.md is missing or is not a regular file"
+        )
     if manifest.get("schema_version") != _MANIFEST_SCHEMA_VERSION:
         raise InvalidDistribution(
-            f"unsupported existing distribution manifest schema: {manifest.get('schema_version')!r}"
+            "unsupported existing distribution manifest schema: "
+            f"{manifest.get('schema_version')!r}"
         )
     if set(manifest) != _MANIFEST_FIELDS:
         raise InvalidDistribution("existing distribution manifest has invalid schema fields")
     if manifest.get("dataset") != dataset or manifest.get("repository") != repository:
         raise ImmutableDistributionConflict(
-            f"staging tree already belongs to another distribution: {manifest.get('dataset')!r}"
+            "staging tree already belongs to another distribution: "
+            f"{manifest.get('dataset')!r}"
         )
 
     raw_ledger = manifest.get("releases")
     if not isinstance(raw_ledger, dict) or not raw_ledger:
-        raise InvalidDistribution("existing distribution releases ledger must be a non-empty JSON object")
+        raise InvalidDistribution(
+            "existing distribution releases ledger must be a non-empty JSON object"
+        )
     ledger: dict[str, object] = {}
     for release_id, raw_record in raw_ledger.items():
         if not isinstance(release_id, str):
             raise InvalidDistribution("existing distribution release ids must be strings")
-        ledger[release_id] = _validate_manifest_release_record(
-            release_id,
-            raw_record,
-            dataset=dataset,
-        )
+        ledger[release_id] = _validate_manifest_release_record(release_id, raw_record)
 
     current_id = manifest.get("release_id")
     if not isinstance(current_id, str) or current_id not in ledger:
-        raise InvalidDistribution("existing distribution current release is absent from its ledger")
+        raise InvalidDistribution(
+            "existing distribution current release is absent from its ledger"
+        )
     current_record = ledger[current_id]
     assert isinstance(current_record, dict)
     for field in _RELEASE_RECORD_FIELDS:
@@ -348,16 +489,24 @@ def _validate_manifest_state(
                 f"existing distribution current fields do not match release {current_id!r}"
             )
 
+    current_support = _validate_support_record(current_record["support_roots"])
+
     raw_visible = manifest.get("visible_roots")
     if not isinstance(raw_visible, dict) or not raw_visible:
-        raise InvalidDistribution("existing distribution visible_roots must be a non-empty JSON object")
+        raise InvalidDistribution(
+            "existing distribution visible_roots must be a non-empty JSON object"
+        )
     visible_roots: dict[str, str] = {}
     for tf_root, owner_id in raw_visible.items():
         if not isinstance(tf_root, str) or not isinstance(owner_id, str):
-            raise InvalidDistribution("existing distribution visible_roots entries must be strings")
+            raise InvalidDistribution(
+                "existing distribution visible_roots entries must be strings"
+            )
         owner = ledger.get(owner_id)
         if not isinstance(owner, dict):
-            raise InvalidDistribution(f"visible TF root {tf_root!r} references unknown release {owner_id!r}")
+            raise InvalidDistribution(
+                f"visible TF root {tf_root!r} references unknown release {owner_id!r}"
+            )
         if owner.get("tf_root") != tf_root:
             raise InvalidDistribution(
                 f"visible TF root {tf_root!r} disagrees with release {owner_id!r}"
@@ -366,7 +515,7 @@ def _validate_manifest_state(
 
     for path in sorted(stage.rglob("*")):
         relative = path.relative_to(stage)
-        if not _is_owned_stage_path(relative, visible_roots):
+        if not _is_owned_stage_path(relative, visible_roots, current_support):
             raise InvalidDistribution(
                 f"existing distribution contains unowned content: {relative.as_posix()}"
             )
@@ -374,7 +523,9 @@ def _validate_manifest_state(
     current_root = current_record["tf_root"]
     assert isinstance(current_root, str)
     if visible_roots.get(current_root) != current_id:
-        raise InvalidDistribution("existing distribution current release does not own its visible TF root")
+        raise InvalidDistribution(
+            "existing distribution current release does not own its visible TF root"
+        )
 
     discovered = _discover_tf_roots(stage)
     if discovered != set(visible_roots):
@@ -403,7 +554,21 @@ def _validate_manifest_state(
                 f"{label} {owner_id!r} at {tf_root!r} has changed bytes"
             )
 
-    return ledger, visible_roots
+    for kind, support_record in sorted(current_support.items()):
+        root = stage / support_record["path"]
+        try:
+            files = _validate_support_source(root, kind=kind)
+            actual_digest = _tree_digest(root, files)
+        except InvalidDistribution as exc:
+            raise ImmutableDistributionConflict(
+                f"current support root {kind!r} is invalid"
+            ) from exc
+        if actual_digest != support_record["tree_digest"]:
+            raise ImmutableDistributionConflict(
+                f"current support root {kind!r} has changed bytes"
+            )
+
+    return ledger, visible_roots, current_support
 
 
 def _current_manifest(
@@ -426,6 +591,19 @@ def _current_manifest(
     }
 
 
+def _check_path_overlap(left: Path, right: Path, *, label: str) -> None:
+    left_resolved = left.resolve(strict=False)
+    right_resolved = right.resolve(strict=False)
+    if (
+        left_resolved == right_resolved
+        or left_resolved in right_resolved.parents
+        or right_resolved in left_resolved.parents
+    ):
+        raise InvalidDistribution(
+            f"{label} overlap: left={left}, right={right}"
+        )
+
+
 def stage_distribution(
     source: Path | str,
     stage: Path | str,
@@ -435,34 +613,38 @@ def stage_distribution(
     tf_version: str,
     builder_commit: str,
     source_state: str | None,
+    support_roots: Mapping[str, Path | str] | None = None,
 ) -> dict[str, object]:
-    """Stage one immutable release into a minimal semantic-dataset tree.
+    """Stage one immutable release into a dedicated semantic-dataset tree.
 
-    ``release_id`` identifies immutable publication state; ``tf_version`` only
-    identifies the TF schema/layout. Replaying an earlier matching release is a
-    no-op even when a newer release is current. A new release may replace bytes
-    at the same TF-version root while the manifest ledger retains immutable
-    digest/provenance evidence for older releases. Manifest v3 additionally maps
-    every discoverable TF root to the release that owns its currently visible
-    bytes, so all coexisting versions are checked before replay or publication.
+    ``stage`` is the repository root itself, so the visible Text-Fabric roots
+    are ``tf/<version>``. Multiple TF versions may coexist with separate visible
+    release owners. ``app/`` and ``docs/`` are optional release-level support
+    trees; their bytes are digest-owned by the current release and replaced or
+    removed transactionally on every new release.
     """
     identity = distribution_identity(dataset)
     _validate_release_id(release_id)
-    root_probe = distribution_root(Path("."), dataset, tf_version)
+    root_probe = repository_tf_root(Path("."), tf_version)
     _validate_provenance(builder_commit, source_state)
 
     source_path = Path(source)
     stage_path = Path(stage)
-    source_resolved = source_path.resolve(strict=False)
-    stage_resolved = stage_path.resolve(strict=False)
-    if (
-        source_resolved == stage_resolved
-        or source_resolved in stage_resolved.parents
-        or stage_resolved in source_resolved.parents
-    ):
-        raise InvalidDistribution(
-            f"TF source and distribution stage overlap: source={source_path}, stage={stage_path}"
+    _check_path_overlap(source_path, stage_path, label="TF source and distribution stage")
+
+    support_snapshot, support_sources = _support_snapshot(support_roots)
+    for kind, support_source in support_sources.items():
+        _check_path_overlap(
+            support_source,
+            stage_path,
+            label=f"support root {kind!r} and distribution stage",
         )
+        _check_path_overlap(
+            support_source,
+            source_path,
+            label=f"support root {kind!r} and TF source",
+        )
+
     files = _validate_source(source_path)
     _validate_loadable(source_path)
     tree_digest = _tree_digest(source_path, files)
@@ -473,13 +655,14 @@ def stage_distribution(
         builder_commit=builder_commit,
         source_state=source_state,
         tree_digest=tree_digest,
+        support_roots=support_snapshot,
     )
 
     existing = _read_existing_manifest(stage_path)
     ledger: dict[str, object] = {}
     visible_roots: dict[str, str] = {}
     if existing is not None:
-        ledger, visible_roots = _validate_manifest_state(
+        ledger, visible_roots, _current_support = _validate_manifest_state(
             stage_path,
             existing,
             dataset=dataset,
@@ -507,12 +690,14 @@ def stage_distribution(
     )
 
     stage_path.parent.mkdir(parents=True, exist_ok=True)
-    temp = Path(tempfile.mkdtemp(prefix=f".{stage_path.name}.stage-", dir=stage_path.parent))
+    temp = Path(
+        tempfile.mkdtemp(prefix=f".{stage_path.name}.stage-", dir=stage_path.parent)
+    )
     try:
         if stage_path.exists():
             shutil.copytree(stage_path, temp, dirs_exist_ok=True)
 
-        target_root = distribution_root(temp, dataset, tf_version)
+        target_root = repository_tf_root(temp, tf_version)
         if target_root.exists():
             shutil.rmtree(target_root)
         target_root.parent.mkdir(parents=True, exist_ok=True)
@@ -520,8 +705,23 @@ def stage_distribution(
 
         target_files = _validate_source(target_root)
         if _tree_digest(target_root, target_files) != tree_digest:
-            raise InvalidDistribution("staged TF bytes do not match the validated source tree")
+            raise InvalidDistribution(
+                "staged TF bytes do not match the validated source tree"
+            )
         _validate_loadable(target_root)
+
+        # Support surfaces are current-release state, not TF-versioned state.
+        # Remove every known support kind first so omitted roots cannot linger.
+        for kind in sorted(_SUPPORT_KINDS):
+            target = temp / kind
+            if target.exists() or target.is_symlink():
+                if target.is_symlink() or not target.is_dir():
+                    raise InvalidDistribution(
+                        f"existing support path {kind!r} is not a regular directory"
+                    )
+                shutil.rmtree(target)
+        for kind, support_source in sorted(support_sources.items()):
+            shutil.copytree(support_source, temp / kind)
 
         (temp / "README.md").write_text(
             f"# {dataset}\n\nGenerated ORACC-TF distribution.\n",

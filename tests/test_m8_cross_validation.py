@@ -95,5 +95,5 @@ def test_shared_feature_metadata_are_string_domains(tmp_path):
         assert api.Fs(feature).meta["valueType"] == "str"
 
 
-def test_additive_compatibility_features_bump_tf_schema_version():
-    assert TF_VERSION == "0.2.0"
+def test_translation_layer_bumps_tf_schema_after_m8_compatibility_release():
+    assert TF_VERSION == "0.3.0"

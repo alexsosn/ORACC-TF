@@ -1,0 +1,48 @@
+{
+  "task": "P-001.M9",
+  "issue": 16,
+  "implementation_pr": 13,
+  "registry_status": "todo",
+  "runtime_status": "external-source-blocked",
+  "base_head": "e8f2b160912e0adaa37b24e68384ac551077a440",
+  "blocked_checkpoint_head": "228de48f9f114507c2330ddbc11cee59ca2c7222",
+  "research": {
+    "current_architecture_design_comment": 5569126446,
+    "alignment_contract": "Resolve inclusive TEI sref..eref ranges against ordered source lines and materialize translation oslots from slot_plan.section_slots so synthetic empty positional anchors are preserved without borrowing neighbouring real signs.",
+    "transport_policy": "The exact published TEI archive must be fetched with normal TLS verification. TLS verification must not be disabled and source facts must not be fabricated."
+  },
+  "tdd": {
+    "current_architecture_red_run": 34110971307,
+    "current_architecture_red_result": "2 expected failures, 184 passed, 1 skipped: current-main build_tf lacked translations_by_document for synthetic-slot translation alignment",
+    "identity_red_run": 34122034225,
+    "identity_red_result": "2 expected failures, 19 passed, 3 skipped: duplicate translation-unit ids and conflicting reused note ids were not rejected",
+    "identity_fix_head": "228de48f9f114507c2330ddbc11cee59ca2c7222"
+  },
+  "green": {
+    "m9_translation_unit_run": 34122422099,
+    "standard_tests_run": 34122422112,
+    "standard_tests_result": "205 passed, 4 skipped in the fast suite; 11 passed in whole-corpus invariants; docs-registry passed",
+    "generated_reference_run": 34122422108,
+    "generated_reference_result": "success",
+    "m8_cross_validation_run": 34122422123,
+    "m8_cross_validation_result": "success"
+  },
+  "determinism": {
+    "finding": "Text-Fabric 13.1 writes a framework-generated @dateWritten timestamp into every .tf file, so byte identity across wall-clock-separated builds is outside ORACC-TF control.",
+    "contract": "Regression comparison removes only @dateWritten lines; every other emitted TF byte remains deterministic."
+  },
+  "blocker": {
+    "real_tei_run": 34122422090,
+    "archive": "riao-teiCorpus-20241202.zip",
+    "reason": "No official ORACC mirror served the exact dated archive with normal TLS verification.",
+    "observed": [
+      "oracc.museum.upenn.edu: curl 60, unable to get local issuer certificate",
+      "build.oracc.org: curl 60, unable to get local issuer certificate",
+      "build-oracc.museum.upenn.edu: curl 60, unable to get local issuer certificate",
+      "oracc2.museum.upenn.edu: curl 60, unable to get local issuer certificate",
+      "oracc.ub.uni-muenchen.de: connection timeout on port 443 on both attempts"
+    ],
+    "acceptance_not_run": "Real-source characterization and whole translation graph validation were skipped because acquisition failed before the archive could be authenticated."
+  },
+  "resume_gate": "Resume M9 only when the exact published archive, or an equivalently provenance-authenticated copy, is available through a TLS-valid trusted source. Then rerun real-source characterization, pin measured coverage/provenance, run exact-head CI, perform logically independent adversarial review, and only then mark done/merge."
+}

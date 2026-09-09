@@ -146,6 +146,10 @@ Issue #79 extends PH0 without creating a second packager. Its implementation gat
 
 Content-level requirements such as mandatory `app/config.yaml`, documentation entry points, generated provenance content, and consumer route equivalence are intentionally not duplicated here; they remain owned by the app/docs/release tickets that consume this path/ownership foundation.
 
+### Completion evidence gate
+
+Durable ISSUE-79 evidence is recorded in `docs/task-state/ISSUE-79.json`. Before #79 may close, the exact final head containing that evidence and this normative synchronization must pass the standard repository tests, generated-reference check, retained M8 cross-validation, and the real P-005 Agora benchmark. A fresh logically-independent adversarial review must then pass on that same exact SHA; no code or documentation commit may follow the passing review before merge.
+
 ## Later phases
 
 - **PH1:** authenticated external-repository publisher and idempotent update transaction.

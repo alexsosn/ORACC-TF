@@ -1,0 +1,46 @@
+name: issue102-unreadable-research
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/research_issue102_unreadable.py"
+      - "tests/test_issue102_unreadable_research.py"
+      - ".github/workflows/issue102-unreadable-research.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out research harness
+        uses: actions/checkout@v4
+
+      - name: Check out exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: alexsosn/ORACC-TF
+          ref: dd6a657d15999288948a266c9eb17666f9790497
+          path: .external/source
+          sparse-checkout: |
+            data
+          sparse-checkout-cone-mode: true
+          persist-credentials: false
+
+      - name: Generate canonical unreadable-source census
+        run: |
+          mkdir -p artifacts
+          python scripts/research_issue102_unreadable.py \
+            --data-root .external/source/data \
+            --repository-revision dd6a657d15999288948a266c9eb17666f9790497 \
+            --output artifacts/issue102-unreadable-report.json
+
+      - name: Upload derived census evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue102-unreadable-report
+          path: artifacts/issue102-unreadable-report.json
+          if-no-files-found: error
+          retention-days: 14

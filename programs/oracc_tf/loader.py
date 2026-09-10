@@ -278,18 +278,18 @@ def iter_source_observations(
 ) -> Iterator[ReadableSource | SourceHazard]:
     """Yield every source member in existing stable file order with audit evidence."""
     data = Path(data)
-    seen: dict[str, ReadableSource] = {}
+    seen: dict[str, str] = {}
     for path in source_files(data, subprojects):
         observation = observe_source(path, data=data)
         if isinstance(observation, ReadableSource):
             key = observation.edition.key
-            previous = seen.get(key)
-            if previous is not None:
+            previous_path = seen.get(key)
+            if previous_path is not None:
                 raise DuplicateSourceIdentityError(
                     f"duplicate embedded source identity {key!r}: "
-                    f"{previous.relative_path!r} and {observation.relative_path!r}"
+                    f"{previous_path!r} and {observation.relative_path!r}"
                 )
-            seen[key] = observation
+            seen[key] = observation.relative_path
         yield observation
 
 

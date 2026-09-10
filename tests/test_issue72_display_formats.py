@@ -136,7 +136,7 @@ def test_synthetic_anchor_is_empty_but_zero_sign_source_form_survives(tmp_path: 
 def test_composite_numeral_uses_source_slot_not_rendering_reference(tmp_path: Path) -> None:
     edition = loader.load_edition(paths.DATA / "riao/ria1/corpusjson/Q005620.json")
     api = _build(tmp_path, edition)
-    word = _node_by_source(api, "word", "Q005620.l00a19")
+    word = _node_by_source(api, "word", "Q005620.l009d1")
     rendered = api.T.text(word, fmt="text-orig-full")
 
     assert rendered == "𒁹 "

@@ -63,7 +63,7 @@ def classify_source_bytes(payload: bytes, *, relative_path: str) -> dict[str, ob
     return {
         "status": "readable",
         **base,
-        "source_id": source_id.strip(),
+        "source_id": source_id,
     }
 
 

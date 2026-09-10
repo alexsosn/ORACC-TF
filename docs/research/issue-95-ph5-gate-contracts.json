@@ -3,7 +3,7 @@
   "issue": 95,
   "parent_issue": 21,
   "kind": "research-design-contract",
-  "status": "reviewed-design-normative-sync-pending",
+  "status": "reviewed-design-normative-synced",
   "base_main": "5fa3062632d0971345f5435c6db12adfc379eb67",
   "scope": "Resolve P-002 PH5 finding identity, approval evidence binding, gate staging, accepted baselines, project-inventory evidence, translation evidence, and cross-archive semantics. No gate evaluator implementation is authorized by this artifact.",
   "research_findings": [
@@ -29,6 +29,7 @@
       "condition",
       "condition_sha256",
       "evidence_refs",
+      "evidence_fingerprint",
       "explanation",
       "approval_id"
     ],
@@ -144,7 +145,7 @@
     "translations": "translation-coverage-drop cannot become a validated automation gate until P-001.M9 has authenticated real-source evidence.",
     "transport": "Current ORACC normal-TLS acquisition remains externally blocked under P-002.PH1; no evidence rule in this contract relaxes that trust boundary."
   },
-  "normative_follow_up": "Amend R-002 and P-002 (or their next coordinated reviewed normative successors) to replace tuple-only approval wording, single-pass Phase-5 staging, archive-local novelty assumptions, and implicit inventory/translation/build baselines before PH5 evaluator TDD begins.",
+  "normative_follow_up": "Completed by PR #103: R-002 and P-002 now adopt the reviewed PH5 finding identity, evidence-bound approval, staging, baseline, and dataset-wide semantics. PH5 evaluator TDD remains separately dependency-gated by the PH4/source, translation, and transport completion contracts.",
   "independent_review": {
     "issue_review_rounds": 2,
     "serialization_review_rounds": 5,

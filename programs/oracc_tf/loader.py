@@ -123,13 +123,32 @@ def count_words(doc: dict) -> int:
     return total
 
 
-def subproject_of(path: Path) -> str:
-    """Return ``riao/ria1`` for ``.../riao/ria1/corpusjson/Q....json``."""
-    parts = Path(path).resolve().parts
+def subproject_of(path: Path, *, data: Path | None = None) -> str:
+    """Return stable corpus context for a corpusjson source path.
+
+    With a data root, every path component before the final ``corpusjson``
+    directory is retained.  Without a data root the historical two-component
+    RIAO/RINAP fallback is preserved for direct ``load_edition()`` callers.
+    """
+    path = Path(path)
+    if data is not None:
+        try:
+            relative = path.resolve().relative_to(Path(data).resolve())
+        except ValueError as exc:
+            raise SourceError(f"source path is outside data root: {path}") from exc
+        parts = relative.parts
+        try:
+            i = len(parts) - 1 - parts[::-1].index(paths.CORPUSJSON)
+        except ValueError:
+            return relative.parent.as_posix()
+        context = parts[:i]
+        return "/".join(context) if context else relative.parent.name
+
+    parts = path.resolve().parts
     try:
         i = len(parts) - 1 - parts[::-1].index(paths.CORPUSJSON)
     except ValueError:
-        return Path(path).parent.name
+        return path.parent.name
     return "/".join(parts[i - 2:i])
 
 
@@ -153,7 +172,7 @@ def _hazard(
     return SourceHazard(
         path=path,
         relative_path=_relative_path(path, data),
-        subproject=subproject_of(path),
+        subproject=subproject_of(path, data=data),
         kind=kind,
         bytes=len(payload),
         sha256=sha256(payload).hexdigest(),
@@ -165,7 +184,8 @@ def observe_source(path: Path | str, *, data: Path | None = None) -> ReadableSou
     """Read and classify one source member exactly once.
 
     Filename/path remains provenance only.  A readable scholarly identity comes
-    exclusively from a non-empty embedded JSON ``textid``.
+    exclusively from a non-empty embedded JSON ``textid`` and is preserved
+    verbatim rather than normalized.
     """
     path = Path(path)
     try:
@@ -192,10 +212,9 @@ def observe_source(path: Path | str, *, data: Path | None = None) -> ReadableSou
     source_id = value.get("textid")
     if not isinstance(source_id, str) or not source_id.strip():
         return _hazard(path=path, data=data, payload=payload, kind="missing-source-id")
-    source_id = source_id.strip()
 
     edition = Edition(
-        subproject=subproject_of(path),
+        subproject=subproject_of(path, data=data),
         text_id=source_id,
         path=path,
         doc=value,
@@ -295,9 +314,21 @@ def iter_editions(
 
 def canonical_hazard_bytes(hazards: Sequence[SourceHazard]) -> bytes:
     """Canonical machine-readable omission evidence with no checkout-local paths."""
+    ordered = sorted(
+        hazards,
+        key=lambda hazard: (
+            hazard.relative_path,
+            hazard.subproject,
+            hazard.kind,
+            hazard.bytes,
+            hazard.sha256,
+            hazard.source_id is not None,
+            hazard.source_id or "",
+        ),
+    )
     report = {
         "schema_version": 1,
-        "hazards": [hazard.evidence() for hazard in hazards],
+        "hazards": [hazard.evidence() for hazard in ordered],
     }
     return (
         json.dumps(

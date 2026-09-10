@@ -73,10 +73,10 @@ class CorpusBuildReport:
     section_path_errors: int
     tf_node_counts: dict[str, int]
     zero_span_counts: dict[str, int]
-    source_members: int = 0
-    readable_source_members: int = 0
-    unreadable_source_members: int = 0
-    source_hazards: tuple[loader.SourceHazard, ...] = ()
+    source_members: int | None = None
+    readable_source_members: int | None = None
+    unreadable_source_members: int | None = None
+    source_hazards: tuple[loader.SourceHazard, ...] | None = None
 
     @property
     def semantic_signs(self) -> int:
@@ -122,10 +122,16 @@ class CorpusBuildReport:
         zero_counts = ", ".join(
             f"{otype}={count}" for otype, count in sorted(self.zero_span_counts.items())
         ) or "none"
-        return "\n".join((
-            f"source members             : {self.source_members:>8,}",
-            f"readable source members    : {self.readable_source_members:>8,}",
-            f"unreadable source members  : {self.unreadable_source_members:>8,}",
+        lines: list[str] = []
+        if self.source_members is not None:
+            if self.readable_source_members is None or self.unreadable_source_members is None:
+                raise CorpusBuildError("source-member report is only partially measured")
+            lines.extend((
+                f"source members             : {self.source_members:>8,}",
+                f"readable source members    : {self.readable_source_members:>8,}",
+                f"unreadable source members  : {self.unreadable_source_members:>8,}",
+            ))
+        lines.extend((
             f"documents                  : {self.documents:>8,}",
             f"populated documents        : {self.populated_documents:>8,}",
             f"stub documents             : {self.stub_documents:>8,}",
@@ -145,6 +151,7 @@ class CorpusBuildReport:
             f"TF node counts             : {tf_counts}",
             f"unanchored node counts     : {zero_counts}",
         ))
+        return "\n".join(lines)
 
 
 @dataclass(frozen=True)

@@ -294,6 +294,9 @@ class _Graph:
             "otext": {
                 "sectionTypes": section_spec,
                 "sectionFeatures": section_spec,
+                "fmt:text-orig-full": "sign#{utf8}{cuneiform_trailer}",
+                "fmt:text-trans-full": "word#{form} ",
+                "fmt:lex-default": "lex#{cf} [{gw}]",
             },
             "otype": {
                 "valueType": "str",
@@ -551,6 +554,8 @@ def build_tf(
                     f"{edition.key}: semantic TF slot {event.slot} lacks source sign ownership"
                 )
             utf8 = sign.value.get("utf8")
+            source_word = by_word[event.word_id]
+            is_final_semantic_sign = event.semantic_slot == source_word.slot_ids[-1]
             graph.slot_feature(
                 event.slot,
                 document_key=edition.key,
@@ -558,6 +563,7 @@ def build_tf(
                 src_path=sign.src_path,
                 utf8=utf8 if isinstance(utf8, str) else None,
                 readingu=utf8 if isinstance(utf8, str) else None,
+                cuneiform_trailer=" " if is_final_semantic_sign else None,
                 sign_json=_json(sign.value),
                 gdl_id=sign.value.get("id"),
                 gdl_form=sign.value.get("form"),

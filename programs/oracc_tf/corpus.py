@@ -19,7 +19,7 @@ import json
 import shutil
 from collections import Counter, defaultdict
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from tf.fabric import Fabric
@@ -73,6 +73,10 @@ class CorpusBuildReport:
     section_path_errors: int
     tf_node_counts: dict[str, int]
     zero_span_counts: dict[str, int]
+    source_members: int | None = None
+    readable_source_members: int | None = None
+    unreadable_source_members: int | None = None
+    source_hazards: tuple[loader.SourceHazard, ...] | None = None
 
     @property
     def semantic_signs(self) -> int:
@@ -118,7 +122,16 @@ class CorpusBuildReport:
         zero_counts = ", ".join(
             f"{otype}={count}" for otype, count in sorted(self.zero_span_counts.items())
         ) or "none"
-        return "\n".join((
+        lines: list[str] = []
+        if self.source_members is not None:
+            if self.readable_source_members is None or self.unreadable_source_members is None:
+                raise CorpusBuildError("source-member report is only partially measured")
+            lines.extend((
+                f"source members             : {self.source_members:>8,}",
+                f"readable source members    : {self.readable_source_members:>8,}",
+                f"unreadable source members  : {self.unreadable_source_members:>8,}",
+            ))
+        lines.extend((
             f"documents                  : {self.documents:>8,}",
             f"populated documents        : {self.populated_documents:>8,}",
             f"stub documents             : {self.stub_documents:>8,}",
@@ -138,6 +151,7 @@ class CorpusBuildReport:
             f"TF node counts             : {tf_counts}",
             f"unanchored node counts     : {zero_counts}",
         ))
+        return "\n".join(lines)
 
 
 @dataclass(frozen=True)
@@ -752,11 +766,42 @@ def build_full_tf(
     *,
     data: Path = paths.DATA,
 ) -> CorpusBuildReport:
-    """Build the complete parseable RIAO+RINAP joined corpus."""
+    """Build the complete parseable RIAO+RINAP corpus with omission accounting."""
     data = Path(data)
     metadata_index = metadata.load_index(data)
-    editions = loader.iter_editions(data, skip_unreadable=True)
-    return build_tf(out_dir, editions=editions, metadata_index=metadata_index)
+    source_members = 0
+    readable_source_members = 0
+    hazards: list[loader.SourceHazard] = []
+
+    def editions() -> Iterable[loader.Edition]:
+        nonlocal source_members, readable_source_members
+        for observation in loader.iter_source_observations(data):
+            source_members += 1
+            if isinstance(observation, loader.SourceHazard):
+                hazards.append(observation)
+                continue
+            readable_source_members += 1
+            yield observation.edition
+
+    report = build_tf(out_dir, editions=editions(), metadata_index=metadata_index)
+    if report.documents != readable_source_members:
+        raise CorpusBuildError(
+            "source/build accounting mismatch: "
+            f"readable={readable_source_members}, documents={report.documents}"
+        )
+    if source_members != readable_source_members + len(hazards):
+        raise CorpusBuildError(
+            "source/build accounting mismatch: "
+            f"source={source_members}, readable={readable_source_members}, "
+            f"unreadable={len(hazards)}"
+        )
+    return replace(
+        report,
+        source_members=source_members,
+        readable_source_members=readable_source_members,
+        unreadable_source_members=len(hazards),
+        source_hazards=tuple(hazards),
+    )
 
 
 def load_tf(out_dir: Path | str):

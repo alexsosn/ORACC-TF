@@ -57,6 +57,16 @@ def test_readable_identity_comes_from_json_not_filename() -> None:
     assert len(result["sha256"]) == 64
 
 
+def test_research_census_preserves_nonblank_embedded_identity_verbatim() -> None:
+    module = load_harness()
+    payload = b'{"type":"cdl","textid":" Q000123 ","cdl":[]}'
+
+    result = module.classify_source_bytes(payload, relative_path="Q000123.json")
+
+    assert result["status"] == "readable"
+    assert result["source_id"] == " Q000123 "
+
+
 def test_scan_repository_covers_every_corpusjson_tree_and_reconciles_totals(tmp_path: Path) -> None:
     module = load_harness()
     data = tmp_path / "data"

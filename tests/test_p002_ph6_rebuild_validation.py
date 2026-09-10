@@ -219,7 +219,11 @@ def test_unexplained_word_delta_blocks_even_when_other_counts_match() -> None:
 def test_unchanged_source_and_schema_reject_semantic_count_drift() -> None:
     module = api()
     accepted = record(module, state=STATE_A, build_counts=counts(module, semantic_signs=20))
-    candidate = record(module, state=STATE_A, build_counts=counts(module, semantic_signs=21))
+    candidate = record(
+        module,
+        state=STATE_A,
+        build_counts=counts(module, semantic_signs=21, tf_slots=22),
+    )
     delta = source_delta(
         module,
         before_state=STATE_A,

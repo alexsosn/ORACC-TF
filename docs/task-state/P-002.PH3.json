@@ -1,0 +1,89 @@
+{
+  "task": "P-002.PH3",
+  "issue": 19,
+  "implementation_pr": 93,
+  "registry_status": "todo",
+  "runtime_status": "completion-blocked",
+  "research": {
+    "base_head": "5fa3062632d0971345f5435c6db12adfc379eb67",
+    "summary": "Archive acquisition/extraction is a fail-closed network-independent core. ORACC publishes no authenticated checksum, so previously unseen bytes require two independent fetch streams with identical byte length and SHA-256. Project roots are derived from internal metadata.json location plus declared pathname/project, including three-level projects; live HTTP/TLS ownership remains outside PH3."
+  },
+  "design": {
+    "module": "programs/oracc_tf/archive_security.py",
+    "boundary": "Bounded stream-to-temp acquisition, two-fetch corroboration, ZIP structural/resource preflight, portable path validation, structure-derived ORACC project roots, identity-bound manual staged extraction, atomic destination publication, and cleanup only. No live HTTP client, discovery policy, lock mutation, source diff, rebuild, or release publication.",
+    "security_contract": "Reject unsafe/non-portable paths, duplicate/casefold/prefix aliases, symlinks and special files, encryption, unsupported compression, classic-ZIP structural inconsistencies, member/aggregate/ratio resource exhaustion, transformed raw names, source-byte identity changes, and extraction length disagreement before publishing any destination tree. Direct/pinned preflight applies the configured archive-byte ceiling before ZipFile central-directory materialization, metadata decompression uses bounded reads and verifies declared length, and ZIP64 requires an explicit research/design update rather than silent widening."
+  },
+  "tdd": {
+    "initial_red": {
+      "head": "ab817e67b19825bc39f77e4fe39c2864af9f7701",
+      "workflow": 34226877471,
+      "result": "29 intended PH3 contract failures because oracc_tf.archive_security did not yet exist; 264 pre-existing fast tests passed, 1 skipped, 11 corpus tests deselected; docs-registry passed."
+    },
+    "review_reds": [
+      {
+        "head": "d91447f2cf30cb56c0edf67da0fcabb4506da418",
+        "workflow": 34235600000,
+        "result": "2 intended failures with 294 existing fast tests passing: NaN and +infinity compression-ratio ceilings were accepted instead of failing closed."
+      },
+      {
+        "head": "e20ec94075bef44ca1b67e347e844d03613cd439",
+        "workflow": 34245344247,
+        "result": "8 intended failures with 303 existing fast tests passing: seven Windows/portable path hazards plus member-count enforcement occurring only after ZipFile central-directory materialization."
+      },
+      {
+        "head": "3a996201b9a552c9fe9c342bb362bde695c4a49c",
+        "workflow": 34247014006,
+        "result": "1 intended failure with 311 existing fast tests passing: a forged EOCD entry count could reach ZipFile before the configured member ceiling, proving EOCD count cannot be the pre-allocation trust boundary."
+      },
+      {
+        "head": "62dec76e9595227de9264762ab5198e7b5755786",
+        "workflow": 34264236550,
+        "result": "4 intended failures with 312 existing fast tests passing: Win32 COM/LPT superscript-digit device aliases were accepted, and hybrid ZIP64 metadata reached ZipFile before the declared ZIP64 stop condition."
+      },
+      {
+        "head": "27d927a8670d3c4029b839c20edc19b597e8b462",
+        "workflow": 34282566687,
+        "result": "5 intended failures with 312 existing fast tests passing: the four prior review regressions plus malformed UTF-8 central-directory filenames leaking raw UnicodeDecodeError instead of the typed archive-security boundary."
+      },
+      {
+        "head": "3fc62c6f5c47e8c43a73b5a22159d15ce63e1f64",
+        "workflow": 34289957145,
+        "result": "2 intended failures with 329 existing fast tests passing, 1 skipped, 11 corpus tests deselected: direct/pinned preflight reached ZipFile before enforcing max_download_bytes, and metadata preflight called ZipExtFile.read() unbounded."
+      },
+      {
+        "head": "8576f139f2b5fe7411a4f5b4ff9c734b0056fa0e",
+        "workflow": 34322940080,
+        "result": "3 intended failures with 331 existing fast tests passing, 1 skipped, 11 corpus tests deselected: zipfile NUL-name transformation was not rejected, extraction reopened mutable caller-path bytes after preflight, and there was no verified-archive extraction API binding the two-fetch SHA-256 to extracted bytes."
+      }
+    ],
+    "functional_green": {
+      "head": "416162d9d6118f32c73fadf6f183e3eb60d4a61e",
+      "tests_workflow": 34324023777,
+      "result": "336 fast tests passed, 1 skipped, 11 deselected; all 11 whole-corpus invariants passed with 337 deselected; docs-registry passed.",
+      "m8_cross_validation_workflow": 34324023685,
+      "m8_result": "Pinned real oldbabylonian TF 1.0.6 cross-validation passed.",
+      "generated_reference_workflow": 34324023780,
+      "generated_reference_result": "Real checked-in corpus build, generated reference evidence, and generated-doc consistency passed."
+    },
+    "reground": {
+      "main": "dd6a657d15999288948a266c9eb17666f9790497",
+      "result": "The PH3 branch was re-grounded as a two-parent merge onto current main while preserving only the seven PH3-owned implementation/evidence files; comparison reports zero commits behind main before final evidence/CI."
+    }
+  },
+  "behavior": {
+    "acquisition": "Download chunks are byte-capped while written once and hashed; unseen bytes are accepted only after two independently supplied streams agree in length and SHA-256; mismatch or second-fetch failure cleans temporary copies.",
+    "preflight": "Before ZipFile materialization, the on-disk archive size is checked against max_download_bytes, classic ZIP EOCD facts are bounded-read, and the central directory is sequentially scanned and member-capped. Scanned count is cross-checked against EOCD and materialized entries; hybrid/ordinary ZIP64 and multidisk inputs fail closed pending explicit research; malformed filename decoding and zipfile raw-name transformation remain typed structure failures; metadata.json is decompressed with bounded reads and its actual length must equal declared ZIP metadata.",
+    "paths": "Member/project components require NFC relative POSIX paths and reject traversal, backslashes, Windows forbidden characters, trailing dot/space, ordinary and superscript-digit Win32 reserved device names, casefold aliases at full-path and ancestor-prefix levels, and file/directory prefix collisions.",
+    "extraction": "Extraction is bound to the bytes that were actually preflighted rather than reopening a mutable caller path. Verified two-fetch state is rechecked against the exact SHA-256/length before extraction; source replacement/tampering fails closed. Members are manually copied into an isolated sibling staging tree with actual decompressed-byte accounting; destination publication is one final rename and failed staging/snapshot files are removed."
+  },
+  "independent_review": {
+    "latest_reviewed_runtime_head": "c0629b51a58ee33eba320612ff9ed342e419a0f9",
+    "result": "Successive logically-independent reviews found resource-boundary and byte-identity/TOCTOU blockers. Every finding was converted into RED-first regression coverage and fixed on later runtime heads. This evidence update deliberately does not self-certify final review: exact-head CI and a fresh logically-independent security review of the final evidence head remain mandatory."
+  },
+  "completion_blocker": {
+    "task": "P-002.PH2",
+    "issue": 18,
+    "reason": "PH3's network-independent security core is implemented and tested, but completion requires integration with PH2's discovery/download transport path; PH2 itself remains completion-blocked by PH1 normal-TLS upstream acquisition. No TLS verification may be weakened to satisfy this dependency."
+  },
+  "resume_gate": "After PH2/PH1 authenticated transport is available, connect the real downloaded archive stream to acquire_unseen/preflight/extract without relaxing any fail-closed rule, exercise representative active RIAO/RINAP inputs plus a three-level project, record integration evidence, then run exact-head CI and a fresh independent security review before marking P-002.PH3 done."
+}

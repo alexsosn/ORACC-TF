@@ -6,7 +6,7 @@ from pathlib import Path
 
 from tf.app import use
 
-from oracc_tf import corpus, loader, metadata, paths
+from oracc_tf import corpus, loader, metadata
 
 
 def _word(text_id: str, suffix: str, form: str, signs: list[tuple[str, str | None]], **features):
@@ -134,8 +134,33 @@ def test_synthetic_anchor_is_empty_but_zero_sign_source_form_survives(tmp_path: 
 
 
 def test_composite_numeral_uses_source_slot_not_rendering_reference(tmp_path: Path) -> None:
-    edition = loader.load_edition(paths.DATA / "riao/ria1/corpusjson/Q005620.json")
-    api = _build(tmp_path, edition)
+    # Minimal source-derived fixture from RIAO Q005620.l009d1. The parent numeral
+    # is the semantic sign slot; its nested {"r": "1"} is rendering metadata and
+    # must never become a second displayed sign. Keep this inline so the normal
+    # no-corpus-dumps CI path exercises the difficult GDL case too.
+    source_word = {
+        "node": "l",
+        "frag": "1",
+        "id": "Q005620.l009d1",
+        "ref": "Q005620.44.1",
+        "inst": "n",
+        "f": {
+            "lang": "akk",
+            "form": "1",
+            "delim": "",
+            "gdl": [
+                {
+                    "n": "n",
+                    "sexified": "1(diš)",
+                    "form": "1",
+                    "utf8": "𒁹",
+                    "id": "Q005620.44.1.0",
+                    "seq": [{"r": "1"}],
+                }
+            ],
+        },
+    }
+    api = _build(tmp_path, _edition("Q005620", [source_word]))
     word = _node_by_source(api, "word", "Q005620.l009d1")
     rendered = api.T.text(word, fmt="text-orig-full")
 

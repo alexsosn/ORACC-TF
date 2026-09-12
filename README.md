@@ -94,7 +94,14 @@ do not emit `zero-span.json` for those entities.
 
 ## Licence
 
-ORACC corpus data is released by its projects; each states its own terms.
+Software authored for this repository — including converter and maintenance
+code, scripts, tests, and supporting software documentation — is licensed
+under the [MIT License](LICENSE). See [LICENSE_SCOPE.md](LICENSE_SCOPE.md) for
+the explicit code/data boundary.
+
+The MIT license does **not** apply to `data/`, corpus texts, translations,
+annotations, metadata, or other upstream/derived data artifacts. Those retain
+the licences and terms of their original ORACC projects and sources.
 
 **Note a conflict in ORACC's own metadata.** The JSON distribution's
 `metadata.json` and the TEI corpus exports declare **CC0**, while the live
@@ -103,5 +110,3 @@ the Creative Commons Attribution Share-Alike license 3.0" and ask that the
 page be cited. Where the two disagree, the safer reading is **CC BY-SA 3.0
 with attribution** — particularly for the translation layer. See
 [docs/plans/P-001-riao-rinap-tf.md](docs/plans/P-001-riao-rinap-tf.md) §2.11.
-
-The scripts in `scripts/` are provided under the MIT licence.

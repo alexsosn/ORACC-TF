@@ -133,6 +133,22 @@ def test_synthetic_anchor_is_empty_but_zero_sign_source_form_survives(tmp_path: 
     assert api.T.text(line, fmt="text-trans-full") == "mnn x "
 
 
+
+def test_named_format_dependencies_exist_for_sparse_source(tmp_path: Path) -> None:
+    """Formats must remain loadable when optional source features have no values."""
+    edition = _edition(
+        "QSPARSE72",
+        [_word("QSPARSE72", "l1", "mnn", [])],
+    )
+    api = _build(tmp_path, edition)
+    word = _node_by_source(api, "word", "QSPARSE72.l1")
+
+    assert api.T.text(word, fmt="text-orig-full") == ""
+    assert api.T.text(word, fmt="text-trans-full") == "mnn "
+    for feature in ("utf8", "cuneiform_trailer", "cf", "gw"):
+        assert (tmp_path / f"{feature}.tf").is_file()
+
+
 def test_composite_numeral_uses_source_slot_not_rendering_reference(tmp_path: Path) -> None:
     # Minimal source-derived fixture from RIAO Q005620.l009d1. The parent numeral
     # is the semantic sign slot; its nested {"r": "1"} is rendering metadata and

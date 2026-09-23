@@ -47,6 +47,19 @@ ZERO_SPAN_REASON = (
 )
 
 
+# Text-Fabric resolves every feature referenced by an otext format while it
+# initializes the T API. Sparse fixtures and real source subsets can have no
+# values at all for an optional display feature, but the feature itself must
+# still exist if the format advertises it.
+_FORMAT_DEPENDENCY_FEATURES = (
+    "utf8",
+    "cuneiform_trailer",
+    "form",
+    "cf",
+    "gw",
+)
+
+
 class CorpusBuildError(RuntimeError):
     """The joined TF graph cannot be built without violating source invariants."""
 
@@ -269,6 +282,11 @@ class _Graph:
             })
             if data:
                 node_features[name] = data
+
+        # Keep the declared text formats loadable for sparse corpora.  An empty
+        # mapping emits a valid feature file without inventing source values.
+        for name in _FORMAT_DEPENDENCY_FEATURES:
+            node_features.setdefault(name, {})
 
         edge_features: dict[str, dict[int, set[int]]] = {
             "oslots": {

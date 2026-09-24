@@ -3,10 +3,10 @@
 - kind: `edge`
 - scope: `edge`
 - value type: `str`
-- populated values: `408517`
-- populated sources: `408517`
-- links: `6713659`
-- source node types: `chunk`, `column`, `document`, `face`, `lex`, `line`, `phrase`, `word`
+- populated values: `415309`
+- populated sources: `415309`
+- links: `7286763`
+- source node types: `chunk`, `column`, `document`, `face`, `lex`, `line`, `phrase`, `translation_unit`, `word`
 - target node types: `sign`
 - description: Text-Fabric warp edge from a non-slot node to its sign slots.
 
@@ -16,26 +16,26 @@ Showing the 20 most frequent out-degrees.
 
 | out-degree | sources |
 |---:|---:|
-| 2 | 92288 |
-| 1 | 90644 |
-| 3 | 79347 |
-| 4 | 48637 |
-| 5 | 18801 |
-| 6 | 9959 |
-| 7 | 5105 |
-| 8 | 4449 |
-| 10 | 4371 |
-| 12 | 4242 |
-| 11 | 4030 |
-| 9 | 3985 |
-| 13 | 3727 |
-| 14 | 3276 |
-| 15 | 2915 |
-| 16 | 2483 |
-| 17 | 2001 |
-| 18 | 1812 |
-| 19 | 1322 |
-| 20 | 1183 |
+| 2 | 92298 |
+| 1 | 90654 |
+| 3 | 79374 |
+| 4 | 48670 |
+| 5 | 18839 |
+| 6 | 10001 |
+| 7 | 5148 |
+| 8 | 4498 |
+| 10 | 4429 |
+| 12 | 4311 |
+| 11 | 4080 |
+| 9 | 4034 |
+| 13 | 3792 |
+| 14 | 3347 |
+| 15 | 2994 |
+| 16 | 2551 |
+| 17 | 2077 |
+| 18 | 1877 |
+| 19 | 1381 |
+| 20 | 1226 |
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

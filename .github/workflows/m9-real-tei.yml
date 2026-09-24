@@ -1,0 +1,27 @@
+name: m9-real-tei
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  real-tei:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: Download the pinned official RIAO TEI archive
+        run: |
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            https://oracc.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip \
+            --output "$RUNNER_TEMP/riao-teiCorpus-20241202.zip"
+          echo "b793d8920db58908e3a044b7f2d1a204c1ba0784e880007e0cd7941333e841bd  $RUNNER_TEMP/riao-teiCorpus-20241202.zip" \
+            | sha256sum --check --strict
+      - name: Validate source-grounded translation graph
+        env:
+          ORACC_TF_M9_TEI_ARCHIVE: ${{ runner.temp }}/riao-teiCorpus-20241202.zip
+        run: pytest tests/test_m9_real_tei.py -q -m corpus

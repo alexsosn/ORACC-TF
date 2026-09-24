@@ -1,0 +1,89 @@
+{
+  "task": "P-001.M9",
+  "issue": 16,
+  "implementation_pr": 13,
+  "runtime_status": "implementation-complete-review-pending",
+  "source": {
+    "archive": "riao-teiCorpus-20241202.zip",
+    "url": "https://oracc.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip",
+    "sha256": "b793d8920db58908e3a044b7f2d1a204c1ba0784e880007e0cd7941333e841bd",
+    "transport": "Downloaded over HTTPS with normal TLS certificate verification; the dedicated workflow repeats the download and verifies the digest before parsing.",
+    "license_attribution": "ORACC default CC BY-SA 3.0; project-specific terms may differ. Kept separate from corpusjson edition licence metadata."
+  },
+  "design": {
+    "identity": "qualified (subproject, Q), with each TF translation_id composed from the qualified document key and TEI unit id",
+    "alignment": "inclusive source line range resolves against ordered M3 lines; oslots is the union of current SlotPlan.section_slots for those lines",
+    "single_line": "explicit xtr:ref maps to that one source line; missing/ambiguous ranges are gaps",
+    "zero_span": "synthetic anchors contribute position only; no neighbouring-slot borrowing or fabricated text",
+    "markup_and_notes": "plain text and canonical inner markup are preserved separately; explicit TEI notes remain linked to their containing unit",
+    "gaps": "unaligned source units, unresolved line refs, and TEI documents missing from the build are counted with source-grounded detail"
+  },
+  "source_measurement": {
+    "tei_documents": 1639,
+    "tei_units": 9301,
+    "units_without_a_source_range": 668,
+    "aligned_units": 6792,
+    "explicit_alignment_gaps": 2509,
+    "joinable_populated_editions": 1638,
+    "populated_editions": 1845,
+    "rinap5p1_populated_editions_without_tei": 138
+  },
+  "coverage_by_subproject": {
+    "riao/ria1": {
+      "populated": 130,
+      "joinable": 130
+    },
+    "riao/ria2": {
+      "populated": 183,
+      "joinable": 183
+    },
+    "riao/ria3": {
+      "populated": 100,
+      "joinable": 99
+    },
+    "riao/ria4": {
+      "populated": 133,
+      "joinable": 133
+    },
+    "riao/ria5": {
+      "populated": 171,
+      "joinable": 171
+    },
+    "rinap/rinap1": {
+      "populated": 85,
+      "joinable": 72
+    },
+    "rinap/rinap2": {
+      "populated": 145,
+      "joinable": 134
+    },
+    "rinap/rinap3": {
+      "populated": 238,
+      "joinable": 229
+    },
+    "rinap/rinap4": {
+      "populated": 178,
+      "joinable": 162
+    },
+    "rinap/rinap5": {
+      "populated": 344,
+      "joinable": 325
+    },
+    "rinap/rinap5p1": {
+      "populated": 138,
+      "joinable": 0
+    }
+  },
+  "verification": {
+    "fast_suite": "345 passed, 1 skipped, 12 deselected on the implementation snapshot after the byte-buffer digest verification change.",
+    "focused_translation_tests": "8 passed, including parser, archive digest, alignment, synthetic anchors, and explicit gap behavior.",
+    "real_source_gate": "Passed against the pinned official archive: 1,639 TEI documents, 9,301 source units, 6,792 aligned units, and 2,509 explicit alignment gaps.",
+    "generated_reference": "Generated from the full source build; docs drift check passes after removing one stale feature page absent from current TF metadata.",
+    "m8_cross_validation": "Not run locally; exact-head GitHub Actions gate required.",
+    "github_actions": "Pending exact implementation head."
+  },
+  "review": {
+    "status": "pending",
+    "fresh_exact_head_independent_review_required": true
+  }
+}

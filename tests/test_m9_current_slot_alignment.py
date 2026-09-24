@@ -67,23 +67,79 @@ def test_translation_range_uses_signless_lines_synthetic_slot_without_neighbour_
         source_id="QTRRED.tr1",
         sref="QTRRED.2",
         eref="QTRRED.2",
+        notes=("Editorial note",),
+    )
+    dollar_unit = _Unit(
+        document_key=edition.key,
+        text_id=edition.text_id,
+        source_id="QTRRED.dollar1",
+        sref="QTRRED.2",
+        eref="QTRRED.2",
+        subtype="dollar",
+        text="",
+        text_raw="",
     )
 
     report = corpus.build_tf(
         tmp_path,
         editions=(edition,),
         metadata_index=metadata.MetadataIndex.empty(),
-        translations_by_document={edition.key: (unit,)},
+        translations_by_document={edition.key: (unit, dollar_unit)},
     )
 
     assert report.signs == 2
     assert report.synthetic_slots == 1
-    assert report.translation_units == 1
+    assert report.translation_units == 2
 
     api = corpus.load_tf(tmp_path)
     translation = next(iter(api.F.otype.s("translation_unit")))
     slots = tuple(api.L.d(translation, otype="sign"))
     assert slots == (2,)
+    assert api.F.translation_id.v(translation) == f"{edition.key}:QTRRED.tr1"
     assert api.F.synthetic.v(2) == 1
     assert api.F.utf8.v(1) == "𒀀"
     assert api.F.utf8.v(3) == "𒁀"
+    line_two = next(node for node in api.F.line.s("QTRRED.2"))
+    assert translation in api.E.translation_line.t(line_two)
+    assert any(
+        api.F.translation_subtype.v(node) == "dollar"
+        for node in api.F.otype.s("translation_unit")
+    )
+    note = next(iter(api.F.otype.s("translation_note")))
+    assert api.F.translation_note_text.v(note) == "Editorial note"
+    assert tuple(api.L.d(note, otype="sign")) == slots
+    assert api.E.translation_note_unit.f(note) == (translation,)
+
+
+def test_translation_units_without_source_alignment_are_reported_as_gaps(tmp_path):
+    edition = _edition("QTRGAP", [
+        {"node": "d", "type": "surface", "ref": "", "label": "o"},
+        {"node": "d", "type": "line-start", "ref": "QTRGAP.1", "label": "1"},
+        _word("QTRGAP", "l1", "a", "𒀀"),
+    ])
+    unaligned = _Unit(
+        document_key=edition.key,
+        text_id=edition.text_id,
+        source_id="QTRGAP.tr-missing",
+        sref=None,
+        eref=None,
+    )
+    missing_line = _Unit(
+        document_key=edition.key,
+        text_id=edition.text_id,
+        source_id="QTRGAP.tr-unresolved",
+        sref="QTRGAP.99",
+        eref="QTRGAP.99",
+    )
+
+    report = corpus.build_tf(
+        tmp_path,
+        editions=(edition,),
+        metadata_index=metadata.MetadataIndex.empty(),
+        translations_by_document={edition.key: (unaligned, missing_line)},
+    )
+
+    assert report.translation_units == 0
+    assert report.translation_gaps == 2
+    assert any("source provides no line range" in gap for gap in report.translation_gap_details)
+    assert any("unresolved source line range" in gap for gap in report.translation_gap_details)

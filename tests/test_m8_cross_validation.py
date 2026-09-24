@@ -96,4 +96,4 @@ def test_shared_feature_metadata_are_string_domains(tmp_path):
 
 
 def test_additive_compatibility_features_bump_tf_schema_version():
-    assert TF_VERSION == "0.2.0"
+    assert TF_VERSION == "0.4.0"

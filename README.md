@@ -1,112 +1,125 @@
 # ORACC-TF
 
-A working copy of the [ORACC](http://oracc.org) open-data corpora, unpacked
-into a single tree, plus the tooling to reproduce and maintain it — groundwork
-for converting selected ORACC projects into
-[Text-Fabric](https://annotation.github.io/text-fabric/) datasets.
+ORACC-TF builds [Text-Fabric](https://annotation.github.io/text-fabric/) datasets from
+[ORACC](https://oracc.museum.upenn.edu/) open data. The central repository keeps
+the source snapshot, conversion code, validation, documentation, and release
+tooling needed to build those datasets reproducibly.
 
-## Contents
+## Status
 
-`data/` holds 33 top-level ORACC projects, 100 of which are subprojects,
-extracted from ORACC's published ZIP distributions:
+**ORACC-TF is pre-1.0.** The first release target is
+`assyrian-royal-inscriptions`, a semantic corpus built from RIAO and RINAP
+material. The current user-facing release gate is tracked in
+[#89](https://github.com/alexsosn/ORACC-TF/issues/89).
 
-| Project | Subprojects |
-|---|---|
-| `tcma` | 29 — ali1, amarna, assur, barri, … ugarit |
-| `atae` | 22 — assurmisc, burmarina, ctn1–3, ctn6, … wvdog152 |
-| `saao` | 22 — saa01–saa21, saas2 |
-| `ribo` | 11 — babylon2–8, babylon10, bab7scores, scores, sources |
-| `rinap` | 8 — rinap1–5, rinap5p1, scores, sources |
-| `riao`, `cmawro`, `cams` | 5 each |
-| `adsd` | 5 — adart1–3, adart5–6 |
-| `aemw` | 3 — alalakh, amarna, ugarit |
-| `asbp` | 2 — ninmed, rlasb |
-| `caspo`, `contrib`, `obabat` | 1 each |
+This repository is the **builder/source repository**, not the intended
+installation surface for researchers. It contains the large ORACC source tree
+and development infrastructure. Current 1.0 work is producing a lightweight
+standalone distribution with the Text-Fabric data, corpus app, and researcher
+documentation, so using the corpus will not require cloning this repository.
 
-The remaining 19 are flat single-project corpora: `akklove`, `babcity`,
-`balt`, `blms`, `borsippa`, `btto`, `ccpo`, `cdli`, `ckst`, `csik`, `etcsri`,
-`glass`, `hbtin`, `nere`, `obta`, `rimanum`, `suhu`, `urap`.
+If you are looking for a stable end-user package, 1.0 has not been published
+yet.
 
-Each project directory follows ORACC's standard layout: `catalogue.json`,
-`metadata.json`, `corpus.json`, per-text transliterations under `corpusjson/`,
-glossaries (`gloss-*.json`) and indexes (`index-*.json`).
+## First dataset: `assyrian-royal-inscriptions`
 
-## Reproducing `data/` from scratch
+The dataset is defined in [`datasets.toml`](datasets.toml). Its source selection
+aggregates:
 
-The ZIPs themselves are not committed — they are opaque binaries git cannot
-delta, and the extracted JSON is both the useful form and the git-friendly one.
+- RIAO 1–5;
+- RINAP 1–5 plus RINAP 5 Part 1;
+- the RIAO TEI corpus source used for the translation workstream.
+
+The converter preserves ORACC textual structure and annotations in Text-Fabric,
+including sign slots, words, lexemes, document/face/column/line structure,
+catalogue metadata, qualified document identity, and source-grounded cuneiform
+and transliteration features. Zero-span textual entities are represented by
+explicit synthetic empty slots rather than fabricated visible text.
+
+The generated feature inventory is documented in
+[`docs/reference/features.md`](docs/reference/features.md). Translation import,
+the standalone app, installation path, and the complete researcher manual are
+still part of the 1.0 work.
+
+## Researcher documentation
+
+User-facing documentation lives under
+[`docs/reference/`](docs/reference/):
+
+- [Data model](docs/reference/model.md)
+- [Signs](docs/reference/signs.md)
+- [Words and lexemes](docs/reference/words-and-lexemes.md)
+- [Translations](docs/reference/translations.md)
+- [Document identity](docs/reference/identity.md)
+- [Query guide](docs/reference/query-guide.md)
+- [Reproducibility](docs/reference/reproducibility.md)
+- [Feature reference](docs/reference/features.md)
+
+The 1.0 manual is still being completed under
+[#78](https://github.com/alexsosn/ORACC-TF/issues/78) and
+[#82](https://github.com/alexsosn/ORACC-TF/issues/82). Pages marked as
+`skeleton` describe the intended documentation surface but are not yet release
+documentation.
+
+Maintainer research, design plans, reports, and the agentic-development
+registry are indexed separately in [`docs/README.md`](docs/README.md).
+
+## Development quick start
+
+ORACC-TF requires Python 3.10 or newer.
 
 ```bash
-# 1. Download the project ZIPs from http://oracc.org/doc/opendata/ into data/
-# 2. Unpack them into their project/subproject tree
-scripts/extract_archives.sh
+git clone https://github.com/alexsosn/ORACC-TF.git
+cd ORACC-TF
 
-# 3. Confirm every file landed at its recorded size
-scripts/verify_extraction.py
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+
+pytest -q -m 'not corpus'
 ```
 
-The archives already encode their own paths (`atae-ctn1.zip` → `atae/ctn1/…`),
-so the grouping falls out of extraction — see [docs/guides/G-001-scripts.md](docs/guides/G-001-scripts.md).
+The fast test suite does not require a full-corpus run. Whole-corpus and
+integration work uses the source data under `data/` and is intentionally
+separate from the normal researcher installation path.
 
-## Repository size
+## Repository layout
 
-The tree is ~9.8 GB uncompressed but ORACC JSON is highly repetitive, so git
-packs it at roughly 16x (measured: `saao` 1,522 MB → 97 MB). The packed
-repository is well under GitHub's advisory limits.
-
-One file exceeded GitHub's hard 100 MB per-file limit — `cdli/index-cat.json`
-at 545 MB. It is stored sharded under `data/cdli/index-cat/` and can be
-rejoined losslessly:
-
-```bash
-scripts/shard_index.py join data/cdli/index-cat -o data/cdli/index-cat.json
-```
-
-Before any push, `scripts/check_repo_limits.py` reports anything GitHub would
-reject.
-
-## Documentation
-
-All documentation lives under [`docs/`](docs/), organised by type with stable
-ids, priorities and declared dependencies. Start at the
-[documentation index](docs/README.md).
-
-| | |
+| Path | Purpose |
 |---|---|
-| [`docs/research/`](docs/research/) | `R-NNN` — measured findings behind each decision |
-| [`docs/plans/`](docs/plans/) | `P-NNN` — what will be built, with acceptance criteria |
-| [`docs/guides/`](docs/guides/) | `G-NNN` — how to operate this repository |
-| [`docs/registry.json`](docs/registry.json) | machine-readable index driving the automated development loop |
+| [`datasets.toml`](datasets.toml) | semantic dataset definitions and source membership |
+| [`programs/oracc_tf/`](programs/oracc_tf/) | conversion and build code |
+| [`tests/`](tests/) | unit, contract, corpus, and integration tests |
+| [`docs/reference/`](docs/reference/) | researcher-facing corpus documentation |
+| [`docs/research/`](docs/research/) | measured research behind design decisions |
+| [`docs/plans/`](docs/plans/) | implementation plans and acceptance criteria |
+| [`data/`](data/) | large ORACC source working tree used by the builder |
+| [`scripts/`](scripts/) | repository maintenance and analysis utilities |
 
-Current work: [R-001](docs/research/R-001-corpus-selection.md) selects the
-conversion targets, [P-001](docs/plans/P-001-riao-rinap-tf.md) specifies the
-RIAO+RINAP converter, [P-002](docs/plans/P-002-upstream-automation.md) automates
-tracking ORACC upstream, and [P-003](docs/plans/P-003-documentation.md) covers
-user-facing documentation.
+Low-level source-tree maintenance commands are documented in
+[`docs/guides/G-001-scripts.md`](docs/guides/G-001-scripts.md). Those utilities
+are useful for maintaining local source material, but simple archive extraction
+or size verification alone is not equivalent to release provenance.
 
-**Architecture note:** P-001 revision 5 records the historical M6 sidecar
-implementation. That zero-span design is superseded by
-[`ADR-0001`](docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md)
-and the current [data-model reference](docs/reference/model.md): independently
-positioned zero-span textual entities use explicit synthetic empty TF slots,
-not a sidecar. New builds keep all 2,078 documents and 320,975 words in TF and
-do not emit `zero-span.json` for those entities.
+## Data model
+
+The Text-Fabric slot type is `sign`. Source words and higher structural nodes
+are connected to those slots through the normal TF graph. Technical empty
+positions use `synthetic=1` sign slots that preserve ordering but carry no
+fabricated cuneiform, transliteration, or lexical content.
+
+See the [data-model reference](docs/reference/model.md) and
+[ADR-0001](docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md) for
+the current rule.
 
 ## Licence
 
-Software authored for this repository — including converter and maintenance
-code, scripts, tests, and supporting software documentation — is licensed
-under the [MIT License](LICENSE). See [LICENSE_SCOPE.md](LICENSE_SCOPE.md) for
-the explicit code/data boundary.
+Software authored for this repository—including converter code, scripts, tests,
+and supporting software documentation—is licensed under the
+[MIT License](LICENSE).
 
-The MIT license does **not** apply to `data/`, corpus texts, translations,
-annotations, metadata, or other upstream/derived data artifacts. Those retain
-the licences and terms of their original ORACC projects and sources.
-
-**Note a conflict in ORACC's own metadata.** The JSON distribution's
-`metadata.json` and the TEI corpus exports declare **CC0**, while the live
-RIAO/RINAP edition pages state that "the annotated edition is released under
-the Creative Commons Attribution Share-Alike license 3.0" and ask that the
-page be cited. Where the two disagree, the safer reading is **CC BY-SA 3.0
-with attribution** — particularly for the translation layer. See
-[docs/plans/P-001-riao-rinap-tf.md](docs/plans/P-001-riao-rinap-tf.md) §2.11.
+The MIT licence does **not** apply to ORACC corpus texts, translations,
+annotations, metadata, or other upstream/derived data. Those retain the terms
+of their original sources. See [`LICENSE_SCOPE.md`](LICENSE_SCOPE.md) for the
+code/data boundary and the corpus documentation for source-specific attribution
+and licensing.

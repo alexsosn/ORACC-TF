@@ -5,13 +5,13 @@
 - value type: `str`
 - populated values: `6792`
 - distinct values: `1`
-- description: Attribution or licence reference associated with the TEI source.
+- description: ORACC licensing guidance for the translation source; project-specific terms may differ.
 
 ## Value frequencies
 
 | value | count |
 |---|---:|
-| `https://oracc.org/doc/about/licensing/` | 6792 |
+| `https://oracc.museum.upenn.edu/doc/about/` | 6792 |
 
 <!-- manual:begin interpretation -->
 <!-- manual:end -->

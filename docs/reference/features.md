@@ -61,12 +61,13 @@ Generated from TF metadata; do not hand-edit generated fields.
 - [`synthetic`](features/mixed/synthetic.md) — Integer flag marking ORACC-TF-synthesized section nodes or technical empty sign slots; synthetic slots carry no fabricated cuneiform content.
 - [`text_id`](features/document/text_id.md) — ORACC text identifier without the subproject qualifier.
 - [`translation_eref`](features/translation_unit/translation_eref.md) — Inclusive source line-range end declared by TEI xtr:eref.
+- [`translation_id`](features/translation_unit/translation_id.md) — Qualified ORACC-TF translation identity composed from the source document key and TEI unit identifier.
 - [`translation_label`](features/translation_unit/translation_label.md) — Translation label declared by the TEI source.
 - [`translation_rows`](features/translation_unit/translation_rows.md) — Row count declared by the TEI translation source, when present.
 - [`translation_se_label`](features/translation_unit/translation_se_label.md) — Source edition label declared by the TEI translation source.
 - [`translation_source_id`](features/translation_unit/translation_source_id.md) — Identifier of this translation unit in the pinned official TEI source.
-- [`translation_source_license`](features/translation_unit/translation_source_license.md) — Conservative attribution or licence statement associated with the TEI source.
-- [`translation_source_license_url`](features/translation_unit/translation_source_license_url.md) — Attribution or licence reference associated with the TEI source.
+- [`translation_source_license`](features/translation_unit/translation_source_license.md) — Conservative translation licence statement, kept separate from corpusjson document licence metadata.
+- [`translation_source_license_url`](features/translation_unit/translation_source_license_url.md) — ORACC licensing guidance for the translation source; project-specific terms may differ.
 - [`translation_source_name`](features/translation_unit/translation_source_name.md) — Name of the pinned official TEI archive supplying this translation.
 - [`translation_source_sha256`](features/translation_unit/translation_source_sha256.md) — SHA-256 digest of the pinned official TEI archive supplying this translation.
 - [`translation_source_url`](features/translation_unit/translation_source_url.md) — Official source URL for the pinned TEI archive.
@@ -82,5 +83,6 @@ Generated from TF metadata; do not hand-edit generated fields.
 - [`line_face`](features/edge/line_face.md) — Edge from a line node to its containing face node.
 - [`oslots`](features/edge/oslots.md) — Text-Fabric warp edge from a non-slot node to its sign slots.
 - [`translation_document`](features/edge/translation_document.md) — Edge from a TEI translation unit to its qualified ORACC document.
+- [`translation_line`](features/edge/translation_line.md) — Edge from a TEI translation unit to each explicitly referenced source line in its inclusive range.
 - [`word_lex`](features/edge/word_lex.md) — Edge from a word occurrence to its ORACC-TF lexeme node.
 - [`word_line`](features/edge/word_line.md) — Edge from a word node to its containing line node.

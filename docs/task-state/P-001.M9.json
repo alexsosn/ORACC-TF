@@ -75,12 +75,12 @@
     }
   },
   "verification": {
-    "fast_suite": "345 passed, 1 skipped, 12 deselected on the implementation snapshot after the byte-buffer digest verification change.",
-    "focused_translation_tests": "8 passed, including parser, archive digest, alignment, synthetic anchors, and explicit gap behavior.",
-    "real_source_gate": "Passed against the pinned official archive: 1,639 TEI documents, 9,301 source units, 6,792 aligned units, and 2,509 explicit alignment gaps.",
-    "generated_reference": "Generated from the full source build; docs drift check passes after removing one stale feature page absent from current TF metadata.",
-    "m8_cross_validation": "Not run locally; exact-head GitHub Actions gate required.",
-    "github_actions": "Pending exact implementation head."
+    "fast_suite": "345 passed, 1 skipped, 12 deselected on the final implementation snapshot.",
+    "focused_translation_tests": "8 passed, including parser, digest, archive, alignment, synthetic-slot, and explicit gap behavior.",
+    "real_source_gate": "Passed in GitHub Actions run 36069853724 on implementation commit 566eae6: 1,639 TEI documents, 9,301 units, 6,792 aligned units, and 2,509 explicit gaps.",
+    "generated_reference": "Passed in GitHub Actions run 36069853761 on implementation commit 566eae6; full corpus was built with the pinned TEI source before docs generation.",
+    "m8_cross_validation": "Passed in GitHub Actions run 36069853801 on implementation commit 566eae6.",
+    "github_actions": "Tests/whole-corpus and docs registry passed in run 36069853695; source gate, M8, and generated-reference passed on 566eae6. This state record is the only change after those green runs; final-head checks will rerun."
   },
   "review": {
     "status": "pending",

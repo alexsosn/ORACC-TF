@@ -2,7 +2,7 @@
   "task": "ISSUE-79",
   "issue": 79,
   "pr": 104,
-  "runtime_status": "review-pending",
+  "runtime_status": "done",
   "scope": "dedicated-repository path normalization and manifest-owned app/docs support roots",
   "research": {
     "design_comment": 5597864592,
@@ -15,7 +15,10 @@
     "dedicated_repository_tf_root": "tf/<tf_version>",
     "central_local_tf_root": "<output-base>/<dataset>/tf/<tf_version>",
     "manifest_schema": 4,
-    "support_roots": ["app", "docs"],
+    "support_roots": [
+      "app",
+      "docs"
+    ],
     "support_semantics": "current-release, non-TF-versioned, digest-owned typed roots; content semantics delegated to downstream app/docs tickets",
     "fail_closed": "unowned content, arbitrary support kinds, raw data/programs paths, symlinks, source/stage/support overlap, pairwise support-root overlap, support digest drift, and malformed manifest state are rejected"
   },
@@ -36,13 +39,12 @@
     ]
   },
   "verification": {
-    "pre_docs_code_head": "a1a31c8fdf8a5e811a9a2e9c62c99624ff7f9de7",
-    "tests": 34376453044,
-    "generated_reference": 34376453063,
-    "m8_cross_validation": 34376453058,
-    "agora_benchmark": 34376453088,
-    "pre_docs_result": "all four exact-head workflows green",
-    "final_head_verification": "pending after durable evidence commit"
+    "tests": 34388564584,
+    "tests_result": "298 passed, 1 skipped plus 11/11 corpus tests",
+    "generated_reference": 34388564817,
+    "m8_cross_validation": 34388564610,
+    "agora_benchmark": 34388564590,
+    "agora_result": "Central/minimal full snapshot equality; 318,883,177 bytes, maxSlot 793340; sha256 32f5f56e523d9d6c82b58cbedfbe98b99c49526e58c9fbce4ccd5db7d2fcedfc."
   },
   "coordination": {
     "current_session": "gpt56sol-20260909-2116-79-support-paths",
@@ -51,9 +53,19 @@
     "base": "0ee2689cd6224dcfaeaa0a04e653444b7221c048"
   },
   "review": {
-    "precompletion_review": 5158177266,
-    "precompletion_verdict": "request_changes because normative P-005 synchronization and durable evidence were still missing",
-    "fresh_exact_head_review_required": true
+    "review_id": 5158355621,
+    "review_session": "review-gpt56sol-20260909-2136-104-final",
+    "implementation_session": "gpt56sol-20260909-2116-79-support-paths",
+    "reviewed_head": "516373f16a710db689efa9b2d121a103c499ccc1",
+    "verdict": "pass"
   },
-  "resume_gate": "Run exact-head tests, generated-reference, M8 and P-005 Agora benchmark on the final evidence head; perform a fresh logically independent adversarial review using the current implementation session; if clean, merge with expected_head_sha, close issue #79 and release the claim without changing the reviewed head."
+  "resume_gate": "Complete: PR #104 merged, all four exact-head checks and independent review passed, and the ISSUE-79 lease was released.",
+  "status": "done",
+  "implementation": {
+    "pr": 104,
+    "session": "gpt56sol-20260909-2116-79-support-paths",
+    "head": "516373f16a710db689efa9b2d121a103c499ccc1",
+    "merged_commit": "72ca36c96a5df0c2fad20da893798eb6f3551059",
+    "release_comment": 5606868428
+  }
 }

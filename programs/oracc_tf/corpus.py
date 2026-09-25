@@ -50,6 +50,19 @@ TRANSLATION_GAP_SCHEMA = "oracc-tf-translation-gaps-v1"
 TRANSLATION_GAP_FILENAME = "translation-gaps.json"
 
 
+# Text-Fabric resolves every feature referenced by an otext format while it
+# initializes the T API. Sparse fixtures and real source subsets can have no
+# values at all for an optional display feature, but the feature itself must
+# still exist if the format advertises it.
+_FORMAT_DEPENDENCY_FEATURES = (
+    "utf8",
+    "cuneiform_trailer",
+    "form",
+    "cf",
+    "gw",
+)
+
+
 class CorpusBuildError(RuntimeError):
     """The joined TF graph cannot be built without violating source invariants."""
 
@@ -280,6 +293,11 @@ class _Graph:
             if data:
                 node_features[name] = data
 
+        # Keep the declared text formats loadable for sparse corpora.  An empty
+        # mapping emits a valid feature file without inventing source values.
+        for name in _FORMAT_DEPENDENCY_FEATURES:
+            node_features.setdefault(name, {})
+
         edge_features: dict[str, dict[int, set[int]]] = {
             "oslots": {
                 remap[node]: set(self.non_slot_oslots[node])
@@ -318,6 +336,9 @@ class _Graph:
             "otext": {
                 "sectionTypes": section_spec,
                 "sectionFeatures": section_spec,
+                "fmt:text-orig-full": "sign#{utf8}{cuneiform_trailer}",
+                "fmt:text-trans-full": "word#{form} ",
+                "fmt:lex-default": "lex#{cf} [{gw}]",
             },
             "otype": {
                 "valueType": "str",
@@ -610,6 +631,8 @@ def build_tf(
                     f"{edition.key}: semantic TF slot {event.slot} lacks source sign ownership"
                 )
             utf8 = sign.value.get("utf8")
+            source_word = by_word[event.word_id]
+            is_final_semantic_sign = event.semantic_slot == source_word.slot_ids[-1]
             graph.slot_feature(
                 event.slot,
                 document_key=edition.key,
@@ -617,6 +640,7 @@ def build_tf(
                 src_path=sign.src_path,
                 utf8=utf8 if isinstance(utf8, str) else None,
                 readingu=utf8 if isinstance(utf8, str) else None,
+                cuneiform_trailer=" " if is_final_semantic_sign else None,
                 sign_json=_json(sign.value),
                 gdl_id=sign.value.get("id"),
                 gdl_form=sign.value.get("form"),

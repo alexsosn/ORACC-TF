@@ -10,6 +10,7 @@ Generated from TF metadata; do not hand-edit generated fields.
 - [`chunk_type`](features/chunk/chunk_type.md) — ORACC chunk type preserved from the source structure.
 - [`collection`](features/document/collection.md) — ORACC catalogue collection value preserved as text.
 - [`column_id`](features/column/column_id.md) — Source ORACC column identifier.
+- [`cuneiform_trailer`](features/sign/cuneiform_trailer.md) — ORACC-TF presentation-only ASCII word separator attached to the final semantic/source sign of a word; absent on synthetic slots.
 - [`designation`](features/document/designation.md) — ORACC catalogue designation value preserved as text.
 - [`document`](features/document/document.md) — Qualified ORACC document key used as the Text-Fabric document section value.
 - [`document_key`](features/mixed/document_key.md) — Qualified ORACC subproject/document key used by ORACC-TF for cross-node identity.

@@ -185,9 +185,11 @@ def test_wholly_empty_document_gets_one_invisible_anchor_and_is_tf_loadable(tmp_
     assert api.F.document.v(document) == "test/unit:QEMPTYDOC"
     assert _slots(api, document) == (1,)
     assert api.F.synthetic.v(1) == 1
-    # In an all-synthetic corpus the strongest no-fabrication guarantee is
-    # that source-text features do not exist at all.
-    assert not hasattr(api.F, "utf8")
+    # Declared display-format dependencies remain part of the 0.3.0 schema
+    # even when they have no values. No source text may be fabricated.
+    assert hasattr(api.F, "utf8")
+    assert api.F.utf8.v(1) is None
+    assert list(api.F.utf8.items()) == []
     assert not hasattr(api.F, "readingu")
     assert not hasattr(api.F, "sign_json")
 
@@ -210,7 +212,9 @@ def test_zero_sign_lexeme_uses_occurrence_anchor_without_fabricated_text(tmp_pat
     lex = next(iter(api.F.otype.s("lex")))
     assert _slots(api, word) == _slots(api, lex) == (1,)
     assert api.F.synthetic.v(1) == 1
-    assert not hasattr(api.F, "utf8")
+    assert hasattr(api.F, "utf8")
+    assert api.F.utf8.v(1) is None
+    assert list(api.F.utf8.items()) == []
 
 
 def test_new_build_does_not_emit_zero_span_sidecar_when_every_node_is_in_tf(tmp_path):

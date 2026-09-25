@@ -25,6 +25,7 @@ DESCRIPTIONS: dict[str, str] = {
     # Sign/GDL layer
     "utf8": "Unicode cuneiform string supplied by ORACC for this sign, when available.",
     "readingu": "Compatibility alias for the ORACC Unicode cuneiform sign string in utf8.",
+    "cuneiform_trailer": "ORACC-TF presentation-only ASCII word separator attached to the final semantic/source sign of a word; absent on synthetic slots.",
     "sign_json": "Canonical JSON serialization of the source ORACC sign/GDL object.",
     "gdl_id": "ORACC GDL identifier attached to this sign, when present.",
     "gdl_form": "ORACC GDL form value attached to this sign, when present.",

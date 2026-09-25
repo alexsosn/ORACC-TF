@@ -54,16 +54,21 @@ def _build(target: Path, edition: loader.Edition):
     )
 
 
-def test_rebuild_removes_semantic_feature_files_absent_from_new_graph(tmp_path):
+def test_rebuild_clears_semantic_values_but_keeps_declared_format_schema(tmp_path):
     _build(tmp_path, _edition("QOLD", semantic_sign=True))
-    stale = ("utf8.tf", "readingu.tf", "sign_json.tf", "src_path.tf")
+    stale = ("readingu.tf", "sign_json.tf", "src_path.tf")
+    assert (tmp_path / "utf8.tf").exists()
     assert all((tmp_path / name).exists() for name in stale)
 
     _build(tmp_path, _edition("QNEW", semantic_sign=False))
 
+    # utf8 remains an empty declared dependency of text-orig-full; source-only
+    # features that are no longer populated must still be removed.
+    assert (tmp_path / "utf8.tf").exists()
     assert all(not (tmp_path / name).exists() for name in stale)
     api = corpus.load_tf(tmp_path)
-    assert not hasattr(api.F, "utf8")
+    assert hasattr(api.F, "utf8")
+    assert list(api.F.utf8.items()) == []
     assert not hasattr(api.F, "readingu")
     assert not hasattr(api.F, "sign_json")
     assert {api.F.document.v(node) for node in api.F.otype.s("document")} == {

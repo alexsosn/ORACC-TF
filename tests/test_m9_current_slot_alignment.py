@@ -143,3 +143,30 @@ def test_translation_units_without_source_alignment_are_reported_as_gaps(tmp_pat
     assert report.translation_gaps == 2
     assert any("source provides no line range" in gap for gap in report.translation_gap_details)
     assert any("unresolved source line range" in gap for gap in report.translation_gap_details)
+
+
+def test_generated_translation_identity_is_not_mislabeled_as_source_id(tmp_path):
+    edition = _edition("QTRSOURCE", [
+        {"node": "d", "type": "surface", "ref": "", "label": "o"},
+        {"node": "d", "type": "line-start", "ref": "QTRSOURCE.1", "label": "1"},
+        _word("QTRSOURCE", "l1", "a", "𒀀"),
+    ])
+    unit = _Unit(
+        document_key=edition.key,
+        text_id=edition.text_id,
+        source_id=None,
+        sref="QTRSOURCE.1",
+        eref="QTRSOURCE.1",
+    )
+
+    corpus.build_tf(
+        tmp_path,
+        editions=(edition,),
+        metadata_index=metadata.MetadataIndex.empty(),
+        translations_by_document={edition.key: (unit,)},
+    )
+
+    api = corpus.load_tf(tmp_path)
+    node = next(iter(api.F.otype.s("translation_unit")))
+    assert api.F.translation_id.v(node) == f"{edition.key}:QTRSOURCE.tr1"
+    assert api.F.translation_source_id.v(node) is None

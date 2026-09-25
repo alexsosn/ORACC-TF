@@ -144,3 +144,25 @@ def test_official_archive_parser_fails_closed_on_digest_mismatch(tmp_path: Path)
         assert "SHA-256 mismatch" in str(exc)
     else:
         raise AssertionError("archive digest mismatch must be rejected")
+
+
+def test_translation_content_preserves_mixed_text_order_around_markup_and_notes(tmp_path: Path):
+    xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="{TEI}" xmlns:xtr="{XTR}" xml:id="Q_MIXED">
+  <text><body>
+    <div3 type="tr" xtr:sref="Q_MIXED.1" xtr:eref="Q_MIXED.1">Before <p>paragraph <hi type="i">italic</hi> tail</p> after paragraph <note>editorial note</note> after note.</div3>
+  </body></text>
+</TEI>'''
+    path = tmp_path / "Q_MIXED.xml"
+    path.write_text(xml, encoding="utf-8")
+
+    record = translations.parse_tei_file(path, subproject="riao/ria1")
+    unit = record.units[0]
+
+    assert unit.text == "Before paragraph italic tail after paragraph after note."
+    assert unit.text_raw.index("Before") < unit.text_raw.index("<p>")
+    assert unit.text_raw.index("</p>") < unit.text_raw.index("after paragraph")
+    assert unit.text_raw.index("after paragraph") < unit.text_raw.index("after note.")
+    assert "<hi type=\"i\">italic</hi>" in unit.text_raw
+    assert "editorial note" not in unit.text_raw
+    assert "editorial note" not in unit.text

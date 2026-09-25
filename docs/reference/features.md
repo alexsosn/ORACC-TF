@@ -1,5 +1,3 @@
-pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
-pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
 # Feature reference
 
 Generated from TF metadata; do not hand-edit generated fields.

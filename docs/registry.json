@@ -751,7 +751,7 @@
       "spec": "§ISSUE-69",
       "priority": "P1",
       "blocked_by": [],
-      "status": "todo",
+      "status": "done",
       "issue": 69,
       "evidence_file": "docs/task-state/ISSUE-69.json"
     },
@@ -764,7 +764,7 @@
       "blocked_by": [
         "ISSUE-69"
       ],
-      "status": "todo",
+      "status": "done",
       "issue": 70,
       "evidence_file": "docs/task-state/ISSUE-70.json"
     },
@@ -776,9 +776,10 @@
       "priority": "P1",
       "blocked_by": [
         "ISSUE-69",
-        "ISSUE-70"
+        "ISSUE-70",
+        "ISSUE-79"
       ],
-      "status": "todo",
+      "status": "done",
       "issue": 71,
       "evidence_file": "docs/task-state/ISSUE-71.json"
     },
@@ -846,6 +847,30 @@
       "status": "todo",
       "issue": 75,
       "evidence_file": "docs/task-state/ISSUE-75.json"
+    },
+    {
+      "id": "ISSUE-78",
+      "title": "Standalone researcher manual",
+      "plan": "P-004",
+      "spec": "§ISSUE-78",
+      "priority": "P0",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 78,
+      "evidence_file": "docs/task-state/ISSUE-78.json"
+    },
+    {
+      "id": "ISSUE-79",
+      "title": "Canonical app/docs/release support path ownership",
+      "plan": "P-004",
+      "spec": "§ISSUE-79",
+      "priority": "P0",
+      "blocked_by": [
+        "P-005.PH0"
+      ],
+      "status": "done",
+      "issue": 79,
+      "evidence_file": "docs/task-state/ISSUE-79.json"
     }
   ],
   "selection_rule": "enumerate every claim/start-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; completion_blocked_by gates finalization without suppressing explicitly permitted early research/design; losing sessions reselect unrelated ready work",

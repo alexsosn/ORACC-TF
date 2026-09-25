@@ -1,5 +1,3 @@
-pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
-pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
 # `translation_source_id`
 
 - kind: `node`

@@ -2,7 +2,7 @@
   "task": "P-001.M9",
   "issue": 16,
   "implementation_pr": 13,
-  "runtime_status": "implementation-complete-review-passed",
+  "runtime_status": "done",
   "source": {
     "archive": "riao-teiCorpus-20241202.zip",
     "url": "https://oracc.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip",
@@ -75,19 +75,24 @@
     }
   },
   "verification": {
-    "fast_suite": "Passed in GitHub Actions run 36154413177 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0: 362 passed, 1 skipped, 12 deselected; whole-corpus invariants: 11 passed, 1 skipped, 363 deselected.",
+    "fast_suite": "Passed in exact-head GitHub Actions run 36155651190: fixture tests and whole-corpus invariants both succeeded.",
     "focused_translation_tests": "Included in the exact-head fixture suite above; publisher tests cover missing archive rejection, explicit archive parsing/pass-through, and environment-path selection. The source-name test covers canonical provenance for official bytes stored under a renamed local file.",
-    "real_source_gate": "Passed in GitHub Actions run 36154413161 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0: 1,639 TEI documents, 9,301 units, 6,792 aligned units, and 2,509 explicit gaps.",
-    "generated_reference": "Passed in GitHub Actions run 36154413183 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0; the real corpus was built with the pinned TEI archive before docs generation.",
-    "m8_cross_validation": "Passed in GitHub Actions run 36154413167 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0.",
-    "github_actions": "All four exact-head workflows passed on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0: tests/whole-corpus and docs registry 36154413177; real TEI 36154413161; generated reference 36154413183; M8 cross-validation 36154413167. The task-state evidence refresh is documentation-only."
+    "real_source_gate": "Passed in exact-head GitHub Actions run 36155651225 on ee431094ce8e1a2601d7cd3795139ece5be3f725: 1,639 TEI documents, 9,301 units, 6,792 aligned units, and 2,509 explicit gaps.",
+    "generated_reference": "Passed in exact-head GitHub Actions run 36155651231 on ee431094ce8e1a2601d7cd3795139ece5be3f725; the real corpus was built with the pinned TEI archive before docs generation.",
+    "m8_cross_validation": "Passed in exact-head GitHub Actions run 36155651222 on ee431094ce8e1a2601d7cd3795139ece5be3f725.",
+    "github_actions": "All four final exact-head workflows passed on ee431094ce8e1a2601d7cd3795139ece5be3f725: tests/whole-corpus and docs registry 36155651190; real TEI 36155651225; generated reference 36155651231; M8 cross-validation 36155651222. PR #13 then merged as dc3049b81a033bc0532c2026ecfc51c62a105128."
   },
   "review": {
     "status": "pass",
     "reviewer": "independent subagent /root/review_pr13",
-    "reviewed_head_sha": "bc8cc2e1315f9915312a805806dec2803dd964f0",
+    "reviewed_head_sha": "ee431094ce8e1a2601d7cd3795139ece5be3f725",
     "verdict": "No source-alignment or display-format blockers. Registered builds require the pinned archive and pass its verified document map; the provenance and side-effect-free RED-test follow-ups are resolved.",
     "fresh_exact_head_independent_review_required": false
   },
-  "registry_status": "todo"
+  "registry_status": "done",
+  "completion": {
+    "merged_pr": 13,
+    "merge_commit": "dc3049b81a033bc0532c2026ecfc51c62a105128",
+    "merged_head": "ee431094ce8e1a2601d7cd3795139ece5be3f725"
+  }
 }

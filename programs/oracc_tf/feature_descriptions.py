@@ -85,6 +85,27 @@ DESCRIPTIONS: dict[str, str] = {
     "line_column": "Edge from a line node to its containing column node.",
     "word_line": "Edge from a word node to its containing line node.",
     "word_lex": "Edge from a word occurrence to its ORACC-TF lexeme node.",
+    # TEI translation layer
+    "translation_id": "Qualified ORACC-TF translation identity composed from the source document key and TEI unit identifier.",
+    "translation_source_id": "TEI xml:id declared on this translation unit, when supplied by the pinned official source.",
+    "translation_sref": "Inclusive source line-range start declared by TEI xtr:sref.",
+    "translation_eref": "Inclusive source line-range end declared by TEI xtr:eref.",
+    "translation_rows": "Row count declared by the TEI translation source, when present.",
+    "translation_subtype": "Translation subtype declared by the TEI source, such as tr or dollar.",
+    "translation_label": "Translation label declared by the TEI source.",
+    "translation_se_label": "Source edition label declared by the TEI translation source.",
+    "translation_text": "Plain running translation text extracted from source TEI markup.",
+    "translation_text_raw": "Canonical source TEI markup for the running translation, excluding note elements.",
+    "translation_source_name": "Name of the pinned official TEI archive supplying this translation.",
+    "translation_source_sha256": "SHA-256 digest of the pinned official TEI archive supplying this translation.",
+    "translation_source_url": "Official source URL for the pinned TEI archive.",
+    "translation_source_license": "Conservative translation licence statement, kept separate from corpusjson document licence metadata.",
+    "translation_source_license_url": "ORACC licensing guidance for the translation source; project-specific terms may differ.",
+    "translation_note_id": "Stable source-derived identifier for a translation note.",
+    "translation_note_text": "Plain text of an editorial note supplied inside a TEI translation unit.",
+    "translation_document": "Edge from a TEI translation unit to its qualified ORACC document.",
+    "translation_line": "Edge from a TEI translation unit to each explicitly referenced source line in its inclusive range.",
+    "translation_note_unit": "Edge from a TEI note to the translation unit that explicitly contains it.",
 }
 
 

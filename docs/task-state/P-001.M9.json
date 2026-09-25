@@ -1,0 +1,93 @@
+{
+  "task": "P-001.M9",
+  "issue": 16,
+  "implementation_pr": 13,
+  "runtime_status": "implementation-complete-review-passed",
+  "source": {
+    "archive": "riao-teiCorpus-20241202.zip",
+    "url": "https://oracc.museum.upenn.edu/riao/downloads/riao-teiCorpus-20241202.zip",
+    "sha256": "b793d8920db58908e3a044b7f2d1a204c1ba0784e880007e0cd7941333e841bd",
+    "transport": "Downloaded over HTTPS with normal TLS certificate verification; the dedicated workflow repeats the download and verifies the digest before parsing.",
+    "license_attribution": "ORACC default CC BY-SA 3.0; project-specific terms may differ. Kept separate from corpusjson edition licence metadata."
+  },
+  "design": {
+    "identity": "qualified (subproject, Q), with each TF translation_id composed from the qualified document key and TEI unit id",
+    "alignment": "inclusive source line range resolves against ordered M3 lines; oslots is the union of current SlotPlan.section_slots for those lines",
+    "single_line": "explicit xtr:ref maps to that one source line; missing/ambiguous ranges are gaps",
+    "zero_span": "synthetic anchors contribute position only; no neighbouring-slot borrowing or fabricated text",
+    "markup_and_notes": "plain text and canonical inner markup are preserved separately; explicit TEI notes remain linked to their containing unit",
+    "gaps": "unaligned source units, unresolved line refs, and TEI documents missing from the build are counted with source-grounded detail"
+  },
+  "source_measurement": {
+    "tei_documents": 1639,
+    "tei_units": 9301,
+    "units_without_a_source_range": 668,
+    "aligned_units": 6792,
+    "explicit_alignment_gaps": 2509,
+    "joinable_populated_editions": 1638,
+    "populated_editions": 1845,
+    "rinap5p1_populated_editions_without_tei": 138
+  },
+  "coverage_by_subproject": {
+    "riao/ria1": {
+      "populated": 130,
+      "joinable": 130
+    },
+    "riao/ria2": {
+      "populated": 183,
+      "joinable": 183
+    },
+    "riao/ria3": {
+      "populated": 100,
+      "joinable": 99
+    },
+    "riao/ria4": {
+      "populated": 133,
+      "joinable": 133
+    },
+    "riao/ria5": {
+      "populated": 171,
+      "joinable": 171
+    },
+    "rinap/rinap1": {
+      "populated": 85,
+      "joinable": 72
+    },
+    "rinap/rinap2": {
+      "populated": 145,
+      "joinable": 134
+    },
+    "rinap/rinap3": {
+      "populated": 238,
+      "joinable": 229
+    },
+    "rinap/rinap4": {
+      "populated": 178,
+      "joinable": 162
+    },
+    "rinap/rinap5": {
+      "populated": 344,
+      "joinable": 325
+    },
+    "rinap/rinap5p1": {
+      "populated": 138,
+      "joinable": 0
+    }
+  },
+  "verification": {
+    "fast_suite": "Passed in GitHub Actions run 36154413177 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0: 362 passed, 1 skipped, 12 deselected; whole-corpus invariants: 11 passed, 1 skipped, 363 deselected.",
+    "focused_translation_tests": "Included in the exact-head fixture suite above; publisher tests cover missing archive rejection, explicit archive parsing/pass-through, and environment-path selection. The source-name test covers canonical provenance for official bytes stored under a renamed local file.",
+    "real_source_gate": "Passed in GitHub Actions run 36154413161 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0: 1,639 TEI documents, 9,301 units, 6,792 aligned units, and 2,509 explicit gaps.",
+    "generated_reference": "Passed in GitHub Actions run 36154413183 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0; the real corpus was built with the pinned TEI archive before docs generation.",
+    "m8_cross_validation": "Passed in GitHub Actions run 36154413167 on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0.",
+    "github_actions": "All four exact-head workflows passed on implementation head bc8cc2e1315f9915312a805806dec2803dd964f0: tests/whole-corpus and docs registry 36154413177; real TEI 36154413161; generated reference 36154413183; M8 cross-validation 36154413167. The task-state evidence refresh is documentation-only."
+  },
+  "review": {
+    "status": "pass",
+    "reviewer": "independent subagent /root/review_pr13",
+    "reviewed_head_sha": "bc8cc2e1315f9915312a805806dec2803dd964f0",
+    "verdict": "No source-alignment or display-format blockers. Registered builds require the pinned archive and pass its verified document map; the provenance and side-effect-free RED-test follow-ups are resolved.",
+    "fresh_exact_head_independent_review_required": false
+  },
+  "registry_status": "todo"
+}

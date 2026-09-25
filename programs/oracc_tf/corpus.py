@@ -33,6 +33,7 @@ from . import (
     paths,
     sections,
     slotplan,
+    translations,
     words,
 )
 
@@ -45,6 +46,8 @@ ZERO_SPAN_REASON = (
     "Legacy ORACC-TF zero-span sidecar retained for reading older artifacts; "
     "current textual zero-span entities use explicit synthetic TF slots."
 )
+TRANSLATION_GAP_SCHEMA = "oracc-tf-translation-gaps-v1"
+TRANSLATION_GAP_FILENAME = "translation-gaps.json"
 
 
 # Text-Fabric resolves every feature referenced by an otext format while it
@@ -86,6 +89,9 @@ class CorpusBuildReport:
     section_path_errors: int
     tf_node_counts: dict[str, int]
     zero_span_counts: dict[str, int]
+    translation_units: int = 0
+    translation_gaps: int = 0
+    translation_gap_details: tuple[str, ...] = ()
     source_members: int | None = None
     readable_source_members: int | None = None
     unreadable_source_members: int | None = None
@@ -158,6 +164,8 @@ class CorpusBuildReport:
             f"slotless source words      : {self.slotless_words:>8,}",
             f"lines                      : {self.lines:>8,}",
             f"lexemes                    : {self.lexemes:>8,}",
+            f"translation units          : {self.translation_units:>8,}",
+            f"unaligned translation gaps : {self.translation_gaps:>8,}",
             f"sign→word errors           : {self.sign_word_membership_errors:>8,}",
             f"word→line errors           : {self.word_line_membership_errors:>8,}",
             f"section path errors        : {self.section_path_errors:>8,}",
@@ -188,6 +196,8 @@ class _Graph:
         "phrase",
         "word",
         "lex",
+        "translation_unit",
+        "translation_note",
     )
 
     def __init__(self) -> None:
@@ -339,7 +349,7 @@ class _Graph:
                 "description": feature_descriptions.require("oslots"),
             },
         }
-        int_features = {"catalogue_present", "lemmaknown", "populated", "synthetic"}
+        int_features = {"catalogue_present", "lemmaknown", "populated", "synthetic", "translation_rows"}
         for name in set(node_features) - {"otype"}:
             meta_data[name] = {
                 "valueType": "int" if name in int_features else "str",
@@ -479,10 +489,38 @@ def _clean_replaced_artifact(out_dir: Path, materialised: _MaterialisedGraph) ->
         if cache.exists():
             shutil.rmtree(cache)
         (out_dir / ZERO_SPAN_FILENAME).unlink(missing_ok=True)
+        (out_dir / TRANSLATION_GAP_FILENAME).unlink(missing_ok=True)
     except OSError as exc:
         raise CorpusBuildError(
             f"cannot clean stale Text-Fabric artifact in {out_dir}: {exc}"
         ) from exc
+
+
+def _write_translation_gap_inventory(
+    out_dir: Path, gaps: list[dict[str, object]]
+) -> None:
+    """Persist source identities and reasons for translation units omitted by alignment."""
+    category_counts = Counter(str(gap["reason"]) for gap in gaps)
+    payload = {
+        "schema": TRANSLATION_GAP_SCHEMA,
+        "count": len(gaps),
+        "category_counts": dict(sorted(category_counts.items())),
+        "gaps": gaps,
+    }
+    path = out_dir / TRANSLATION_GAP_FILENAME
+    temp = path.with_name(f".{path.name}.tmp")
+    try:
+        temp.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        temp.replace(path)
+    except OSError as exc:
+        raise CorpusBuildError(
+            f"cannot write translation gap inventory {path}: {exc}"
+        ) from exc
+    finally:
+        temp.unlink(missing_ok=True)
 
 
 def load_zero_span(out_dir: Path | str) -> dict[str, object]:
@@ -504,6 +542,7 @@ def build_tf(
     *,
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
+    translations_by_document: dict[str, Iterable[object]] | None = None,
 ) -> CorpusBuildReport:
     """Build one joined TF dataset with explicit empty positional anchors."""
     graph = _Graph()
@@ -525,6 +564,12 @@ def build_tf(
     key_counts: Counter[str] = Counter()
     sign_word_memberships: Counter[int] = Counter()
     lex_nodes: dict[lexemes.LexemeKey, int] = {}
+    translation_count = 0
+    translation_gap_count = 0
+    translation_gap_details: list[str] = []
+    translation_gap_inventory: list[dict[str, object]] = []
+    translations_by_document = translations_by_document or {}
+    seen_translation_documents: set[str] = set()
 
     for edition in editions:
         document_count += 1
@@ -628,6 +673,7 @@ def build_tf(
         column_nodes: dict[str, int] = {}
         line_nodes: dict[str, int] = {}
         line_sources = {line.source_id: line for line in section_view.lines}
+        line_slot_map = {line.source_id: slot_plan.section_slots[line] for line in section_view.lines}
 
         for face in section_view.faces:
             if face.source_id in face_nodes:
@@ -734,6 +780,110 @@ def build_tf(
                 graph.add_oslots(lex_node, slots)
                 graph.edge("word_lex", word_node, lex_node)
 
+        translation_units = tuple(translations_by_document.get(edition.key, ()))
+        if translation_units:
+            seen_translation_documents.add(edition.key)
+        line_ids = [line.source_id for line in section_view.lines]
+        line_positions: dict[str, int] = {}
+        for position, source_id in enumerate(line_ids):
+            if source_id in line_positions:
+                raise CorpusBuildError(f"{edition.key}: duplicate source line id {source_id!r}")
+            line_positions[source_id] = position
+        for ordinal, unit in enumerate(translation_units, start=1):
+            sref = getattr(unit, "sref", None)
+            eref = getattr(unit, "eref", None)
+            if sref is None and eref is None:
+                translation_gap_count += 1
+                source_id = getattr(unit, "source_id", None)
+                subtype = getattr(unit, "subtype", None) or "unspecified"
+                generated_id = source_id or f"{edition.text_id}.tr{ordinal}"
+                translation_gap_inventory.append({
+                    "document_key": edition.key,
+                    "translation_id": f"{edition.key}:{generated_id}",
+                    "translation_source_id": source_id,
+                    "subtype": getattr(unit, "subtype", None),
+                    "reason": "missing-source-range",
+                    "sref": sref,
+                    "eref": eref,
+                    "rows": getattr(unit, "rows", None),
+                    "source_sha256": getattr(unit, "source_sha256", None),
+                })
+                translation_gap_details.append(
+                    f"{edition.key}:{generated_id}:subtype={subtype}:source provides no line range"
+                )
+                continue
+            if not isinstance(sref, str) or not isinstance(eref, str):
+                raise CorpusBuildError(f"{edition.key}: translation unit has invalid line range")
+            if sref not in line_positions or eref not in line_positions:
+                translation_gap_count += 1
+                source_id = getattr(unit, "source_id", None)
+                subtype = getattr(unit, "subtype", None) or "unspecified"
+                generated_id = source_id or f"{edition.text_id}.tr{ordinal}"
+                translation_gap_inventory.append({
+                    "document_key": edition.key,
+                    "translation_id": f"{edition.key}:{generated_id}",
+                    "translation_source_id": source_id,
+                    "subtype": getattr(unit, "subtype", None),
+                    "reason": "unresolved-source-range",
+                    "sref": sref,
+                    "eref": eref,
+                    "rows": getattr(unit, "rows", None),
+                    "source_sha256": getattr(unit, "source_sha256", None),
+                })
+                translation_gap_details.append(
+                    f"{edition.key}:{generated_id}:subtype={subtype}:unresolved source line range {sref}..{eref}"
+                )
+                continue
+            start, end = line_positions[sref], line_positions[eref]
+            if end < start:
+                raise CorpusBuildError(
+                    f"{edition.key}: translation range is reversed: {sref!r}..{eref!r}"
+                )
+            span_ids = line_ids[start : end + 1]
+            slots = tuple(sorted({slot for source_id in span_ids for slot in line_slot_map[source_id]}))
+            if not slots:
+                raise CorpusBuildError(
+                    f"{edition.key}: translation range {sref!r}..{eref!r} has no TF slots"
+                )
+            source_id = getattr(unit, "source_id", None)
+            generated_id = source_id or f"{edition.text_id}.tr{ordinal}"
+            translation_id = f"{edition.key}:{generated_id}"
+            unit_node = graph.node("translation_unit", slots)
+            graph.feature(
+                unit_node,
+                translation_id=translation_id,
+                translation_source_id=source_id,
+                translation_sref=sref,
+                translation_eref=eref,
+                translation_rows=getattr(unit, "rows", None),
+                translation_subtype=getattr(unit, "subtype", None),
+                translation_label=getattr(unit, "label", None),
+                translation_se_label=getattr(unit, "se_label", None),
+                translation_text=getattr(unit, "text", None),
+                translation_text_raw=getattr(unit, "text_raw", None),
+                translation_source_name=getattr(unit, "source_name", None),
+                translation_source_sha256=getattr(unit, "source_sha256", None),
+                translation_source_url=getattr(unit, "source_url", None),
+                translation_source_license=getattr(unit, "source_license", None),
+                translation_source_license_url=getattr(unit, "source_license_url", None),
+                document_key=edition.key,
+            )
+            graph.edge("translation_document", unit_node, document_node)
+            for source_id in span_ids:
+                graph.edge("translation_line", unit_node, line_nodes[source_id])
+            translation_count += 1
+            for note_ordinal, note_text in enumerate(getattr(unit, "notes", ()) or (), start=1):
+                if not isinstance(note_text, str) or not note_text:
+                    continue
+                note_node = graph.node("translation_note", slots)
+                graph.feature(
+                    note_node,
+                    translation_note_id=f"{translation_id}.note{note_ordinal}",
+                    translation_note_text=note_text,
+                    document_key=edition.key,
+                )
+                graph.edge("translation_note_unit", note_node, unit_node)
+
     semantic_signs = next_semantic_slot - 1
     max_tf_slot = next_tf_slot - 1
     collision_count = sum(count - 1 for count in key_counts.values() if count > 1)
@@ -749,6 +899,28 @@ def build_tf(
         )
     if document_count == 0 or max_tf_slot == 0:
         raise CorpusBuildError("cannot emit a Text-Fabric corpus with no documents")
+    unknown_translation_documents = set(translations_by_document) - seen_translation_documents
+    for key in sorted(unknown_translation_documents):
+        units = tuple(translations_by_document[key])
+        translation_gap_count += len(units)
+        for i, unit in enumerate(units, start=1):
+            source_id = getattr(unit, "source_id", None)
+            generated_id = source_id or f"unit-{i}"
+            subtype = getattr(unit, "subtype", None) or "unspecified"
+            translation_gap_inventory.append({
+                "document_key": key,
+                "translation_id": f"{key}:{generated_id}",
+                "translation_source_id": source_id,
+                "subtype": getattr(unit, "subtype", None),
+                "reason": "document-not-in-corpus",
+                "sref": getattr(unit, "sref", None),
+                "eref": getattr(unit, "eref", None),
+                "rows": getattr(unit, "rows", None),
+                "source_sha256": getattr(unit, "source_sha256", None),
+            })
+            translation_gap_details.append(
+                f"{key}:{generated_id}:subtype={subtype}:document absent from corpus build"
+            )
 
     materialised = graph.materialise(max_tf_slot)
     tf = Fabric(locations=str(out_dir), silent="deep")
@@ -761,6 +933,7 @@ def build_tf(
         raise CorpusBuildError(f"Text-Fabric rejected generated graph in {out_dir}")
 
     _clean_replaced_artifact(out_dir, materialised)
+    _write_translation_gap_inventory(out_dir, translation_gap_inventory)
     _normalize_tf_generated_metadata(out_dir)
 
     return CorpusBuildReport(
@@ -782,6 +955,9 @@ def build_tf(
         section_path_errors=section_path_errors,
         tf_node_counts=materialised.tf_node_counts,
         zero_span_counts=materialised.zero_span_counts,
+        translation_units=translation_count,
+        translation_gaps=translation_gap_count,
+        translation_gap_details=tuple(translation_gap_details),
     )
 
 
@@ -789,6 +965,7 @@ def build_full_tf(
     out_dir: Path | str,
     *,
     data: Path = paths.DATA,
+    translations_by_document: dict[str, Iterable[object]] | None = None,
 ) -> CorpusBuildReport:
     """Build the complete parseable RIAO+RINAP corpus with omission accounting."""
     data = Path(data)
@@ -807,7 +984,12 @@ def build_full_tf(
             readable_source_members += 1
             yield observation.edition
 
-    report = build_tf(out_dir, editions=editions(), metadata_index=metadata_index)
+    report = build_tf(
+        out_dir,
+        editions=editions(),
+        metadata_index=metadata_index,
+        translations_by_document=translations_by_document,
+    )
     if report.documents != readable_source_members:
         raise CorpusBuildError(
             "source/build accounting mismatch: "

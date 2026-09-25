@@ -15,8 +15,22 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - name: Build the real checked-in corpus
-        run: python -c "from oracc_tf import corpus; corpus.build_full_tf('/tmp/oracc-tf')"
+      - name: Download the pinned official RIAO TEI archive
+        run: scripts/download_m9_tei.sh "$RUNNER_TEMP/riao-teiCorpus-20241202.zip"
+      - name: Build the real checked-in corpus with source-grounded translations
+        env:
+          ORACC_TF_M9_TEI_ARCHIVE: ${{ runner.temp }}/riao-teiCorpus-20241202.zip
+        run: |
+          python - <<'PY'
+          import os
+          from oracc_tf import corpus, translations
+
+          source = translations.parse_tei_archive(os.environ["ORACC_TF_M9_TEI_ARCHIVE"])
+          corpus.build_full_tf(
+              "/tmp/oracc-tf",
+              translations_by_document=source.as_document_map(),
+          )
+          PY
       - name: Generate reference evidence
         run: python scripts/gen_docs.py /tmp/oracc-tf --docs-dir /tmp/reference
       - uses: actions/upload-artifact@v4

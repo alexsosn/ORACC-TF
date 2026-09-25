@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from oracc_tf import TF_VERSION, corpus, loader, metadata, paths, publishing, releases
+from oracc_tf import TF_VERSION, corpus, loader, metadata, paths, publishing, releases, translations
 
 
 def _edition() -> loader.Edition:
@@ -94,11 +94,18 @@ def test_every_registered_dataset_has_a_distinct_publishable_root(tmp_path):
 def test_registered_builder_resolves_the_canonical_root(tmp_path, monkeypatch):
     calls = []
     sentinel = object()
+    empty_map = {}
 
-    def fake_build(out_dir, *, data):
-        calls.append((Path(out_dir), Path(data)))
+    class Index:
+        def as_document_map(self):
+            return empty_map
+
+    def fake_build(out_dir, *, data, translations_by_document):
+        calls.append((Path(out_dir), Path(data), translations_by_document))
         return sentinel
 
+    monkeypatch.setenv("ORACC_TF_M9_TEI_ARCHIVE", str(tmp_path / translations.OFFICIAL_ARCHIVE_NAME))
+    monkeypatch.setattr(translations, "parse_tei_archive", lambda path: Index())
     monkeypatch.setattr(corpus, "build_full_tf", fake_build)
     root, report = publishing.build_registered_tf(
         tmp_path, "assyrian-royal-inscriptions", tf_version=TF_VERSION
@@ -107,7 +114,7 @@ def test_registered_builder_resolves_the_canonical_root(tmp_path, monkeypatch):
     assert root == paths.publishable_tf_root(
         tmp_path, "assyrian-royal-inscriptions", TF_VERSION
     )
-    assert calls == [(root, paths.DATA)]
+    assert calls == [(root, paths.DATA, empty_map)]
     assert report is sentinel
 
 
@@ -123,7 +130,7 @@ def test_registered_builder_cannot_mislabel_the_converter_schema(tmp_path, monke
     monkeypatch.setattr(corpus, "build_full_tf", should_not_build)
     with pytest.raises(ValueError, match="TF version"):
         publishing.build_registered_tf(
-            tmp_path, "assyrian-royal-inscriptions", tf_version="0.4.0"
+            tmp_path, "assyrian-royal-inscriptions", tf_version="0.5.0"
         )
 
 

@@ -8,10 +8,11 @@ repository-standard root.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Callable
 
-from . import TF_VERSION, corpus, paths, releases
+from . import TF_VERSION, corpus, paths, releases, translations
 
 
 _DATASET_BUILDERS: dict[str, str] = {
@@ -25,6 +26,7 @@ def build_registered_tf(
     *,
     tf_version: str = TF_VERSION,
     data: Path = paths.DATA,
+    translations_archive: Path | str | None = None,
 ) -> tuple[Path, Any]:
     """Build one registered dataset into its canonical standalone TF root.
 
@@ -33,6 +35,9 @@ def build_registered_tf(
     silently publishing to an ad-hoc path. The current converter can publish
     only its own schema version; callers cannot relabel those bytes by choosing
     a different version directory.
+
+    The pinned M9 TEI archive is required. Supply it explicitly or set
+    ``ORACC_TF_M9_TEI_ARCHIVE``; its pinned SHA-256 is checked before parsing.
     """
     config = releases.load_datasets(paths.ROOT / "datasets.toml")
     if dataset not in config:
@@ -46,7 +51,21 @@ def build_registered_tf(
     if builder_name is None:
         raise RuntimeError(f"registered dataset has no publishable builder: {dataset!r}")
 
+    archive = translations_archive
+    if archive is None:
+        archive = os.environ.get("ORACC_TF_M9_TEI_ARCHIVE")
+    if archive is None or not str(archive).strip():
+        raise ValueError(
+            "registered TF builds require the pinned TEI archive; pass "
+            "translations_archive or set ORACC_TF_M9_TEI_ARCHIVE"
+        )
+    translation_index = translations.parse_tei_archive(archive)
+
     root = paths.publishable_tf_root(output_base, dataset, tf_version)
     builder: Callable[..., Any] = getattr(corpus, builder_name)
-    report = builder(root, data=Path(data))
+    report = builder(
+        root,
+        data=Path(data),
+        translations_by_document=translation_index.as_document_map(),
+    )
     return root, report

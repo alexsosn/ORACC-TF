@@ -265,7 +265,7 @@ def test_browser_passage_renders_named_formats_from_source_slots(tmp_path: Path)
 
     def rendered_passage(fmt: str) -> str:
         response = webapp.test_client().post(
-            "/passage",
+            f"/passage/{sections[1]}",
             data={
                 "sec0": sections[0],
                 "sec1": sections[1],

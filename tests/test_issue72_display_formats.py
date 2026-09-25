@@ -275,6 +275,7 @@ def test_browser_passage_renders_named_formats_from_source_slots(tmp_path: Path)
                 "sec1": sections[1],
                 "sec2": sections[2],
                 "textFormat": fmt,
+                "baseTypes": ["word"] if fmt == "text-trans-full" else ["sign"],
             },
         )
         assert response.status_code == 200

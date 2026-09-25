@@ -3,7 +3,7 @@
   "issue": 27,
   "implementation_pr": 67,
   "registry_status": "todo",
-  "runtime_status": "completion-blocked",
+  "runtime_status": "completion-unblocked",
   "research": {
     "base_head": "34030b8e29779f976a9db9565274b9029f33a639",
     "finding": "Phase 1 requires an executable line-range translation lookup for final completion, but issue #27 explicitly permits research/content drafting before P-001.M9 is done. The Phase-1 model contract also tracks ADR-0001 semantic-sign versus synthetic-empty-slot separation."
@@ -14,11 +14,12 @@
     "intermediate_run": 34108555805,
     "intermediate_result": "1 expected failure, 183 passed, 1 skipped after the model contract was corrected; the remaining start-blocking assertion was later superseded by issue #27's explicit early-drafting rule"
   },
-  "completion_blocker": {
-    "dependency": "P-001.M9",
-    "dependency_issue": 16,
-    "dependency_pr": 13,
-    "reason": "The translations hazard page cannot satisfy its runnable overlap-query acceptance criterion, and P-003.PH1 cannot merge/finalize, until the translation layer is present on main."
-  },
-  "resume_gate": "Research, measurement, model/identity/sign/word drafting, and RED docs-execution preparation may proceed now. Do not finalize or merge P-003.PH1 until P-001.M9 is done and the translation-range example executes against main."
+  "resume_gate": "P-001.M9 is complete on main. Continue the Phase-1 work and validate the translation-range overlap example against the merged translation graph. Keep P-003.PH1 todo until its own acceptance criteria and checks are complete.",
+  "resolved_dependency": {
+    "task": "P-001.M9",
+    "issue": 16,
+    "implementation_pr": 13,
+    "merge_commit": "dc3049b81a033bc0532c2026ecfc51c62a105128",
+    "resolved_on": "2026-09-25"
+  }
 }

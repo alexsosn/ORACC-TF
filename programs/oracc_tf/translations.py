@@ -290,7 +290,11 @@ def parse_tei_archive(
             f"TEI archive SHA-256 mismatch: expected {expected_sha256}, got {source_sha256}"
         )
 
-    archive_name = path.name
+    archive_name = (
+        OFFICIAL_ARCHIVE_NAME
+        if source_sha256 == OFFICIAL_ARCHIVE_SHA256
+        else path.name
+    )
     try:
         with zipfile.ZipFile(io.BytesIO(archive_bytes)) as archive:
             xml_names = [name for name in archive.namelist() if name.lower().endswith(".xml")]

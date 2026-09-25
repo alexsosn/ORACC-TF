@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 
 import pytest
@@ -38,6 +39,20 @@ def test_pinned_riao_tei_archive_builds_source_aligned_translation_graph(tmp_pat
     assert report.translation_units + report.translation_gaps == source_units
     assert any("unresolved source line range" in gap for gap in report.translation_gap_details)
     assert any("document absent from corpus build" in gap for gap in report.translation_gap_details)
+
+    gap_inventory = json.loads(
+        (tmp_path / "tf" / corpus.TRANSLATION_GAP_FILENAME).read_text(encoding="utf-8")
+    )
+    assert gap_inventory["schema"] == corpus.TRANSLATION_GAP_SCHEMA
+    assert gap_inventory["count"] == report.translation_gaps == 2_509
+    assert sum(gap_inventory["category_counts"].values()) == 2_509
+    assert gap_inventory["category_counts"]["missing-source-range"] == 668
+    assert set(gap_inventory["category_counts"]) <= {
+        "missing-source-range",
+        "unresolved-source-range",
+        "document-not-in-corpus",
+    }
+    assert len(gap_inventory["gaps"]) == 2_509
 
     api = corpus.load_tf(tmp_path / "tf")
     units_by_id = {

@@ -490,7 +490,7 @@ def _write_translation_gap_inventory(
     temp = path.with_name(f".{path.name}.tmp")
     try:
         temp.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
         temp.replace(path)

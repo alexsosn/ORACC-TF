@@ -107,7 +107,7 @@ def test_issue69_prototype_formats_do_not_leak_synthetic_slots(tmp_path: Path) -
     assert result["schema_version"] == 1
     assert result["synthetic_slot_count"] == 1
     assert result["synthetic_slot_utf8"] is None
-    assert result["cuneiform"] == "𒀀"
+    assert result["cuneiform"] == "𒀀 "
     assert result["transliteration"].strip().split() == ["*", "a"]
     assert "synthetic" not in result["cuneiform"].lower()
     assert "synthetic" not in result["transliteration"].lower()

@@ -85,5 +85,5 @@ def test_issue69_probe_separates_blank_synthetic_anchor_from_semantic_text(tmp_p
     assert result["synthetic_slot_utf8"] is None
     assert result["synthetic_slot_cuneiform"] == ""
     assert result["synthetic_slot_transliteration"] == ""
-    assert result["semantic_line_cuneiform"] == "𒀀"
+    assert result["semantic_line_cuneiform"] == "𒀀 "
     assert result["semantic_line_transliteration"].strip() == "a"

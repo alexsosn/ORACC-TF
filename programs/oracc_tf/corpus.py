@@ -766,8 +766,9 @@ def build_tf(
                 raise CorpusBuildError(
                     f"{edition.key}: translation range {sref!r}..{eref!r} has no TF slots"
                 )
-            source_id = getattr(unit, "source_id", None) or f"{edition.text_id}.tr{ordinal}"
-            translation_id = f"{edition.key}:{source_id}"
+            source_id = getattr(unit, "source_id", None)
+            generated_id = source_id or f"{edition.text_id}.tr{ordinal}"
+            translation_id = f"{edition.key}:{generated_id}"
             unit_node = graph.node("translation_unit", slots)
             graph.feature(
                 unit_node,

@@ -6,7 +6,7 @@ status: active
 priority: P0
 depends_on:
   - R-004
-updated: 2026-09-07
+updated: 2026-09-25
 ---
 
 # Parallel-safe research-design-TDD-review task loop

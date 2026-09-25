@@ -97,7 +97,7 @@ def test_translation_nodes_and_features_advance_the_tf_schema():
     assert TF_VERSION == "0.4.0"
 
 
-def test_official_archive_parser_pins_identity_and_preserves_explicit_gaps(tmp_path: Path):
+def test_official_archive_parser_pins_identity_and_preserves_explicit_gaps(tmp_path: Path, monkeypatch):
     archive_path = tmp_path / "tei.zip"
     xml = f'''<?xml version="1.0"?>
 <teiCorpus xmlns="{TEI}" xmlns:xtr="{XTR}">
@@ -112,6 +112,7 @@ def test_official_archive_parser_pins_identity_and_preserves_explicit_gaps(tmp_p
     with zipfile.ZipFile(archive_path, "w") as archive:
         archive.writestr("source.xml", xml)
     digest = hashlib.sha256(archive_path.read_bytes()).hexdigest()
+    monkeypatch.setattr(translations, "OFFICIAL_ARCHIVE_SHA256", digest)
 
     index = translations.parse_tei_archive(archive_path, expected_sha256=digest)
 
@@ -129,7 +130,7 @@ def test_official_archive_parser_pins_identity_and_preserves_explicit_gaps(tmp_p
     assert record.units[2].sref is None
     assert record.units[2].eref is None
     assert record.units[0].document_key == record.key
-    assert record.units[0].source_name == "tei.zip"
+    assert record.units[0].source_name == translations.OFFICIAL_ARCHIVE_NAME
     assert record.units[0].source_sha256 == digest
 
 

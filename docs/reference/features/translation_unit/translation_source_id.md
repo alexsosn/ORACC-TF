@@ -1,3 +1,5 @@
+pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
+pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
 # `translation_source_id`
 
 - kind: `node`
@@ -5,7 +7,7 @@
 - value type: `str`
 - populated values: `6792`
 - distinct values: `6792`
-- description: Identifier of this translation unit in the pinned official TEI source.
+- description: TEI xml:id declared on this translation unit, when supplied by the pinned official source.
 
 ## Value frequencies
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -63,11 +62,11 @@ def test_registered_builder_uses_pinned_archive_environment_path(tmp_path, monke
         def as_document_map(self):
             return {}
 
-    monkeypatch.setattr(
-        translations,
-        "parse_tei_archive",
-        lambda path: observed.setdefault("archive", Path(path)) or Index(),
-    )
+    def parse(path):
+        observed["archive"] = Path(path)
+        return Index()
+
+    monkeypatch.setattr(translations, "parse_tei_archive", parse)
     monkeypatch.setattr(corpus, "build_full_tf", lambda *args, **kwargs: "report")
 
     publishing.build_registered_tf(tmp_path, "assyrian-royal-inscriptions")

@@ -6,7 +6,7 @@ status: active
 priority: P0
 depends_on:
   - R-004
-updated: 2026-09-07
+updated: 2026-09-25
 ---
 
 # Parallel-safe research-design-TDD-review task loop
@@ -213,5 +213,11 @@ Generated app provenance and collision-safe ORACC source links — GitHub #74.
 
 ### ISSUE-75
 End-to-end Text-Fabric browser acceptance tests — GitHub #75.
+
+### ISSUE-78
+Standalone researcher manual — GitHub #78.
+
+### ISSUE-79
+Canonical app/docs/release support path ownership — GitHub #79.
 
 When one of these workstreams gains a dedicated normative R/P document, move its registry task to that document without changing the task id or GitHub issue mapping unless an explicit migration says otherwise. When an issue closes, reconcile registry status/evidence in the same merge window so closed work cannot remain falsely selectable.

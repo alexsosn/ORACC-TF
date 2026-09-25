@@ -2,7 +2,7 @@
   "task": "ISSUE-71",
   "issue": 71,
   "pr": 106,
-  "runtime_status": "review-pending",
+  "runtime_status": "done",
   "scope": "generated per-dataset Text-Fabric app packaging and supported standalone discovery",
   "research": {
     "design_comment": 5607480866,
@@ -24,7 +24,9 @@
       "provenanceSpec.relative=/tf",
       "provenanceSpec.version=<tf_version>"
     ],
-    "override_surface": ["display_css"],
+    "override_surface": [
+      "display_css"
+    ],
     "default_app_py": false,
     "publication": "distribution.stage_distribution(..., support_roots={app: generated_app}) remains the sole manifest ownership transaction",
     "discovery": "Text-Fabric 13.1 app:<path> loading from canonical staged app path resolves sibling tf/<version>; the known data-only browser CLI parser limitation is not treated as product acceptance",
@@ -54,14 +56,12 @@
     ]
   },
   "verification": {
-    "code_head": "4098a43248835490fb84a2c6f9101a8606d2abf7",
-    "tests": 34407186338,
-    "tests_result": "311 passed, 1 skipped, 11 deselected fast/fixture; 11 passed whole-corpus",
-    "generated_reference": 34407186225,
+    "tests": 34407852980,
+    "tests_result": "Exact-final GREEN.",
+    "generated_reference": 34407852966,
     "generated_reference_result": "success",
-    "m8_cross_validation": 34407186398,
-    "m8_cross_validation_result": "success",
-    "final_head_verification": "pending after durable evidence commit"
+    "m8_cross_validation": 34407853040,
+    "m8_result": "success"
   },
   "coordination": {
     "current_session": "gpt56sol-20260910-0024-71-app-packaging",
@@ -70,8 +70,19 @@
     "base": "72ca36c96a5df0c2fad20da893798eb6f3551059"
   },
   "review": {
-    "status": "pending",
-    "fresh_exact_head_review_required": true
+    "review_id": 5160185240,
+    "review_session": "review-gpt56sol-20260910-0045-106",
+    "implementation_session": "gpt56sol-20260910-0024-71-app-packaging",
+    "reviewed_head": "6b43311cdcde7f2762baf46a139e2f0548baaf34",
+    "verdict": "pass"
   },
-  "resume_gate": "Run exact-head required workflows on the evidence-final head, recheck main/head/claim ownership, then perform a fresh logically independent adversarial review. Any blocker requires a tests-only RED regression and re-review; a clean exact-head review may be followed only by PR metadata, merge, issue completion and claim release."
+  "resume_gate": "Complete: PR #106 merged, exact-head checks and independent review passed, and the ISSUE-71 lease was released.",
+  "status": "done",
+  "implementation": {
+    "pr": 106,
+    "session": "gpt56sol-20260910-0024-71-app-packaging",
+    "head": "6b43311cdcde7f2762baf46a139e2f0548baaf34",
+    "merged_commit": "e4448645d423d88837d3267db3609e0666cc9536",
+    "release_comment": 5609186179
+  }
 }

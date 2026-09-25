@@ -86,7 +86,7 @@ DESCRIPTIONS: dict[str, str] = {
     "word_lex": "Edge from a word occurrence to its ORACC-TF lexeme node.",
     # TEI translation layer
     "translation_id": "Qualified ORACC-TF translation identity composed from the source document key and TEI unit identifier.",
-    "translation_source_id": "Identifier of this translation unit in the pinned official TEI source.",
+    "translation_source_id": "TEI xml:id declared on this translation unit, when supplied by the pinned official source.",
     "translation_sref": "Inclusive source line-range start declared by TEI xtr:sref.",
     "translation_eref": "Inclusive source line-range end declared by TEI xtr:eref.",
     "translation_rows": "Row count declared by the TEI translation source, when present.",

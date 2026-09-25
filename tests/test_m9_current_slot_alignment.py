@@ -151,10 +151,17 @@ def test_generated_translation_identity_is_not_mislabeled_as_source_id(tmp_path)
         {"node": "d", "type": "line-start", "ref": "QTRSOURCE.1", "label": "1"},
         _word("QTRSOURCE", "l1", "a", "𒀀"),
     ])
-    unit = _Unit(
+    unit_without_xml_id = _Unit(
         document_key=edition.key,
         text_id=edition.text_id,
         source_id=None,
+        sref="QTRSOURCE.1",
+        eref="QTRSOURCE.1",
+    )
+    unit_with_xml_id = _Unit(
+        document_key=edition.key,
+        text_id=edition.text_id,
+        source_id="QTRSOURCE.project-en.1",
         sref="QTRSOURCE.1",
         eref="QTRSOURCE.1",
     )
@@ -163,10 +170,15 @@ def test_generated_translation_identity_is_not_mislabeled_as_source_id(tmp_path)
         tmp_path,
         editions=(edition,),
         metadata_index=metadata.MetadataIndex.empty(),
-        translations_by_document={edition.key: (unit,)},
+        translations_by_document={edition.key: (unit_without_xml_id, unit_with_xml_id)},
     )
 
     api = corpus.load_tf(tmp_path)
-    node = next(iter(api.F.otype.s("translation_unit")))
-    assert api.F.translation_id.v(node) == f"{edition.key}:QTRSOURCE.tr1"
-    assert api.F.translation_source_id.v(node) is None
+    nodes = {
+        api.F.translation_id.v(node): node
+        for node in api.F.otype.s("translation_unit")
+    }
+    generated = nodes[f"{edition.key}:QTRSOURCE.tr1"]
+    source_identified = nodes[f"{edition.key}:QTRSOURCE.project-en.1"]
+    assert api.F.translation_source_id.v(generated) is None
+    assert api.F.translation_source_id.v(source_identified) == "QTRSOURCE.project-en.1"

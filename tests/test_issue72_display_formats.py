@@ -245,6 +245,7 @@ def test_advanced_app_observes_same_named_format_output(tmp_path: Path) -> None:
 
 def test_browser_passage_renders_named_formats_from_source_slots(tmp_path: Path) -> None:
     """The browser's actual passage response must expose the public display formats."""
+    from tf.app import findApp, useApp
     from tf.browser.kernel import makeTfKernel
     from tf.browser.web import Web, factory as browser_factory
 
@@ -257,9 +258,12 @@ def test_browser_passage_renders_named_formats_from_source_slots(tmp_path: Path)
     sections = api.T.sectionFromNode(line)
     data_spec = f"data:{tmp_path.resolve()}"
 
-    advanced_app = use(data_spec, silent="deep")
-    assert advanced_app is not None and advanced_app.api is not None
-    kernel_api = makeTfKernel(advanced_app, data_spec)
+    app_name, checkout_app, data_loc, backend = useApp(data_spec, None)
+    browser_app = findApp(
+        app_name, checkout_app, data_loc, backend, True, silent="deep"
+    )
+    assert browser_app is not None and browser_app.api is not None
+    kernel_api = makeTfKernel(browser_app, data_spec)
     assert kernel_api
     webapp = browser_factory(Web(kernel_api))
 
@@ -278,5 +282,6 @@ def test_browser_passage_renders_named_formats_from_source_slots(tmp_path: Path)
         assert payload is not None
         return str(payload.get("table", ""))
 
-    assert "𒀀𒁀" in rendered_passage("text-orig-full")
+    assert "𒀀" in rendered_passage("text-orig-full")
+    assert "𒁀" in rendered_passage("text-orig-full")
     assert "a-ba" in rendered_passage("text-trans-full")

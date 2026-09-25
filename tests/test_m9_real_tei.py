@@ -57,7 +57,7 @@ def test_pinned_riao_tei_archive_builds_source_aligned_translation_graph(tmp_pat
     ) == 2_452
     assert {
         gap["source_sha256"] for gap in gap_inventory["gaps"]
-    } == {index.records["riao-teiCorpus-20241202.zip"].source_sha256}
+    } == {"b793d8920db58908e3a044b7f2d1a204c1ba0784e880007e0cd7941333e841bd"}
 
     api = corpus.load_tf(tmp_path / "tf")
     units_by_id = {

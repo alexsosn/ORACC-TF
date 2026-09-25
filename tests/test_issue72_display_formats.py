@@ -241,3 +241,42 @@ def test_advanced_app_observes_same_named_format_output(tmp_path: Path) -> None:
     assert app is not None and app.api is not None
     assert app.api.T.text(line, fmt="text-orig-full") == expected_orig == "𒀀𒁀 "
     assert app.api.T.text(line, fmt="text-trans-full") == expected_trans == "a-ba "
+
+
+def test_browser_passage_renders_named_formats_from_source_slots(tmp_path: Path) -> None:
+    """The browser's actual passage response must expose the public display formats."""
+    from tf.browser.kernel import makeTfKernel
+    from tf.browser.web import Web, factory as browser_factory
+
+    edition = _edition(
+        "QWEB72",
+        [_word("QWEB72", "l1", "a-ba", [("a", "𒀀"), ("ba", "𒁀")])],
+    )
+    api = _build(tmp_path, edition)
+    line = _node_by_source(api, "line", "QWEB72.1")
+    sections = api.T.sectionFromNode(line)
+    data_spec = f"data:{tmp_path.resolve()}"
+
+    advanced_app = use(data_spec, silent="deep")
+    assert advanced_app is not None and advanced_app.api is not None
+    kernel_api = makeTfKernel(advanced_app, data_spec)
+    assert kernel_api
+    webapp = browser_factory(Web(kernel_api))
+
+    def rendered_passage(fmt: str) -> str:
+        response = webapp.test_client().post(
+            "/passage",
+            data={
+                "sec0": sections[0],
+                "sec1": sections[1],
+                "sec2": sections[2],
+                "textFormat": fmt,
+            },
+        )
+        assert response.status_code == 200
+        payload = response.get_json()
+        assert payload is not None
+        return str(payload.get("passages", ""))
+
+    assert "𒀀𒁀" in rendered_passage("text-orig-full")
+    assert "a-ba" in rendered_passage("text-trans-full")

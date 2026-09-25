@@ -159,12 +159,10 @@ def _raw_text(element: ET.Element) -> str:
 
 
 def _translation_content(unit: ET.Element) -> tuple[str, str]:
-    prose = [child for child in unit if _local(child.tag) != "note"]
-    if not prose:
-        return _clean_text(unit), _raw_text(unit)
-    plain = " ".join(filter(None, (_clean_text(child) for child in prose)))
-    raw = " ".join(filter(None, (_raw_text(child) for child in prose)))
-    return plain, raw
+    # Walk the whole translation unit so its own leading text and each child's
+    # tail remain in source order around structural markup and editorial notes.
+    # The helpers exclude note contents while preserving the text after a note.
+    return _clean_text(unit), _raw_text(unit)
 
 
 def _record_from_root(

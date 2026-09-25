@@ -1,3 +1,5 @@
+pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
+pyenv: cannot rehash: /Users/alexandersosnovschenko/.pyenv/shims isn't writable
 # Feature reference
 
 Generated from TF metadata; do not hand-edit generated fields.
@@ -65,7 +67,7 @@ Generated from TF metadata; do not hand-edit generated fields.
 - [`translation_label`](features/translation_unit/translation_label.md) — Translation label declared by the TEI source.
 - [`translation_rows`](features/translation_unit/translation_rows.md) — Row count declared by the TEI translation source, when present.
 - [`translation_se_label`](features/translation_unit/translation_se_label.md) — Source edition label declared by the TEI translation source.
-- [`translation_source_id`](features/translation_unit/translation_source_id.md) — Identifier of this translation unit in the pinned official TEI source.
+- [`translation_source_id`](features/translation_unit/translation_source_id.md) — TEI xml:id declared on this translation unit, when supplied by the pinned official source.
 - [`translation_source_license`](features/translation_unit/translation_source_license.md) — Conservative translation licence statement, kept separate from corpusjson document licence metadata.
 - [`translation_source_license_url`](features/translation_unit/translation_source_license_url.md) — ORACC licensing guidance for the translation source; project-specific terms may differ.
 - [`translation_source_name`](features/translation_unit/translation_source_name.md) — Name of the pinned official TEI archive supplying this translation.

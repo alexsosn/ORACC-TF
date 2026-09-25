@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -143,6 +144,17 @@ def test_translation_units_without_source_alignment_are_reported_as_gaps(tmp_pat
     assert report.translation_gaps == 2
     assert any("source provides no line range" in gap for gap in report.translation_gap_details)
     assert any("unresolved source line range" in gap for gap in report.translation_gap_details)
+    inventory = json.loads((tmp_path / corpus.TRANSLATION_GAP_FILENAME).read_text())
+    assert inventory["schema"] == corpus.TRANSLATION_GAP_SCHEMA
+    assert inventory["count"] == 2
+    assert inventory["category_counts"] == {
+        "missing-source-range": 1,
+        "unresolved-source-range": 1,
+    }
+    assert {gap["translation_source_id"] for gap in inventory["gaps"]} == {
+        "QTRGAP.tr-missing",
+        "QTRGAP.tr-unresolved",
+    }
 
 
 def test_generated_translation_identity_is_not_mislabeled_as_source_id(tmp_path):

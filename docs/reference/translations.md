@@ -35,6 +35,16 @@ source archive digest, and a machine-readable reason (`missing-source-range`,
 `unresolved-source-range`, or `document-not-in-corpus`). This lets consumers
 inspect every omitted unit rather than relying only on aggregate coverage.
 
+## Registered builds
+
+Registered publication builds require the pinned archive, so a release artifact
+cannot silently omit its translations. Download and verify the source with
+`scripts/download_m9_tei.sh PATH`, then pass the archive to
+`build_registered_tf(..., translations_archive=PATH)`, or set
+`ORACC_TF_M9_TEI_ARCHIVE` to its path. In both cases the parser verifies the
+pinned SHA-256 digest before the corpus build proceeds. The registered builder
+raises an error when the archive is missing or has changed.
+
 To retrieve the source translation units that explicitly cover a line, follow
 the `translation_line` edge from the line node. There is no `line.translation`
 feature because a unit may span several lines:

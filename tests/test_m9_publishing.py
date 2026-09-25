@@ -12,6 +12,11 @@ from oracc_tf import corpus, paths, publishing, translations
 def test_registered_builder_fails_closed_without_pinned_tei_source(tmp_path, monkeypatch):
     monkeypatch.delenv("ORACC_TF_M9_TEI_ARCHIVE", raising=False)
 
+    def should_not_build(*args, **kwargs):
+        raise RuntimeError("builder must not run without the pinned TEI source")
+
+    monkeypatch.setattr(corpus, "build_full_tf", should_not_build)
+
     with pytest.raises(ValueError, match="pinned TEI archive"):
         publishing.build_registered_tf(
             tmp_path,

@@ -252,7 +252,7 @@ def _semantic_reconciliation(
         tf_sign_slots.setdefault(key, slot)
 
     source_line_counts: Counter[str] = Counter()
-    source_lexemes: set[str] = set()
+    source_lexeme_ids: set[str] = set()
     source_sign_counts: Counter[str] = Counter()
 
     word_feature_names = (
@@ -388,7 +388,7 @@ def _semantic_reconciliation(
                     )
 
             for key in lexemes.keys_for_word(word):
-                source_lexemes.add(_lexeme_identity(key))
+                source_lexeme_ids.add(_lexeme_identity(key))
 
             for sign in word.signs:
                 sign_identity = (
@@ -430,7 +430,7 @@ def _semantic_reconciliation(
     for identity in _duplicates(tf_line_counts):
         issue("duplicate-tf-line", identity=identity)
 
-    source_lexeme_counts = Counter({identity: 1 for identity in source_lexemes})
+    source_lexeme_counts = Counter({identity: 1 for identity in source_lexeme_ids})
     missing_lexemes = _difference(source_lexeme_counts, tf_lexeme_counts)
     unexpected_lexemes = _difference(tf_lexeme_counts, source_lexeme_counts)
     for identity in missing_lexemes:

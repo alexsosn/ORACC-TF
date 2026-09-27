@@ -51,6 +51,9 @@ jobs:
             --dataset "$DATASET" \
             > /tmp/issue124-source-to-tf-audit.json
 
+      - name: Print audit evidence
+        run: python -m json.tool /tmp/issue124-source-to-tf-audit.json
+
       - name: Upload audit report
         uses: actions/upload-artifact@v4
         with:

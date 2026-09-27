@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import importlib
 import json
 from pathlib import Path
@@ -164,6 +165,76 @@ def test_audit_reports_qualified_missing_document_and_word(tmp_path: Path) -> No
         "semantic-sign-count",
         "line-count",
     }
+
+
+
+def test_audit_detects_same_cardinality_semantic_drift(tmp_path: Path) -> None:
+    audit = _audit()
+    data = tmp_path / "data"
+    source_path = _write_source(data, "Q000001")
+    source_doc = json.loads(source_path.read_text(encoding="utf-8"))
+    source_word = source_doc["cdl"][0]["cdl"][-1]
+    source_word["f"].update(
+        {"cf": "abu", "gw": "father", "pos": "N"}
+    )
+    source_path.write_text(json.dumps(source_doc), encoding="utf-8")
+    _write_catalogue(
+        data,
+        {"Q000001": {"project": "riao/ria1", "designation": "Fixture 1"}},
+    )
+
+    candidate_doc = copy.deepcopy(source_doc)
+    candidate_word = candidate_doc["cdl"][0]["cdl"][-1]
+    candidate_word["f"].update(
+        {
+            "form": "ba",
+            "cf": "alu",
+            "gw": "city",
+            "gdl": [
+                {
+                    "v": "ba",
+                    "utf8": "𒁀",
+                    "id": "Q000001.1.1.0",
+                }
+            ],
+        }
+    )
+    candidate = loader.Edition(
+        subproject="riao/ria1",
+        text_id="Q000001",
+        path=source_path,
+        doc=candidate_doc,
+        word_count=1,
+    )
+
+    tf_root = tmp_path / "tf"
+    corpus.build_tf(
+        tf_root,
+        editions=(candidate,),
+        metadata_index=metadata.load_index(data),
+    )
+    report = audit.build_report(
+        data=data,
+        tf_dir=tf_root,
+        source_revision=SOURCE_REVISION,
+        dataset=DATASET,
+    )
+
+    # Counts and qualified document/word identities are deliberately unchanged.
+    assert report["reconciliation"]["documents"]["missing_in_tf"] == []
+    assert report["reconciliation"]["words"]["missing_in_tf"] == []
+    assert report["reconciliation"]["semantic_signs"]["delta"] == 0
+    assert report["reconciliation"]["lines"]["delta"] == 0
+    assert report["reconciliation"]["lexemes"]["delta"] == 0
+
+    kinds = {item["kind"] for item in report["unexplained"]}
+    assert {
+        "word-feature-mismatch",
+        "semantic-sign-payload-mismatch",
+        "lexeme-identity",
+        "word-lex-relation",
+    } <= kinds
+    assert report["status"] == "fail"
 
 
 def test_audit_json_is_deterministic_and_checkout_path_independent(tmp_path: Path) -> None:

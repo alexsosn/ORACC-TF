@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-09-25",
+  "updated": "2026-09-27",
   "documents": [
     {
       "id": "G-001",
@@ -868,6 +868,19 @@
       "status": "done",
       "issue": 79,
       "evidence_file": "docs/task-state/ISSUE-79.json"
+    },
+    {
+      "id": "ISSUE-124",
+      "title": "Final source-to-TF correctness and completeness audit",
+      "plan": "P-004",
+      "spec": "§ISSUE-124",
+      "priority": "P0",
+      "blocked_by": [
+        "P-001.M6"
+      ],
+      "status": "todo",
+      "issue": 124,
+      "evidence_file": "docs/task-state/ISSUE-124.json"
     }
   ],
   "selection_rule": "enumerate every claim/start-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; completion_blocked_by gates finalization without suppressing explicitly permitted early research/design; losing sessions reselect unrelated ready work",

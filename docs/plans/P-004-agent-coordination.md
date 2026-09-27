@@ -220,4 +220,7 @@ Standalone researcher manual — GitHub #78.
 ### ISSUE-79
 Canonical app/docs/release support path ownership — GitHub #79.
 
+### ISSUE-124
+Final source-to-TF correctness and completeness audit — GitHub #124.
+
 When one of these workstreams gains a dedicated normative R/P document, move its registry task to that document without changing the task id or GitHub issue mapping unless an explicit migration says otherwise. When an issue closes, reconcile registry status/evidence in the same merge window so closed work cannot remain falsely selectable.

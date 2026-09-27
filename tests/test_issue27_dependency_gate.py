@@ -14,10 +14,16 @@ def _task(task_id: str) -> dict[str, object]:
     return next(task for task in registry["tasks"] if task["id"] == task_id)
 
 
-def test_p003_ph1_may_start_before_translation_but_waits_to_finish() -> None:
+def test_p003_ph1_translation_dependency_tracks_m9_completion() -> None:
     task = _task("P-003.PH1")
+    translation = _task("P-001.M9")
+
     assert "P-001.M9" not in task["blocked_by"]
-    assert "P-001.M9" in task["completion_blocked_by"]
+    completion_dependencies = task.get("completion_blocked_by", [])
+    if translation["status"] == "done":
+        assert "P-001.M9" not in completion_dependencies
+    else:
+        assert "P-001.M9" in completion_dependencies
 
 
 def test_p003_phase1_model_contract_tracks_empty_slot_architecture() -> None:

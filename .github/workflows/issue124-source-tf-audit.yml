@@ -21,6 +21,7 @@ on:
       - "docs/reference/data-audit.md"
       - "docs/reference/index.md"
       - "docs/README.md"
+      - "datasets.toml"
       - "data/riao/**"
       - "data/rinap/**"
   workflow_dispatch:
@@ -40,6 +41,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Verify pinned source tree
+        run: git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap datasets.toml
 
       - name: Install audit dependencies
         run: pip install -e ".[dev]"

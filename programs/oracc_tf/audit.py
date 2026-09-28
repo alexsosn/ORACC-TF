@@ -8,6 +8,7 @@ instead of inventing a parallel classifier.
 from __future__ import annotations
 
 from collections import Counter
+from hashlib import sha256
 import json
 from pathlib import Path
 from typing import Mapping
@@ -135,6 +136,46 @@ def _canonical_json(value: object) -> str:
         separators=(",", ":"),
         allow_nan=False,
     )
+
+
+def _source_state_evidence(
+    data: Path,
+) -> tuple[list[dict[str, object]], list[dict[str, object]], str]:
+    """Enumerate in-scope source bytes independently of checkout-local paths."""
+    members: list[dict[str, object]] = []
+    for observation in loader.iter_source_observations(data):
+        if isinstance(observation, loader.ReadableSource):
+            members.append(
+                {
+                    "status": "readable",
+                    "relative_path": observation.relative_path,
+                    "subproject": observation.edition.subproject,
+                    "document_key": observation.edition.key,
+                    "bytes": observation.bytes,
+                    "sha256": observation.sha256,
+                }
+            )
+        else:
+            members.append({"status": "hazard", **observation.evidence()})
+    members.sort(key=lambda item: str(item["relative_path"]))
+
+    catalogues: list[dict[str, object]] = []
+    for subproject in loader.edition_subprojects(data):
+        path = data / subproject / "catalogue.json"
+        payload = path.read_bytes()
+        catalogues.append(
+            {
+                "relative_path": path.relative_to(data).as_posix(),
+                "subproject": subproject,
+                "bytes": len(payload),
+                "sha256": sha256(payload).hexdigest(),
+            }
+        )
+    catalogues.sort(key=lambda item: str(item["relative_path"]))
+
+    state = {"members": members, "catalogues": catalogues}
+    digest = sha256(_canonical_json(state).encode("utf-8")).hexdigest()
+    return members, catalogues, digest
 
 
 def _stored_scalar(value: object) -> str | int | None:
@@ -491,6 +532,9 @@ def build_report(
     data_path = Path(data)
     tf_path = Path(tf_dir)
 
+    members_manifest, catalogue_manifest, source_state_sha256 = _source_state_evidence(
+        data_path
+    )
     source_survey = loader.survey(data_path)
     source_gdl = gdl.census(data_path)
     source_words_census = words.census(data_path)
@@ -573,6 +617,35 @@ def build_report(
                 "kind": "source-word-census",
                 "identity_count": source_word_total,
                 "census_count": source_words_census.words,
+            }
+        )
+
+    readable_manifest = sum(
+        item["status"] == "readable" for item in members_manifest
+    )
+    hazard_manifest = sum(item["status"] == "hazard" for item in members_manifest)
+    if len(members_manifest) != source_survey.source_files:
+        unexplained.append(
+            {
+                "kind": "source-member-manifest-census",
+                "manifest_count": len(members_manifest),
+                "survey_count": source_survey.source_files,
+            }
+        )
+    if readable_manifest != source_survey.parseable:
+        unexplained.append(
+            {
+                "kind": "readable-member-manifest-census",
+                "manifest_count": readable_manifest,
+                "survey_count": source_survey.parseable,
+            }
+        )
+    if hazard_manifest != source_survey.unreadable:
+        unexplained.append(
+            {
+                "kind": "hazard-member-manifest-census",
+                "manifest_count": hazard_manifest,
+                "survey_count": source_survey.unreadable,
             }
         )
 
@@ -661,7 +734,11 @@ def build_report(
         "dataset": dataset,
         "source": {
             "repository_revision": source_revision,
+            "source_state_sha256": source_state_sha256,
             "subprojects": loader.edition_subprojects(data_path),
+            "document_keys": sorted(source_survey.keys),
+            "members_manifest": members_manifest,
+            "catalogue_manifest": catalogue_manifest,
             "members": source_survey.source_files,
             "readable_documents": source_survey.parseable,
             "populated_documents": source_survey.populated,

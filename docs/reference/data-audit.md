@@ -17,7 +17,7 @@ python scripts/audit_source_to_tf.py \
   --dataset assyrian-royal-inscriptions
 ```
 
-For the release candidate, the `issue124-source-to-tf-audit` workflow builds TF from the same checkout, publishes the canonical JSON report as an artifact, and rejects any non-empty `unexplained` list. The JSON report is the authoritative place for current counts and exact affected identities.
+For the release candidate, the `issue124-source-to-tf-audit` workflow builds TF from the same checkout, publishes the canonical JSON report as an artifact, and rejects any non-empty `unexplained` list. The JSON report is the authoritative place for current counts and exact affected identities. The workflow also verifies that the in-scope source tree still matches the pinned revision. `source.members_manifest` and `source.catalogue_manifest` record stable relative paths and SHA-256 hashes, while `source.source_state_sha256` fingerprints those manifests as one source state.
 
 ## Known source limitations
 

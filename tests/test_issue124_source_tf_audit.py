@@ -18,6 +18,7 @@ SOURCE_REVISION = "85d2f131202882d40b05b65bfb4c83e8b1238426"
 DATASET = "assyrian-royal-inscriptions"
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "audit_source_to_tf.py"
+WORKFLOW = ROOT / ".github" / "workflows" / "issue124-source-tf-audit.yml"
 
 
 def _audit():
@@ -107,6 +108,21 @@ def test_audit_reconciles_source_tf_and_keeps_known_gaps_explicit(tmp_path: Path
     assert report["source"]["readable_documents"] == 1
     assert report["source"]["hazards"][0]["kind"] == "empty-file"
     assert report["source"]["hazards"][0]["relative_path"].endswith("QEMPTY.json")
+
+    manifest = report["source"]["members_manifest"]
+    assert [item["relative_path"] for item in manifest] == [
+        "riao/ria1/corpusjson/Q000001.json",
+        "riao/ria1/corpusjson/QEMPTY.json",
+    ]
+    assert manifest[0]["document_key"] == "riao/ria1:Q000001"
+    assert manifest[0]["status"] == "readable"
+    assert manifest[1]["kind"] == "empty-file"
+    assert manifest[1]["status"] == "hazard"
+    assert len(report["source"]["catalogue_manifest"]) == 1
+    assert report["source"]["catalogue_manifest"][0]["relative_path"] == (
+        "riao/ria1/catalogue.json"
+    )
+    assert len(report["source"]["source_state_sha256"]) == 64
 
     assert report["tf"]["documents"] == 1
     assert report["tf"]["words"] == 1
@@ -259,8 +275,19 @@ def test_audit_json_is_deterministic_and_checkout_path_independent(tmp_path: Pat
         payloads.append(audit.canonical_bytes(report))
 
     assert payloads[0] == payloads[1]
+    left_report = json.loads(payloads[0])
+    right_report = json.loads(payloads[1])
+    assert left_report["source"]["source_state_sha256"] == (
+        right_report["source"]["source_state_sha256"]
+    )
     assert str(tmp_path).encode() not in payloads[0]
     assert payloads[0].endswith(b"\n")
+
+
+
+def test_release_workflow_verifies_pinned_source_tree_before_audit() -> None:
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert 'git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap datasets.toml' in workflow
 
 
 def test_audit_cli_emits_machine_readable_json(tmp_path: Path) -> None:

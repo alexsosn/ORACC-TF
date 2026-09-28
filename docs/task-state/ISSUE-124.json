@@ -21,11 +21,12 @@
     ],
     "red_commit": "d2d4bcf5c364632f5971eaf112d025deef328012",
     "adversarial_red_commit": "026321b38b23d7c728079fd4329c642f3a990a31",
-    "implementation_head_before_completion_evidence": "0d1465bf2757a25a6d92ee0c63e30fb1ae7e58f6"
+    "implementation_head_before_completion_evidence": "6c41284135a9bcef12ea37f18defae41d04552a8",
+    "source_pin_red_commit": "0b4bc38e4701f91d0a202a1799bad6cf8f826334"
   },
   "audit": {
-    "workflow_run": 36328003882,
-    "artifact_id": 10934419574,
+    "workflow_run": 36478010467,
+    "artifact_id": 10995405168,
     "artifact_name": "issue124-source-to-tf-audit",
     "status": "pass",
     "source": {
@@ -42,7 +43,10 @@
       "semantic_signs": 792651,
       "lines": 56226,
       "lexemes": 8025,
-      "gdl_unknown": 0
+      "gdl_unknown": 0,
+      "source_state_sha256": "249df0535d57c0f3de810bfdb3bd4d652d9d8aed154e84db6d8cee21ea8025e4",
+      "manifest_entries": 2081,
+      "catalogue_manifest_entries": 11
     },
     "tf": {
       "documents": 2078,
@@ -99,24 +103,31 @@
         "rinap/rinap5p1:Q008353",
         "rinap/rinap5p1:Q008369"
       ]
-    }
+    },
+    "artifact_digest": "sha256:8c9ae497cfb360fb1639a40333ab2af1d1703ac024724445066ef62791f52d06"
   },
   "verification": {
-    "tests_run": 36328003955,
-    "audit_run": 36328003882,
-    "m8_run": 36328003843,
-    "m9_run": 36328003841,
-    "docs_reference_run": 36328003870,
-    "issue69_research_run": 36328003918,
-    "result": "All exact-head workflows passed on 0d1465bf2757a25a6d92ee0c63e30fb1ae7e58f6 before documentation/completion-evidence finalization; the final head must be rerun and independently reviewed."
+    "tests_run": 36478010340,
+    "audit_run": 36478010467,
+    "m8_run": 36478010564,
+    "m9_run": 36478010455,
+    "docs_reference_run": 36478010242,
+    "issue69_research_run": 36478010334,
+    "result": "All triggered workflows passed on implementation head 6c41284135a9bcef12ea37f18defae41d04552a8. The completion-evidence commit is code/data-neutral and must receive its own exact-head rerun before merge."
   },
   "documentation": {
     "reference_page": "docs/reference/data-audit.md",
     "note": "User-facing documentation explains where the authoritative audit report exposes unreadable source members, catalogue asymmetries, round-trip exception classes, and synthetic-anchor validation without hand-maintaining drift-prone counts."
   },
   "review": {
-    "status": "pending",
-    "requirement": "Independent reviewer must bind a passing marker to the final exact head and sample raw ORACC records against generated TF/report for dropped, duplicated, fabricated or misjoined data."
+    "status": "pending_after_failed_review",
+    "failed_review_comment": 5877571350,
+    "failed_review_head": "a8eefa293e0140eedf01f9c28a8411ad462ee734",
+    "resolved_blockers": [
+      "The workflow now verifies data/riao, data/rinap, and datasets.toml against the pinned source revision before auditing.",
+      "The report now enumerates every corpusjson member with stable relative path/hash/qualified identity or typed hazard, hashes every in-scope catalogue source, and records a combined source-state SHA-256."
+    ],
+    "requirement": "A fresh independent reviewer must bind a passing marker to the final completion-evidence head and re-sample raw ORACC records against generated TF/report."
   },
   "status": "done"
 }

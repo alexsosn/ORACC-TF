@@ -4,7 +4,7 @@ title: ORACC-TF documentation index
 type: index
 status: active
 priority: P0
-updated: 2026-09-05
+updated: 2026-09-28
 ---
 
 # ORACC-TF documentation
@@ -27,6 +27,7 @@ claim-free skeletons until their generated evidence is available:
 - [Document identity](reference/identity.md)
 - [Query guide](reference/query-guide.md)
 - [Reproducibility](reference/reproducibility.md)
+- [Source-to-TF audit and known source gaps](reference/data-audit.md)
 - [Feature reference](reference/features.md)
 
 ## Layout

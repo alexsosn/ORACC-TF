@@ -1,34 +1,122 @@
 {
   "task": "ISSUE-124",
   "issue": 124,
-  "scope": "Final source-grounded audit of the assyrian-royal-inscriptions 1.0 candidate, including source membership, word/sign/line/lexeme reconciliation, catalogue joins, difficult GDL cases, and explicit remaining gaps.",
+  "implementation_pr": 128,
+  "scope": "Final source-grounded audit of the assyrian-royal-inscriptions 1.0 candidate, including source membership, identity, word/sign/line/lexeme reconciliation, catalogue joins, semantic payloads/relations, synthetic anchors, and explicit remaining source gaps.",
   "coordination": {
-    "implementation_session": "gpt56sol-20260927-1733-issue124",
-    "claim_comment": 5856788262,
-    "base_main": "85d2f131202882d40b05b65bfb4c83e8b1238426",
-    "note": "Issue #124 was added to the executable task registry in this workstream because the groomed 1.0 release gate selected it as the first P0 but the registry bridge had not yet been synchronized."
+    "implementation_session": "gpt56sol-20260928-2300-issue124",
+    "original_claim_comment": 5856788262,
+    "recovery_comment": 5877480734,
+    "claim_comment": 5877481410,
+    "base_main": "f6f189bbd99d72bfdc7044555bd3113aa7b54232",
+    "pinned_source_revision": "85d2f131202882d40b05b65bfb4c83e8b1238426",
+    "note": "The pinned source/data revision is unchanged by the later merge of PR #129, which modified only tests/test_issue27_dependency_gate.py."
   },
-  "research": {
-    "status": "in_progress",
-    "source_snapshot": {
-      "repository_revision": "85d2f131202882d40b05b65bfb4c83e8b1238426",
-      "dataset": "assyrian-royal-inscriptions"
-    },
-    "existing_evidence": [
-      "P-001.M0 source-member cardinalities and unreadable-member handling",
-      "P-001.M1 semantic GDL census and exceptional-shape tests",
-      "P-001.M2 word/sign reconciliation and zero-sign census",
-      "P-001.M3 source line and word-to-line reconciliation",
-      "P-001.M4 lexeme identity and multi-analysis tests",
-      "P-001.M5 qualified catalogue joins",
-      "P-001.M6 whole-corpus TF invariants and synthetic-anchor model",
-      "ISSUE-102 explicit unreadable-source observation/accounting work"
+  "gates": {
+    "research_comments": [
+      5856816027
     ],
-    "open_questions": [
-      "Which correctness/completeness assertions are still only historical registry evidence rather than regenerated from the pinned current snapshot?",
-      "Can one bounded audit harness directly compare the current source snapshot to the generated TF candidate without depending on previous ORACC-TF releases?",
-      "Do current source hazards or difficult GDL/lexical/catalogue cases expose any concrete converter defect that needs RED-first remediation?"
-    ]
+    "design_comments": [
+      5856816254
+    ],
+    "red_commit": "d2d4bcf5c364632f5971eaf112d025deef328012",
+    "adversarial_red_commit": "026321b38b23d7c728079fd4329c642f3a990a31",
+    "implementation_head_before_completion_evidence": "0d1465bf2757a25a6d92ee0c63e30fb1ae7e58f6"
   },
-  "status": "research"
+  "audit": {
+    "workflow_run": 36328003882,
+    "artifact_id": 10934419574,
+    "artifact_name": "issue124-source-to-tf-audit",
+    "status": "pass",
+    "source": {
+      "members": 2081,
+      "readable_documents": 2078,
+      "populated_documents": 1845,
+      "stubs": 233,
+      "hazards": [
+        "rinap/rinap1/corpusjson/Q003424.json",
+        "rinap/rinap1/corpusjson/Q006331.json",
+        "rinap/rinap1/corpusjson/Q006333.json"
+      ],
+      "words": 320975,
+      "semantic_signs": 792651,
+      "lines": 56226,
+      "lexemes": 8025,
+      "gdl_unknown": 0
+    },
+    "tf": {
+      "documents": 2078,
+      "words": 320975,
+      "semantic_signs": 792651,
+      "synthetic_slots": 689,
+      "total_slots": 793340,
+      "lines": 56226,
+      "lexemes": 8025
+    },
+    "reconciliation": {
+      "missing_documents": [],
+      "unexpected_documents": [],
+      "missing_words": [],
+      "unexpected_words": [],
+      "missing_sign_identities": [],
+      "unexpected_sign_identities": [],
+      "missing_line_identities": [],
+      "unexpected_line_identities": [],
+      "missing_lexeme_identities": [],
+      "unexpected_lexeme_identities": [],
+      "semantic_content_mismatches": {},
+      "synthetic_source_payload_violations": [],
+      "unexplained": []
+    },
+    "catalogue": {
+      "missing_document_keys": [
+        "riao/ria4:Q000000",
+        "riao/ria5:Q004703",
+        "rinap/rinap5p1:Q007630"
+      ],
+      "unmatched_catalogue_keys": [
+        "riao/ria4:Q009485",
+        "riao/ria4:Q009486",
+        "riao/ria4:Q009487",
+        "riao/ria4:Q009488",
+        "riao/ria4:Q009489",
+        "riao/ria4:Q009490",
+        "riao/ria4:Q009491",
+        "riao/ria4:Q009492",
+        "riao/ria4:Q009493",
+        "riao/ria4:Q009494",
+        "riao/ria4:Q009495",
+        "riao/ria4:Q009496",
+        "riao/ria4:Q009497",
+        "riao/ria4:Q009498",
+        "riao/ria4:Q009499",
+        "riao/ria4:Q009500",
+        "riao/ria4:Q009501",
+        "riao/ria4:Q009502",
+        "rinap/rinap1:Q003424",
+        "rinap/rinap1:Q006331",
+        "rinap/rinap1:Q006333",
+        "rinap/rinap5p1:Q008353",
+        "rinap/rinap5p1:Q008369"
+      ]
+    }
+  },
+  "verification": {
+    "tests_run": 36328003955,
+    "audit_run": 36328003882,
+    "m8_run": 36328003843,
+    "m9_run": 36328003841,
+    "docs_reference_run": 36328003870,
+    "issue69_research_run": 36328003918,
+    "result": "All exact-head workflows passed on 0d1465bf2757a25a6d92ee0c63e30fb1ae7e58f6 before documentation/completion-evidence finalization; the final head must be rerun and independently reviewed."
+  },
+  "documentation": {
+    "reference_page": "docs/reference/data-audit.md",
+    "note": "User-facing documentation explains where the authoritative audit report exposes unreadable source members, catalogue asymmetries, round-trip exception classes, and synthetic-anchor validation without hand-maintaining drift-prone counts."
+  },
+  "review": {
+    "status": "pending",
+    "requirement": "Independent reviewer must bind a passing marker to the final exact head and sample raw ORACC records against generated TF/report for dropped, duplicated, fabricated or misjoined data."
+  },
+  "status": "done"
 }

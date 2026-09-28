@@ -37,15 +37,15 @@ jobs:
       DATASET: assyrian-royal-inscriptions
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Verify pinned source tree
-        run: git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap datasets.toml
+        run: |
+          git fetch --no-tags --depth=1 origin "$SOURCE_REVISION"
+          git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap datasets.toml
 
       - name: Install audit dependencies
         run: pip install -e ".[dev]"

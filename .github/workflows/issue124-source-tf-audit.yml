@@ -1,0 +1,88 @@
+name: issue124-source-to-tf-audit
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/issue124-source-tf-audit.yml"
+      - "programs/oracc_tf/audit.py"
+      - "programs/oracc_tf/corpus.py"
+      - "programs/oracc_tf/gdl.py"
+      - "programs/oracc_tf/lexemes.py"
+      - "programs/oracc_tf/loader.py"
+      - "programs/oracc_tf/metadata.py"
+      - "programs/oracc_tf/roundtrip.py"
+      - "programs/oracc_tf/sections.py"
+      - "programs/oracc_tf/slotplan.py"
+      - "programs/oracc_tf/words.py"
+      - "scripts/audit_source_to_tf.py"
+      - "tests/test_issue124_source_tf_audit.py"
+      - "docs/registry.json"
+      - "docs/task-state/ISSUE-124.json"
+      - "docs/reference/data-audit.md"
+      - "docs/reference/index.md"
+      - "docs/README.md"
+      - "datasets.toml"
+      - "data/riao/**"
+      - "data/rinap/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_REVISION: 85d2f131202882d40b05b65bfb4c83e8b1238426
+      DATASET: assyrian-royal-inscriptions
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify pinned source tree
+        run: |
+          git fetch --no-tags --depth=1 origin "$SOURCE_REVISION"
+          git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap datasets.toml
+
+      - name: Install audit dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Build current semantic TF candidate
+        run: python -c "from oracc_tf import corpus; corpus.build_full_tf('/tmp/oracc-tf')"
+
+      - name: Produce pinned source-to-TF audit
+        run: |
+          python scripts/audit_source_to_tf.py \
+            --data data \
+            --tf-dir /tmp/oracc-tf \
+            --source-revision "$SOURCE_REVISION" \
+            --dataset "$DATASET" \
+            > /tmp/issue124-source-to-tf-audit.json
+
+      - name: Print audit evidence
+        run: python -m json.tool /tmp/issue124-source-to-tf-audit.json
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue124-source-to-tf-audit
+          path: /tmp/issue124-source-to-tf-audit.json
+          if-no-files-found: error
+
+      - name: Reject unexplained source-to-TF discrepancies
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              Path("/tmp/issue124-source-to-tf-audit.json").read_text(encoding="utf-8")
+          )
+          assert report["source"]["repository_revision"] == "85d2f131202882d40b05b65bfb4c83e8b1238426"
+          assert report["dataset"] == "assyrian-royal-inscriptions"
+          assert report["status"] == "pass", report["unexplained"]
+          assert report["unexplained"] == []
+          PY

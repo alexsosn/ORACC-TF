@@ -1,0 +1,133 @@
+{
+  "task": "ISSUE-124",
+  "issue": 124,
+  "implementation_pr": 128,
+  "scope": "Final source-grounded audit of the assyrian-royal-inscriptions 1.0 candidate, including source membership, identity, word/sign/line/lexeme reconciliation, catalogue joins, semantic payloads/relations, synthetic anchors, and explicit remaining source gaps.",
+  "coordination": {
+    "implementation_session": "gpt56sol-20260928-2300-issue124",
+    "original_claim_comment": 5856788262,
+    "recovery_comment": 5877480734,
+    "claim_comment": 5877481410,
+    "base_main": "f6f189bbd99d72bfdc7044555bd3113aa7b54232",
+    "pinned_source_revision": "85d2f131202882d40b05b65bfb4c83e8b1238426",
+    "note": "The pinned source/data revision is unchanged by the later merge of PR #129, which modified only tests/test_issue27_dependency_gate.py."
+  },
+  "gates": {
+    "research_comments": [
+      5856816027
+    ],
+    "design_comments": [
+      5856816254
+    ],
+    "red_commit": "d2d4bcf5c364632f5971eaf112d025deef328012",
+    "adversarial_red_commit": "026321b38b23d7c728079fd4329c642f3a990a31",
+    "implementation_head_before_completion_evidence": "6c41284135a9bcef12ea37f18defae41d04552a8",
+    "source_pin_red_commit": "0b4bc38e4701f91d0a202a1799bad6cf8f826334"
+  },
+  "audit": {
+    "workflow_run": 36478010467,
+    "artifact_id": 10995405168,
+    "artifact_name": "issue124-source-to-tf-audit",
+    "status": "pass",
+    "source": {
+      "members": 2081,
+      "readable_documents": 2078,
+      "populated_documents": 1845,
+      "stubs": 233,
+      "hazards": [
+        "rinap/rinap1/corpusjson/Q003424.json",
+        "rinap/rinap1/corpusjson/Q006331.json",
+        "rinap/rinap1/corpusjson/Q006333.json"
+      ],
+      "words": 320975,
+      "semantic_signs": 792651,
+      "lines": 56226,
+      "lexemes": 8025,
+      "gdl_unknown": 0,
+      "source_state_sha256": "249df0535d57c0f3de810bfdb3bd4d652d9d8aed154e84db6d8cee21ea8025e4",
+      "manifest_entries": 2081,
+      "catalogue_manifest_entries": 11
+    },
+    "tf": {
+      "documents": 2078,
+      "words": 320975,
+      "semantic_signs": 792651,
+      "synthetic_slots": 689,
+      "total_slots": 793340,
+      "lines": 56226,
+      "lexemes": 8025
+    },
+    "reconciliation": {
+      "missing_documents": [],
+      "unexpected_documents": [],
+      "missing_words": [],
+      "unexpected_words": [],
+      "missing_sign_identities": [],
+      "unexpected_sign_identities": [],
+      "missing_line_identities": [],
+      "unexpected_line_identities": [],
+      "missing_lexeme_identities": [],
+      "unexpected_lexeme_identities": [],
+      "semantic_content_mismatches": {},
+      "synthetic_source_payload_violations": [],
+      "unexplained": []
+    },
+    "catalogue": {
+      "missing_document_keys": [
+        "riao/ria4:Q000000",
+        "riao/ria5:Q004703",
+        "rinap/rinap5p1:Q007630"
+      ],
+      "unmatched_catalogue_keys": [
+        "riao/ria4:Q009485",
+        "riao/ria4:Q009486",
+        "riao/ria4:Q009487",
+        "riao/ria4:Q009488",
+        "riao/ria4:Q009489",
+        "riao/ria4:Q009490",
+        "riao/ria4:Q009491",
+        "riao/ria4:Q009492",
+        "riao/ria4:Q009493",
+        "riao/ria4:Q009494",
+        "riao/ria4:Q009495",
+        "riao/ria4:Q009496",
+        "riao/ria4:Q009497",
+        "riao/ria4:Q009498",
+        "riao/ria4:Q009499",
+        "riao/ria4:Q009500",
+        "riao/ria4:Q009501",
+        "riao/ria4:Q009502",
+        "rinap/rinap1:Q003424",
+        "rinap/rinap1:Q006331",
+        "rinap/rinap1:Q006333",
+        "rinap/rinap5p1:Q008353",
+        "rinap/rinap5p1:Q008369"
+      ]
+    },
+    "artifact_digest": "sha256:8c9ae497cfb360fb1639a40333ab2af1d1703ac024724445066ef62791f52d06"
+  },
+  "verification": {
+    "tests_run": 36478010340,
+    "audit_run": 36478010467,
+    "m8_run": 36478010564,
+    "m9_run": 36478010455,
+    "docs_reference_run": 36478010242,
+    "issue69_research_run": 36478010334,
+    "result": "All triggered workflows passed on implementation head 6c41284135a9bcef12ea37f18defae41d04552a8. The completion-evidence commit is code/data-neutral and must receive its own exact-head rerun before merge."
+  },
+  "documentation": {
+    "reference_page": "docs/reference/data-audit.md",
+    "note": "User-facing documentation explains where the authoritative audit report exposes unreadable source members, catalogue asymmetries, round-trip exception classes, and synthetic-anchor validation without hand-maintaining drift-prone counts."
+  },
+  "review": {
+    "status": "pending_after_failed_review",
+    "failed_review_comment": 5877571350,
+    "failed_review_head": "a8eefa293e0140eedf01f9c28a8411ad462ee734",
+    "resolved_blockers": [
+      "The workflow now verifies data/riao, data/rinap, and datasets.toml against the pinned source revision before auditing.",
+      "The report now enumerates every corpusjson member with stable relative path/hash/qualified identity or typed hazard, hashes every in-scope catalogue source, and records a combined source-state SHA-256."
+    ],
+    "requirement": "A fresh independent reviewer must bind a passing marker to the final completion-evidence head and re-sample raw ORACC records against generated TF/report."
+  },
+  "status": "done"
+}

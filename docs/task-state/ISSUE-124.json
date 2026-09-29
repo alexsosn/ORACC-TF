@@ -10,7 +10,11 @@
     "claim_comment": 5877481410,
     "base_main": "f6f189bbd99d72bfdc7044555bd3113aa7b54232",
     "pinned_source_revision": "85d2f131202882d40b05b65bfb4c83e8b1238426",
-    "note": "The pinned source/data revision is unchanged by the later merge of PR #129, which modified only tests/test_issue27_dependency_gate.py."
+    "note": "The pinned source/data revision is unchanged by the later merge of PR #129, which modified only tests/test_issue27_dependency_gate.py.",
+    "finalization_session": "gpt56sol-20260929-1843-issue124",
+    "final_recovery_comment": 5893651701,
+    "final_claim_comment": 5893652480,
+    "release_comment": 5893731145
   },
   "gates": {
     "research_comments": [
@@ -25,8 +29,8 @@
     "source_pin_red_commit": "0b4bc38e4701f91d0a202a1799bad6cf8f826334"
   },
   "audit": {
-    "workflow_run": 36478010467,
-    "artifact_id": 10995405168,
+    "workflow_run": 36479512006,
+    "artifact_id": 10996496580,
     "artifact_name": "issue124-source-to-tf-audit",
     "status": "pass",
     "source": {
@@ -104,30 +108,37 @@
         "rinap/rinap5p1:Q008369"
       ]
     },
-    "artifact_digest": "sha256:8c9ae497cfb360fb1639a40333ab2af1d1703ac024724445066ef62791f52d06"
+    "artifact_digest": "sha256:0ff9101af8054304b49b10f8ffa71d2c219b5c881c7758cca9bc09a2ae8c29c6",
+    "artifact_payload_sha256": "36b7029a84a7ff045d03bac0a60f9e26890cab9f1a23180ab06e32b1e707fa9b"
   },
   "verification": {
-    "tests_run": 36478010340,
-    "audit_run": 36478010467,
-    "m8_run": 36478010564,
-    "m9_run": 36478010455,
-    "docs_reference_run": 36478010242,
-    "issue69_research_run": 36478010334,
-    "result": "All triggered workflows passed on implementation head 6c41284135a9bcef12ea37f18defae41d04552a8. The completion-evidence commit is code/data-neutral and must receive its own exact-head rerun before merge."
+    "tests_run": 36479512032,
+    "audit_run": 36479512006,
+    "m8_run": 36479512071,
+    "m9_run": 36479512111,
+    "docs_reference_run": 36479512022,
+    "issue69_research_run": 36479512099,
+    "exact_head": "5f2866b558d5134f3989baf032f0a77611169067",
+    "result": "All six final exact-head workflows passed before merge, including pinned source-tree verification and the source-to-TF audit artifact."
   },
   "documentation": {
     "reference_page": "docs/reference/data-audit.md",
     "note": "User-facing documentation explains where the authoritative audit report exposes unreadable source members, catalogue asymmetries, round-trip exception classes, and synthetic-anchor validation without hand-maintaining drift-prone counts."
   },
   "review": {
-    "status": "pending_after_failed_review",
+    "status": "pass",
+    "session": "gpt56sol-independent-20260929-issue124-final",
+    "implementation_session": "gpt56sol-20260928-2300-issue124",
+    "head_sha": "5f2866b558d5134f3989baf032f0a77611169067",
+    "marker_comment": 5893720403,
     "failed_review_comment": 5877571350,
     "failed_review_head": "a8eefa293e0140eedf01f9c28a8411ad462ee734",
-    "resolved_blockers": [
-      "The workflow now verifies data/riao, data/rinap, and datasets.toml against the pinned source revision before auditing.",
-      "The report now enumerates every corpusjson member with stable relative path/hash/qualified identity or typed hazard, hashes every in-scope catalogue source, and records a combined source-state SHA-256."
-    ],
-    "requirement": "A fresh independent reviewer must bind a passing marker to the final completion-evidence head and re-sample raw ORACC records against generated TF/report."
+    "verdict": "The source pin and exact-member enumeration blockers were resolved; independent raw-source sampling plus exact-head artifact/CI review found no dropped, duplicated, fabricated, misjoined, or unexplained source-to-TF defect in scope."
   },
-  "status": "done"
+  "status": "done",
+  "merge": {
+    "head_sha": "5f2866b558d5134f3989baf032f0a77611169067",
+    "merge_commit_sha": "67a9899ff51fc376279f996003a087c1fa20d610",
+    "merged_at": "2026-09-29T15:51:20Z"
+  }
 }

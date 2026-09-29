@@ -1,0 +1,36 @@
+{
+  "task": "ISSUE-73",
+  "issue": 73,
+  "scope": "Generated Text-Fabric browser presentation, measured heavy-feature preload policy, feature-help integration contract, and real generated-app browser usability.",
+  "coordination": {
+    "implementation_session": "gpt56sol-20260929-1907-issue73",
+    "claim_comment": 5893996707,
+    "base_main": "9573ef036040da20b05bcc5b47100f13f3212451"
+  },
+  "research": {
+    "status": "done",
+    "comment": 5894166183,
+    "current_measurement_run": 36593611956,
+    "current_measurement_artifact": 11045507169,
+    "conclusions": [
+      "Exclude catalogue_json, gdl_json, sign_json from ordinary browser preload while keeping their TF files explicitly loadable.",
+      "The old data-only root/export 500s are a non-browse characterization-harness artifact; product acceptance must use generated app: discovery in browse mode.",
+      "Text-Fabric 13.1 supports the required preload, typeDisplay, and featureBase policy declaratively.",
+      "Feature help is an outbound URL; #73 defines a stable shipped-repository URL contract and #81 validates the actual staged docs bundle."
+    ]
+  },
+  "design": {
+    "status": "done",
+    "comment": 5894166869
+  },
+  "tdd": {
+    "status": "pending"
+  },
+  "verification": {
+    "status": "pending"
+  },
+  "review": {
+    "status": "pending"
+  },
+  "status": "research-complete"
+}

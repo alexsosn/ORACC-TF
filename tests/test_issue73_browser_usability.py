@@ -50,7 +50,6 @@ def _edition() -> loader.Edition:
                                 "id": f"{text_id}.l1",
                                 "ref": f"{text_id}.1.1",
                                 "frag": "a",
-                                "sig": "@fixture/project%akk:abu[father]N",
                                 "f": {
                                     "lang": "akk",
                                     "form": "a",

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import os
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -17,11 +18,32 @@ from tf.fabric import Fabric
 import yaml
 
 from . import paths, releases
-from .distribution import repository_tf_root
+from .distribution import repository_name, repository_tf_root
 
 
 _REQUIRED_WARP = ("otype.tf", "oslots.tf", "otext.tf")
 _ALLOWED_OVERRIDE_KEYS = frozenset({"display_css"})
+_REPOSITORY_ORG_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+_HEAVY_BROWSER_FEATURES = ("catalogue_json", "gdl_json", "sign_json")
+_TYPE_DISPLAY_POLICY: dict[str, dict[str, object]] = {
+    "document": {"label": "{document}"},
+    "face": {"label": "{source_id}"},
+    "column": {"label": "{source_id}"},
+    "line": {"label": "{lnno}", "verselike": True},
+    "chunk": {"hidden": True},
+    "phrase": {"label": "{source_id}"},
+    "word": {"label": "{form}", "style": "trans"},
+    "lex": {"label": "{cf} [{gw}]", "lexOcc": "word"},
+    "sign": {"label": True, "style": "orig", "exclude": {"synthetic": 1}},
+    "translation_unit": {"label": "{translation_id}"},
+    "translation_note": {"label": "{translation_note_text}"},
+}
+_TYPE_FEATURES = {
+    "document": ("designation", "ruler", "period"),
+    "word": ("lang", "pos", "cf", "gw", "sense"),
+    "lex": ("lang", "pos"),
+    "translation_unit": ("translation_text",),
+}
 
 
 class AppGenerationError(ValueError):
@@ -50,8 +72,18 @@ def _validate_disjoint_paths(tf_root: Path, target: Path) -> None:
         )
 
 
-def _validate_tf_loadable(tf_root: Path) -> None:
-    """Load the source through Text-Fabric without creating cache files in it."""
+def _validate_repository_org(repository_org: str) -> str:
+    if (
+        not isinstance(repository_org, str)
+        or not _REPOSITORY_ORG_RE.fullmatch(repository_org)
+        or "--" in repository_org
+    ):
+        raise AppGenerationError(f"invalid repository organization: {repository_org!r}")
+    return repository_org
+
+
+def _validate_tf_loadable(tf_root: Path) -> tuple[tuple[str, ...], frozenset[str]]:
+    """Load the source without mutating it and return its display-relevant schema."""
     with tempfile.TemporaryDirectory(prefix="oracc-tf-app-validate-") as temp_dir:
         isolated = Path(temp_dir) / "tf"
         isolated.mkdir()
@@ -71,9 +103,12 @@ def _validate_tf_loadable(tf_root: Path) -> None:
             raise AppGenerationError(f"Text-Fabric could not load TF source: {tf_root}") from exc
         if not good or tf.api is None:
             raise AppGenerationError(f"Text-Fabric could not load valid TF warp: {tf_root}")
+        return tuple(tf.api.F.otype.all), frozenset(tf.api.Fall())
 
 
-def _validate_tf_root(tf_root: Path, tf_version: str) -> None:
+def _validate_tf_root(
+    tf_root: Path, tf_version: str
+) -> tuple[tuple[str, ...], frozenset[str]]:
     try:
         repository_tf_root(Path("."), tf_version)
     except (TypeError, ValueError) as exc:
@@ -85,7 +120,7 @@ def _validate_tf_root(tf_root: Path, tf_version: str) -> None:
         path = tf_root / name
         if path.is_symlink() or not path.is_file():
             raise AppGenerationError(f"TF root is missing required warp feature: {name}")
-    _validate_tf_loadable(tf_root)
+    return _validate_tf_loadable(tf_root)
 
 
 def _validate_override(override: Mapping[str, object] | None) -> str | None:
@@ -108,14 +143,55 @@ def _validate_override(override: Mapping[str, object] | None) -> str | None:
     return css
 
 
-def _config_bytes(*, dataset: str, tf_version: str) -> bytes:
+def _type_display(
+    node_types: tuple[str, ...], node_features: frozenset[str]
+) -> dict[str, dict[str, object]]:
+    unknown = sorted(set(node_types) - set(_TYPE_DISPLAY_POLICY))
+    if unknown:
+        raise AppGenerationError(
+            "no browser display policy for TF node types: " + ", ".join(unknown)
+        )
+
+    result: dict[str, dict[str, object]] = {}
+    for node_type in node_types:
+        policy = dict(_TYPE_DISPLAY_POLICY[node_type])
+        extra_features = [
+            feature
+            for feature in _TYPE_FEATURES.get(node_type, ())
+            if feature in node_features
+        ]
+        if extra_features:
+            policy["featuresBare"] = " ".join(extra_features)
+        result[node_type] = policy
+    return result
+
+
+def _config_bytes(
+    *,
+    dataset: str,
+    tf_version: str,
+    repository_org: str,
+    node_types: tuple[str, ...],
+    node_features: frozenset[str],
+) -> bytes:
     config = {
         "apiVersion": 3,
         "provenanceSpec": {
+            "org": repository_org,
+            "repo": repository_name(dataset),
             "corpus": dataset,
             "relative": "/tf",
             "version": tf_version,
         },
+        "dataDisplay": {
+            "excludedFeatures": list(_HEAVY_BROWSER_FEATURES),
+            "textFormat": "text-trans-full",
+        },
+        "docs": {
+            "featureBase": "{docBase}/reference/features.md#<feature>",
+            "featurePage": "feature-reference",
+        },
+        "typeDisplay": _type_display(node_types, node_features),
     }
     return yaml.safe_dump(
         config,
@@ -158,14 +234,15 @@ def generate_app(
     *,
     dataset: str,
     tf_version: str,
+    repository_org: str,
     datasets_path: Path | str = paths.ROOT / "datasets.toml",
     override: Mapping[str, object] | None = None,
 ) -> Path:
     """Generate one minimal deterministic Text-Fabric app directory.
 
-    The ordinary app is entirely generated from registered dataset identity and
-    the explicit TF schema-version root.  The only Phase-A override is literal
-    CSS text; it cannot replace generated config/release identity.
+    The ordinary app is generated from registered dataset identity, explicit
+    repository ownership, and the actual TF node-type schema. Browser policy is
+    declarative; the only manual override remains literal CSS text.
 
     Generation is transactional: all inputs are validated and a complete
     sibling temp tree is built before the existing target is replaced.
@@ -176,7 +253,8 @@ def generate_app(
 
     _validate_disjoint_paths(source, output)
     _validate_registered_dataset(dataset, registry)
-    _validate_tf_root(source, tf_version)
+    org = _validate_repository_org(repository_org)
+    node_types, node_features = _validate_tf_root(source, tf_version)
     css = _validate_override(override)
     _validate_target(output)
 
@@ -184,7 +262,13 @@ def generate_app(
     temp = Path(tempfile.mkdtemp(prefix=f".{output.name}.stage-", dir=output.parent))
     try:
         (temp / "config.yaml").write_bytes(
-            _config_bytes(dataset=dataset, tf_version=tf_version)
+            _config_bytes(
+                dataset=dataset,
+                tf_version=tf_version,
+                repository_org=org,
+                node_types=node_types,
+                node_features=node_features,
+            )
         )
         if css is not None:
             (temp / "display.css").write_text(css, encoding="utf-8")

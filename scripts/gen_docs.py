@@ -197,7 +197,8 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
             value_counts[value] += 1
         scope = next(iter(node_types)) if len(node_types) == 1 else "mixed"
         rel = Path("features") / scope / f"{name}.md"
-        rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
+        rows.append(f'<a id="{name}"></a>')
+        rows.append(f"- [\`{name}\`]({rel.as_posix()}) — {description}")
         page = _node_feature_page(
             name=name,
             scope=scope,
@@ -234,7 +235,8 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
             for target in targets:
                 target_types.add(api.F.otype.v(target))
         rel = Path("features") / "edge" / f"{name}.md"
-        rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
+        rows.append(f'<a id="{name}"></a>')
+        rows.append(f"- [\`{name}\`]({rel.as_posix()}) — {description}")
         page = _edge_feature_page(
             name=name,
             value_type=value_type,

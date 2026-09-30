@@ -47,12 +47,15 @@ def profile(tf_root: Path, app_root: Path, *, version: str) -> dict[str, object]
             "schema_version": 1,
             "app_loaded": False,
             "elapsed_seconds": elapsed,
-            "peak_rss_kib": _peak_rss_kib(),
+            "startup_peak_rss_kib": _peak_rss_kib(),
+            "browser_peak_rss_kib": _peak_rss_kib(),
             "routes": {},
             "responses_nonempty": {},
             "loaded_node_features": [],
             "excluded_features": [],
         }
+
+    startup_peak_rss_kib = _peak_rss_kib()
 
     kernel = makeTfKernel(app, app_name)
     if not kernel:
@@ -70,7 +73,8 @@ def profile(tf_root: Path, app_root: Path, *, version: str) -> dict[str, object]
         "schema_version": 1,
         "app_loaded": True,
         "elapsed_seconds": elapsed,
-        "peak_rss_kib": _peak_rss_kib(),
+        "startup_peak_rss_kib": startup_peak_rss_kib,
+        "browser_peak_rss_kib": _peak_rss_kib(),
         "routes": routes,
         "responses_nonempty": responses_nonempty,
         "loaded_node_features": sorted(app.api.Fall()),

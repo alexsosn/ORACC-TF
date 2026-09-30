@@ -92,8 +92,11 @@ jobs:
               "startup_median_seconds": median(
                   run["elapsed_seconds"] for run in runs
               ),
-              "peak_rss_median_kib": median(
-                  run["peak_rss_kib"] for run in runs
+              "startup_peak_rss_median_kib": median(
+                  run["startup_peak_rss_kib"] for run in runs
+              ),
+              "browser_peak_rss_median_kib": median(
+                  run["browser_peak_rss_kib"] for run in runs
               ),
               "excluded_features": sorted(heavy),
               "routes": runs[0]["routes"],

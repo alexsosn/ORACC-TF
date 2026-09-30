@@ -1,0 +1,116 @@
+name: issue73-browser-usability
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/issue73-browser-usability.yml"
+      - "programs/oracc_tf/app_generation.py"
+      - "scripts/measure_issue73_browser_app.py"
+      - "tests/test_issue71_app_packaging.py"
+      - "tests/test_issue73_browser_usability.py"
+      - "scripts/gen_docs.py"
+      - "docs/reference/features.md"
+      - "docs/task-state/ISSUE-73.json"
+      - "docs/registry.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-browser:
+    runs-on: ubuntu-latest
+    env:
+      DATASET: assyrian-royal-inscriptions
+      TF_VERSION: "0.3.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project and pinned Text-Fabric
+        run: pip install -e ".[dev]" "text-fabric==13.1.0"
+
+      - name: Build real corpus and generated app
+        run: |
+          python - <<'PY'
+          import os
+          from oracc_tf import TF_VERSION, app_generation, corpus
+
+          corpus.build_full_tf("/tmp/oracc-tf")
+          app_generation.generate_app(
+              "/tmp/oracc-tf",
+              "/tmp/oracc-app",
+              dataset="assyrian-royal-inscriptions",
+              tf_version=TF_VERSION,
+              repository_org=os.environ["GITHUB_REPOSITORY_OWNER"],
+          )
+          PY
+          mkdir -p /tmp/issue73-browser
+
+      - name: Cold-profile generated browser app
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            rm -rf /tmp/oracc-tf/.tf
+            python scripts/measure_issue73_browser_app.py               /tmp/oracc-tf /tmp/oracc-app               --version "$TF_VERSION"               > "/tmp/issue73-browser/run-${i}.json"
+          done
+
+      - name: Summarize and validate browser evidence
+        env:
+          EVIDENCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from statistics import median
+
+          root = Path("/tmp/issue73-browser")
+          runs = [
+              json.loads((root / f"run-{i}.json").read_text(encoding="utf-8"))
+              for i in range(1, 4)
+          ]
+          heavy = {"catalogue_json", "gdl_json", "sign_json"}
+          for run in runs:
+              assert run["app_loaded"] is True
+              assert run["max_slot"] == 793340
+              assert set(run["routes"]) == {"/", "/passage", "/query", "/export"}
+              assert set(run["routes"].values()) == {200}
+              assert all(run["responses_nonempty"].values())
+              assert set(run["excluded_features"]) == heavy
+              assert set(run["loaded_node_features"]).isdisjoint(heavy)
+
+          summary = {
+              "schema_version": 1,
+              "head_sha": os.environ.get("EVIDENCE_HEAD_SHA", ""),
+              "profile_repetitions": 3,
+              "cold_cache_policy": "remove TF binary cache before every generated-app profile",
+              "startup_median_seconds": median(
+                  run["elapsed_seconds"] for run in runs
+              ),
+              "peak_rss_median_kib": median(
+                  run["peak_rss_kib"] for run in runs
+              ),
+              "excluded_features": sorted(heavy),
+              "routes": runs[0]["routes"],
+              "responses_nonempty": runs[0]["responses_nonempty"],
+              "node_types": runs[0]["node_types"],
+              "max_slot": runs[0]["max_slot"],
+          }
+          (root / "summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload browser evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue73-browser-usability
+          path: /tmp/issue73-browser/*.json
+          if-no-files-found: error

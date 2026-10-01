@@ -9,12 +9,13 @@ from tf.advanced.app import findApp
 from tf.browser.kernel import makeTfKernel
 from tf.browser.web import Web, factory
 
-from oracc_tf import TF_VERSION, corpus, loader, metadata
+from oracc_tf import TF_VERSION, corpus, loader, metadata, translations
 
 
 DATASET = "assyrian-royal-inscriptions"
 ORG = "example-org"
 ROOT = Path(__file__).resolve().parents[1]
+WORKFLOW = ROOT / ".github" / "workflows" / "issue73-browser-usability.yml"
 
 
 def _edition() -> loader.Edition:
@@ -173,6 +174,53 @@ def test_type_display_covers_emitted_types_with_source_faithful_policy(tmp_path:
     assert "style" not in display["sign"]
     assert "exclude" not in display["sign"]
     assert "sentence" not in display
+
+
+
+def test_translation_bearing_build_has_explicit_browser_policy(tmp_path: Path) -> None:
+    from oracc_tf import app_generation
+
+    edition = _edition()
+    unit = translations.TranslationUnit(
+        sref="Q000073.1",
+        eref="Q000073.1",
+        rows=1,
+        subtype="tr",
+        label="1",
+        se_label=None,
+        text="Father.",
+        text_raw="Father.",
+        notes=("editorial note",),
+        source_id="tr1",
+    )
+    tf_root = tmp_path / "repo" / "tf" / TF_VERSION
+    corpus.build_tf(
+        tf_root,
+        editions=[edition],
+        metadata_index=metadata.MetadataIndex.empty(),
+        translations_by_document={edition.key: (unit,)},
+    )
+    app_root = app_generation.generate_app(
+        tf_root,
+        tmp_path / "repo" / "app",
+        dataset=DATASET,
+        tf_version=TF_VERSION,
+        datasets_path=_datasets(tmp_path),
+        repository_org=ORG,
+    )
+    config = yaml.safe_load((app_root / "config.yaml").read_text(encoding="utf-8"))
+    display = config["typeDisplay"]
+
+    assert display["translation_unit"]["label"] == "{translation_id}"
+    assert display["translation_unit"]["featuresBare"] == "translation_text"
+    assert display["translation_note"]["label"] == "{translation_note_text}"
+
+
+def test_real_browser_workflow_uses_pinned_translation_bearing_candidate() -> None:
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert "scripts/download_m9_tei.sh" in workflow
+    assert "translations.parse_tei_archive" in workflow
+    assert "translations_by_document=source.as_document_map()" in workflow
 
 
 def test_excluded_features_remain_explicitly_loadable(tmp_path: Path) -> None:

@@ -135,12 +135,16 @@ def test_generated_config_has_measured_preload_policy_and_docs_contract(tmp_path
     assert "noneValues" not in config["dataDisplay"]
 
     provenance = config["provenanceSpec"]
-    assert provenance["org"] == ORG
-    assert provenance["repo"] == f"ORACC-TF-{DATASET}"
-    assert provenance["corpus"] == DATASET
-    assert provenance["version"] == TF_VERSION
+    assert provenance == {
+        "corpus": DATASET,
+        "relative": "/tf",
+        "version": TF_VERSION,
+    }
 
     assert config["docs"] == {
+        "docBase": (
+            f"https://github.com/{ORG}/ORACC-TF-{DATASET}/blob/main/docs"
+        ),
         "featureBase": "{docBase}/reference/features.md#<feature>",
         "featurePage": "feature-reference",
     }

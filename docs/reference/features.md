@@ -1,5 +1,7 @@
 # Feature reference
 
+<a id="feature-reference"></a>
+
 Generated from TF metadata; do not hand-edit generated fields.
 
 <a id="catalogue_json"></a>

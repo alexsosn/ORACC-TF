@@ -180,7 +180,14 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
     generated_paths: set[Path] = set()
     next_manifest: dict[str, list[str]] = {}
 
-    rows = ["# Feature reference", "", "Generated from TF metadata; do not hand-edit generated fields.", ""]
+    rows = [
+        "# Feature reference",
+        "",
+        '<a id="feature-reference"></a>',
+        "",
+        "Generated from TF metadata; do not hand-edit generated fields.",
+        "",
+    ]
 
     for name in sorted(api.Fall()):
         feature = api.Fs(name)

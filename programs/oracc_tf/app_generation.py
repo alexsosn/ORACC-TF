@@ -177,8 +177,6 @@ def _config_bytes(
     config = {
         "apiVersion": 3,
         "provenanceSpec": {
-            "org": repository_org,
-            "repo": repository_name(dataset),
             "corpus": dataset,
             "relative": "/tf",
             "version": tf_version,
@@ -188,6 +186,10 @@ def _config_bytes(
             "textFormat": "text-trans-full",
         },
         "docs": {
+            "docBase": (
+                f"https://github.com/{repository_org}/{repository_name(dataset)}"
+                "/blob/main/docs"
+            ),
             "featureBase": "{docBase}/reference/features.md#<feature>",
             "featurePage": "feature-reference",
         },

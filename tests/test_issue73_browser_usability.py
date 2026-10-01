@@ -221,6 +221,8 @@ def test_real_browser_workflow_uses_pinned_translation_bearing_candidate() -> No
     assert "scripts/download_m9_tei.sh" in workflow
     assert "translations.parse_tei_archive" in workflow
     assert "translations_by_document=source.as_document_map()" in workflow
+    assert "--output" in workflow
+    assert '> "/tmp/issue73-browser/run-' not in workflow
 
 
 def test_excluded_features_remain_explicitly_loadable(tmp_path: Path) -> None:

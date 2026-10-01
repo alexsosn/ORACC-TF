@@ -89,9 +89,15 @@ def main() -> int:
     parser.add_argument("tf_root", type=Path)
     parser.add_argument("app_root", type=Path)
     parser.add_argument("--version", required=True)
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = profile(args.tf_root, args.app_root, version=args.version)
-    print(json.dumps(result, sort_keys=True))
+    payload = json.dumps(result, sort_keys=True) + "\n"
+    if args.output is None:
+        print(payload, end="")
+    else:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(payload, encoding="utf-8")
     return 0 if result["app_loaded"] else 1
 
 

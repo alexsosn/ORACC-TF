@@ -70,7 +70,7 @@ jobs:
             python scripts/measure_issue73_browser_app.py \
               "/tmp/oracc-stage/tf/$TF_VERSION" /tmp/oracc-stage/app \
               --version "$TF_VERSION" \
-              > "/tmp/issue73-browser/run-${i}.json"
+              --output "/tmp/issue73-browser/run-${i}.json"
           done
 
       - name: Summarize and validate browser evidence

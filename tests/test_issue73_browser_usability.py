@@ -277,6 +277,11 @@ def test_generated_app_browser_mode_serves_core_routes_without_header_failure(
         assert response.status_code == 200, (route, response.status_code)
         assert response.data
 
+    assert (
+        f"https://github.com/{ORG}/ORACC-TF-{DATASET}/blob/main/docs/"
+        "reference/features.md#feature-reference"
+    ) in app.featureLink
+
     captured = capsys.readouterr()
     assert "App config error" not in captured.out
     assert "App config error" not in captured.err
@@ -286,6 +291,7 @@ def test_feature_reference_has_stable_feature_name_anchors() -> None:
     feature_index = (ROOT / "docs" / "reference" / "features.md").read_text(
         encoding="utf-8"
     )
+    assert '<a id="feature-reference"></a>' in feature_index
     for feature in ("catalogue_json", "cf", "form", "sign_json", "word_lex"):
         assert f'<a id="{feature}"></a>' in feature_index
 

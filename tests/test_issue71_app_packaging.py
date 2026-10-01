@@ -120,12 +120,13 @@ def test_registered_dataset_generates_minimal_deterministic_app_without_manual_t
     config = yaml.safe_load((first / "config.yaml").read_text(encoding="utf-8"))
     assert config["apiVersion"] == 3
     assert config["provenanceSpec"] == {
-        "org": REPOSITORY_ORG,
-        "repo": f"ORACC-TF-{DATASET}",
         "corpus": DATASET,
         "relative": "/tf",
         "version": TF_VERSION,
     }
+    assert config["docs"]["docBase"] == (
+        f"https://github.com/{REPOSITORY_ORG}/ORACC-TF-{DATASET}/blob/main/docs"
+    )
     assert config["dataDisplay"]["excludedFeatures"] == [
         "catalogue_json",
         "gdl_json",

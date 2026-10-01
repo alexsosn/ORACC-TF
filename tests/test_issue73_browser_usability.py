@@ -214,11 +214,11 @@ def test_generated_app_browser_mode_serves_core_routes_without_header_failure(
         silent="deep",
     )
     assert app is not None and app.api is not None
-    assert app.context.excludedFeatures == {
+    assert app.context.excludedFeatures == [
         "catalogue_json",
         "gdl_json",
         "sign_json",
-    }
+    ]
 
     webapp = factory(Web(makeTfKernel(app, app_name)))
     client = webapp.test_client()

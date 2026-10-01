@@ -32,9 +32,9 @@ _TYPE_DISPLAY_POLICY: dict[str, dict[str, object]] = {
     "line": {"label": "{lnno}", "verselike": True},
     "chunk": {"hidden": True},
     "phrase": {"label": "{source_id}"},
-    "word": {"label": "{form}", "style": "trans"},
+    "word": {"label": "{form}"},
     "lex": {"label": "{cf} [{gw}]", "lexOcc": "word"},
-    "sign": {"label": True, "style": "orig", "exclude": {"synthetic": 1}},
+    "sign": {"label": "{utf8}"},
     "translation_unit": {"label": "{translation_id}"},
     "translation_note": {"label": "{translation_note_text}"},
 }

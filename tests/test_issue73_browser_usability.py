@@ -166,11 +166,12 @@ def test_type_display_covers_emitted_types_with_source_faithful_policy(tmp_path:
     assert display["line"]["label"] == "{lnno}"
     assert display["line"]["verselike"] is True
     assert display["chunk"]["hidden"] is True
-    assert display["word"]["style"] == "trans"
+    assert "style" not in display["word"]
     assert display["lex"]["lexOcc"] == "word"
     assert display["lex"]["label"] == "{cf} [{gw}]"
-    assert display["sign"]["style"] == "orig"
-    assert display["sign"]["exclude"] == {"synthetic": 1}
+    assert display["sign"]["label"] == "{utf8}"
+    assert "style" not in display["sign"]
+    assert "exclude" not in display["sign"]
     assert "sentence" not in display
 
 
@@ -197,6 +198,7 @@ def test_excluded_features_remain_explicitly_loadable(tmp_path: Path) -> None:
 
 def test_generated_app_browser_mode_serves_core_routes_without_header_failure(
     tmp_path: Path,
+    capsys,
 ) -> None:
     tf_root, app_root = _generate(tmp_path)
     app_name = f"app:{app_root}"
@@ -224,6 +226,10 @@ def test_generated_app_browser_mode_serves_core_routes_without_header_failure(
         response = client.get(route)
         assert response.status_code == 200, (route, response.status_code)
         assert response.data
+
+    captured = capsys.readouterr()
+    assert "App config error" not in captured.out
+    assert "App config error" not in captured.err
 
 
 def test_feature_reference_has_stable_feature_name_anchors() -> None:

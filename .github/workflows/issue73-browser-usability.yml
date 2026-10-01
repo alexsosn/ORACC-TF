@@ -40,10 +40,10 @@ jobs:
           import os
           from oracc_tf import TF_VERSION, app_generation, corpus
 
-          corpus.build_full_tf("/tmp/oracc-tf")
+          corpus.build_full_tf("/tmp/oracc-stage/tf/0.3.0")
           app_generation.generate_app(
-              "/tmp/oracc-tf",
-              "/tmp/oracc-app",
+              "/tmp/oracc-stage/tf/0.3.0",
+              "/tmp/oracc-stage/app",
               dataset="assyrian-royal-inscriptions",
               tf_version=TF_VERSION,
               repository_org=os.environ["GITHUB_REPOSITORY_OWNER"],
@@ -55,8 +55,11 @@ jobs:
         run: |
           set -euo pipefail
           for i in 1 2 3; do
-            rm -rf /tmp/oracc-tf/.tf
-            python scripts/measure_issue73_browser_app.py               /tmp/oracc-tf /tmp/oracc-app               --version "$TF_VERSION"               > "/tmp/issue73-browser/run-${i}.json"
+            rm -rf "/tmp/oracc-stage/tf/$TF_VERSION/.tf"
+            python scripts/measure_issue73_browser_app.py \
+              "/tmp/oracc-stage/tf/$TF_VERSION" /tmp/oracc-stage/app \
+              --version "$TF_VERSION" \
+              > "/tmp/issue73-browser/run-${i}.json"
           done
 
       - name: Summarize and validate browser evidence

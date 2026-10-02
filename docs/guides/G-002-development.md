@@ -50,10 +50,13 @@ keeps dataset identity stable when source bytes change without a schema change
 and lets multiple schema versions coexist without collision.
 
 The version directory is the independently loadable Text-Fabric root. It must
-contain the TF warp (`otype.tf`, `oslots.tf`, `otext.tf`) and coordinated
-sidecars such as `zero-span.json`. Consumers and packaging code must resolve
-this root through the shared layout helper rather than duplicating string path
-logic. Dataset and version identifiers are validated before any path is
+contain the TF warp (`otype.tf`, `oslots.tf`, `otext.tf`) and any auxiliary
+artifacts explicitly emitted by the current build contract. Current ADR-0001
+builds keep zero-sign textual entities inside TF with visually empty
+`synthetic=1` sign anchors; the current build **does not require `zero-span.json`**. Consumers
+and packaging code must resolve this root through the shared layout helper
+rather than duplicating string path logic. Dataset and version identifiers are
+validated before any path is
 constructed; absolute paths, separators, traversal components, and ambiguous
 identifiers are rejected.
 

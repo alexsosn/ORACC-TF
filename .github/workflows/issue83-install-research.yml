@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/issue83-install-research.yml"
       - "scripts/measure_issue83_install.py"
+      - "scripts/measure_issue83_browser.py"
       - "programs/oracc_tf/distribution.py"
       - "programs/oracc_tf/publishing.py"
       - "programs/oracc_tf/app_generation.py"
@@ -30,7 +31,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install project and pinned Text-Fabric
+      - name: Install builder and pinned Text-Fabric
         run: pip install -e ".[dev]" "text-fabric==13.1.0"
 
       - name: Resolve converter TF schema version
@@ -52,9 +53,8 @@ jobs:
           from oracc_tf import TF_VERSION, app_generation, distribution, publishing
 
           dataset = "assyrian-royal-inscriptions"
-          build_base = Path("/tmp/issue83-build")
           tf_root, _report = publishing.build_registered_tf(
-              build_base,
+              "/tmp/issue83-build",
               dataset,
               tf_version=TF_VERSION,
               translations_archive=os.environ["ORACC_TF_M9_TEI_ARCHIVE"],
@@ -80,10 +80,9 @@ jobs:
               Path("docs/task-state/ISSUE-124.json").read_text(encoding="utf-8")
           )
           source_state = "sha256:" + audit_state["audit"]["source"]["source_state_sha256"]
-          stage = Path("/tmp/issue83-stage") / dataset
           distribution.stage_distribution(
               tf_root,
-              stage,
+              Path("/tmp/issue83-stage") / dataset,
               dataset=dataset,
               release_id="issue83-research-" + os.environ["GITHUB_SHA"][:12],
               tf_version=TF_VERSION,
@@ -93,17 +92,25 @@ jobs:
           )
           PY
 
-      - name: Package candidate as one release ZIP
+      - name: Package full and measurement-only filtered ZIPs
         run: |
           python - <<'PY'
           from pathlib import Path
           from zipfile import ZIP_DEFLATED, ZipFile
 
           root = Path("/tmp/issue83-stage/assyrian-royal-inscriptions")
-          archive = Path("/tmp/assyrian-royal-inscriptions-issue83.zip")
-          with ZipFile(archive, "w", compression=ZIP_DEFLATED, compresslevel=6) as zf:
+          full = Path("/tmp/assyrian-royal-inscriptions-issue83.zip")
+          filtered = Path("/tmp/assyrian-royal-inscriptions-issue83-no-heavy.zip")
+          heavy = {"catalogue_json.tf", "gdl_json.tf", "sign_json.tf"}
+
+          with ZipFile(full, "w", compression=ZIP_DEFLATED, compresslevel=6) as zf:
               for path in sorted(root.rglob("*")):
                   if path.is_file():
+                      zf.write(path, Path(root.name) / path.relative_to(root))
+
+          with ZipFile(filtered, "w", compression=ZIP_DEFLATED, compresslevel=6) as zf:
+              for path in sorted(root.rglob("*")):
+                  if path.is_file() and path.name not in heavy:
                       zf.write(path, Path(root.name) / path.relative_to(root))
           PY
           rm -rf /tmp/issue83-clean
@@ -114,21 +121,40 @@ jobs:
               zf.extractall("/tmp/issue83-clean")
           PY
 
+      - name: Remove builder package before user-path validation
+        run: |
+          pip uninstall -y oracc-tf
+          cd /tmp
+          python - <<'PY'
+          import importlib.util
+          import tf
+          assert importlib.util.find_spec("oracc_tf") is None
+          print("text-fabric import OK")
+          PY
+
       - name: Cold-profile Python load and representative query
         run: |
           set -euo pipefail
           mkdir -p /tmp/issue83-results
+          cd /tmp
           for i in 1 2 3; do
             rm -rf "/tmp/issue83-clean/$DATASET/tf/$TF_VERSION/.tf"
-            python scripts/measure_issue83_install.py               "/tmp/issue83-clean/$DATASET"               --version "$TF_VERSION"               --archive /tmp/assyrian-royal-inscriptions-issue83.zip               --output "/tmp/issue83-results/python-${i}.json"
+            python "$GITHUB_WORKSPACE/scripts/measure_issue83_install.py" \
+              "/tmp/issue83-clean/$DATASET" \
+              --version "$TF_VERSION" \
+              --archive /tmp/assyrian-royal-inscriptions-issue83.zip \
+              --output "/tmp/issue83-results/python-${i}.json"
           done
 
-      - name: Cold-profile browser from extracted ZIP
+      - name: Cold-profile browser through documented app path
         run: |
           set -euo pipefail
+          cd /tmp
           for i in 1 2 3; do
             rm -rf "/tmp/issue83-clean/$DATASET/tf/$TF_VERSION/.tf"
-            python scripts/measure_issue73_browser_app.py               "/tmp/issue83-clean/$DATASET/tf/$TF_VERSION"               "/tmp/issue83-clean/$DATASET/app"               --version "$TF_VERSION"               --output "/tmp/issue83-results/browser-${i}.json"
+            python "$GITHUB_WORKSPACE/scripts/measure_issue83_browser.py" \
+              "/tmp/issue83-clean/$DATASET/app" \
+              --output "/tmp/issue83-results/browser-${i}.json"
           done
 
       - name: Summarize standalone evidence
@@ -152,14 +178,14 @@ jobs:
               for i in range(1, 4)
           ]
           archive = Path("/tmp/assyrian-royal-inscriptions-issue83.zip")
+          without_heavy = Path("/tmp/assyrian-royal-inscriptions-issue83-no-heavy.zip")
           digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          heavy = {"catalogue_json", "gdl_json", "sign_json"}
 
           for row in python_runs:
               assert row["max_slot"] == 793340
               assert row["query_result"]
-              assert set(row["loaded_node_features"]).isdisjoint(
-                  {"catalogue_json", "gdl_json", "sign_json"}
-              )
+              assert set(row["loaded_node_features"]).isdisjoint(heavy)
           for row in browser_runs:
               assert row["app_loaded"] is True
               assert set(row["routes"].values()) == {200}
@@ -167,13 +193,19 @@ jobs:
 
           first = python_runs[0]
           summary = {
-              "schema_version": 1,
+              "schema_version": 2,
               "head_sha": os.environ["EVIDENCE_HEAD_SHA"],
               "archive_bytes": archive.stat().st_size,
+              "archive_without_heavy_bytes": without_heavy.stat().st_size,
+              "archive_heavy_feature_delta_bytes": (
+                  archive.stat().st_size - without_heavy.stat().st_size
+              ),
               "archive_sha256": digest,
               "extracted_before_load": first["before_first_load"],
               "extracted_after_first_load": first["after_first_load"],
-              "tf_payload": first["tf_payload"],
+              "tf_payload_before_load": first["tf_payload_before_load"],
+              "tf_payload_after_load": first["tf_payload_after_load"],
+              "heavy_feature_payload": first["heavy_feature_payload"],
               "app_payload": first["app_payload"],
               "docs_payload": first["docs_payload"],
               "tf_cache": first["tf_cache"],
@@ -192,10 +224,10 @@ jobs:
                   row["elapsed_seconds"] for row in browser_runs
               ),
               "browser_peak_rss_median_kib": median(
-                  row["browser_peak_rss_kib"] for row in browser_runs
+                  row["peak_rss_kib"] for row in browser_runs
               ),
               "browser_routes": browser_runs[0]["routes"],
-              "excluded_features": browser_runs[0]["excluded_features"],
+              "excluded_features": sorted(heavy),
               "max_slot": first["max_slot"],
           }
           (result_root / "summary.json").write_text(

@@ -8,14 +8,62 @@
     "base_main": "75fcade2369264098e3d3f318a9cc483833be2e3"
   },
   "research": {
-    "status": "in-progress",
-    "note": "Measure a real translation-bearing standalone candidate as a release ZIP. Stage only tf/, generated app/, a provisional docs/reference-only bundle, README.md, and manifest.json. Agora migration/equivalence is post-1.0 per issue #89 and the current #83 scope."
+    "status": "done",
+    "evidence": {
+      "workflow_run": 37076038130,
+      "artifact_digest": "sha256:2117637aa5d704c958a068f3918bda502ff580126a4b96c103fff8020ebc26f1",
+      "head_sha": "853020fe36cdcb00985892abb14946f7da442a0a",
+      "archive_bytes": 41264487,
+      "extracted_before_load_bytes": 340769995,
+      "first_load_cache_bytes": 68304710,
+      "normal_python_startup_median_seconds": 51.996231151000075,
+      "normal_python_peak_rss_median_kib": 2088976,
+      "normal_browser_startup_median_seconds": 52.06479745299998,
+      "normal_browser_peak_rss_median_kib": 2098184,
+      "lean_python_startup_seconds": 43.74193338500004,
+      "lean_python_peak_rss_kib": 1838060,
+      "lean_browser_startup_seconds": 44.214187822999975,
+      "lean_browser_peak_rss_kib": 1831824
+    },
+    "finding": "Pinned Text-Fabric 13.1 standalone app works after uninstalling the ORACC-TF builder. Keep all TF features in the distribution, but exclude measured audit/duplicate/provenance fields from the advanced-app default preload. The release ZIP plus local app: path is the canonical 1.0 consumer route; Agora remains post-1.0."
   },
   "design": {
-    "status": "pending"
+    "status": "accepted",
+    "canonical_route": "Versioned standalone release ZIP with checksum; extract and load its local app/ with pinned text-fabric==13.1.0.",
+    "local_fallback": "Use the same extracted distribution directly from an absolute local app: path.",
+    "default_excluded_features": [
+      "catalogue_json",
+      "gdl_form",
+      "gdl_id",
+      "gdl_json",
+      "gdl_sexified",
+      "inst",
+      "lexeme",
+      "readingu",
+      "ref",
+      "sig",
+      "sign_json",
+      "src_path",
+      "translation_source_id",
+      "translation_source_license",
+      "translation_source_license_url",
+      "translation_source_name",
+      "translation_source_sha256",
+      "translation_source_url",
+      "translation_text_raw",
+      "word_id"
+    ],
+    "constraints": [
+      "Do not remove excluded features from TF data; Text-Fabric users may load them explicitly on demand.",
+      "Keep document_key and source_id in the normal preload because qualified/source identity is a core research contract.",
+      "Keep form, utf8, cf, gw, sense, pos, lang, translation_text, navigation/section features, and synthetic in the normal preload.",
+      "The standalone README must replace the placeholder and document the pinned Text-Fabric runtime plus Python/browser local app path without requiring the builder checkout.",
+      "Full manual assembly remains owned by #81; release publication/checksum remains owned by #23."
+    ]
   },
   "tdd": {
-    "status": "pending"
+    "status": "red-next",
+    "contract": "Add focused tests for the generated default exclusion set and standalone README user path before production changes."
   },
   "verification": {
     "status": "pending"
@@ -23,5 +71,5 @@
   "review": {
     "status": "pending"
   },
-  "status": "research-in-progress"
+  "status": "design-accepted"
 }

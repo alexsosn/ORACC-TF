@@ -26,7 +26,7 @@ def test_p001_current_model_no_longer_requires_sidecar_domain() -> None:
     assert "synthetic=1" in text
     assert "synthetic" in text.lower() and "anchor" in text.lower()
     assert "semantic/source sign" in text.lower()
-    assert "total TF slot" in text.lower()
+    assert "total tf slot" in text.lower()
 
 
 def test_g002_describes_tf_root_without_required_zero_span_sidecar() -> None:

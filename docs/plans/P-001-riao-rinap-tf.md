@@ -6,12 +6,12 @@ status: draft
 priority: P0
 depends_on: [R-001]
 blocks: [P-002, P-003]
-updated: 2026-09-04
+updated: 2026-10-03
 ---
 
 # TDD implementation plan: a joined RIAO + RINAP Text-Fabric module
 
-**Status:** implementation in progress, revision 5 (three rounds of independent review plus implementation measurements).
+**Status:** implementation in progress, revision 6 (synthetic-anchor reconciliation after ADR-0001/#37).
 **Target dataset:** `assyrian-royal-inscriptions` — RIAO parts 1–5 and RINAP
 1–5 (+5p1) as one continuous TF corpus.
 

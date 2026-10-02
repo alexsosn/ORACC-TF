@@ -28,14 +28,14 @@ updated: 2026-09-04
 > 1,845 populated editions have `ruler`; all 2,078 corpusjson documents carry
 > `license` and `license-url`, while **none carries `license_type`**. The plan
 > no longer asks the converter to fabricate that absent field (§2.12, M5).
-> *Rev 5:* M6 discovered a Text-Fabric 13.1 warp constraint that the plan had
-> missed: every non-slot TF node in `oslots` must span at least one sign. The
-> source nevertheless contains 1,242 zero-span entities, including 295 words,
-> 236 documents and 142 lines. They are now preserved in a deterministic
-> `zero-span.json` sidecar with stable source-facing keys and cross-boundary
-> relation edges, rather than by inventing or borrowing sign slots (§2.13,
-> §3, M6). M6 also freezes Unicode coverage at 778,873 / 792,651 (98.2618 %).
-> §9 records what changed and which review points did not hold.
+> *Rev 5 (historical, superseded):* M6 initially handled zero-sign entities in
+> a deterministic `zero-span.json` sidecar after discovering Text-Fabric's
+> non-empty-`oslots` constraint. Section 9 retains that decision as history.
+> *Rev 6 (current):* ADR-0001/#37 replaced the sidecar model with explicit,
+> visually empty synthetic `sign` anchors. Current builds keep every textual
+> source entity in the TF graph, mark technical anchors with `synthetic=1`,
+> and do not emit a new `zero-span.json`. M6's semantic-sign Unicode census
+> remains 778,873 / 792,651 (98.2618 %).
 
 ---
 
@@ -74,13 +74,12 @@ textual position, so it cannot yield a normal section path — which is exactly
 why M6's section-path invariant has to be stated against *populated*
 documents.
 
-**Decision (revised by M6):** preserve all 2,078 source documents and record
-all four cardinalities in the build report. A document that spans at least one
-sign is emitted into the Text-Fabric warp. A metadata-only zero-span document
-is preserved in the deterministic zero-span sidecar instead; it is **not**
-assigned an invented sign merely to satisfy Text-Fabric's non-empty `oslots`
-constraint. M6 measures 236 zero-span documents: all 233 stubs plus three
-populated-but-zero-sign editions (§2.13).
+**Decision (revised by ADR-0001/#37):** preserve all 2,078 source documents
+as TF nodes and record all four source cardinalities in the build report.
+A document with no semantic/source sign extent receives the minimum positional
+support needed by TF through a visually empty synthetic `sign` slot marked
+`synthetic=1`; that technical slot is not source sign content. Ancestor
+structures reuse descendant anchors where possible (§2.13).
 
 ### 2.2 Three files are zero bytes
 
@@ -226,12 +225,11 @@ must not invent one merely to make the feature matrix rectangular.
 
 All 31,770 unlemmatised words retain `form`; dropping them would delete about
 10 % of the corpus and corrupt every offset. M2 also finds **295** source words
-whose GDL contributes zero semantic sign slots. Their source-level empty
-half-open spans are retained. M6 further establishes that Text-Fabric 13.1
-cannot represent those 295 words as warp nodes without assigning a false sign,
-so their features and relation edges live in `zero-span.json` (§2.13). They
-remain part of the corpus word cardinality and round-trip contract even though
-the TF warp itself contains 320,680 word nodes.
+whose GDL contributes zero semantic/source sign slots. Their source-level empty
+half-open spans remain semantically empty. ADR-0001/#37 represents each such
+textual position inside TF with a visually/content-empty synthetic `sign`
+anchor marked `synthetic=1`, so all **320,975** source words are TF word nodes
+without fabricating a source sign (§2.13).
 
 ### 2.7 One word can carry **two to fourteen** lexemes
 
@@ -403,79 +401,63 @@ carry source `license` and `license-url`; **0** carry `license_type` or
 `license-type`. The document layer preserves those raw source fields and never
 manufactures a licence type.
 
-### 2.13 Text-Fabric warp boundary and zero-span preservation
+### 2.13 Text-Fabric warp boundary and synthetic anchors
 
-M6 is the first milestone that serialises the joined graph through Text-Fabric
-13.1. The library rejects a non-slot node whose `oslots` set is empty. ORACC,
-however, contains legitimate source entities with zero semantic sign extent.
-Fabricating or borrowing a sign would make section and lexical relations look
-valid while changing the source semantics.
+Text-Fabric requires every non-slot node participating in `oslots` to have a
+non-empty slot extent. ORACC nevertheless contains legitimate textual entities
+with zero **semantic/source sign** extent. Borrowing a neighboring source sign
+would falsify their position and content.
 
-**Decision:** the distributable v1 corpus is two coordinated layers:
+**Current decision (ADR-0001/#37):** keep those entities in the normal TF graph
+by allocating the minimum visually empty technical `sign` anchors. Synthetic
+anchors carry `synthetic=1` and source identity/ordering metadata only; they do
+not carry fabricated `utf8`, `readingu`, `sign_json`, grapheme, token, or
+lexical content. Ancestor sections reuse descendant anchors rather than gaining
+redundant synthetic slots.
 
-1. the standard TF warp for every entity spanning at least one `sign` slot;
-2. deterministic `zero-span.json` for source entities with no sign extent,
-   including their complete emitted feature set and every relation edge that
-   crosses the TF/sidecar boundary or connects two sidecar nodes.
+Whole-corpus current measurement:
 
-Both layers use stable qualified source identities. For a non-document entity
-the sidecar key is `<otype>:<subproject:Q>:<source_id>`; documents and lexemes
-use their already-qualified canonical keys. An omitted node may therefore point
-to an included TF node and still be resolved reproducibly from the included
-node's `document_key` plus `source_id`/canonical lexeme key.
+| quantity | count |
+|---|--:|
+| semantic/source signs | **792,651** |
+| synthetic technical TF slots | **689** |
+| **total TF slots** | **793,340** |
+| source words / TF word nodes | **320,975 / 320,975** |
+| source documents / TF document nodes | **2,078 / 2,078** |
+| new-build zero-span sidecar nodes | **0** |
 
-Whole-corpus M6 census:
-
-| type | source total | TF warp | zero-span sidecar |
-|---|--:|--:|--:|
-| `document` | 2,078 | 1,842 | 236 |
-| `face` | 2,312 emitted section faces | 2,036 | 276 |
-| `column` | 758 | 723 | 35 |
-| `line` | 56,226 | 56,084 | 142 |
-| `chunk` | 13,644 | 13,388 | 256 |
-| `phrase` | 4,499 | 4,499 | 0 |
-| `word` | 320,975 | 320,680 | 295 |
-| `lex` | 8,025 | 8,023 | 2 |
-| `sign` slot | 792,651 | 792,651 | — |
-
-The 236 zero-span documents are the 233 M0 stubs plus exactly three populated
-editions whose words collectively yield no semantic sign slot:
-`rinap/rinap1:Q003633`, `rinap/rinap2:Q006646`, and
-`rinap/rinap4:Q003344`. Total zero-span sidecar nodes are **1,242**.
-
-M6 freezes Unicode-bearing signs at **778,873 / 792,651 = 98.2618 %**.
-
-**API limitation:** `build_tf()` still requires at least one sign overall,
-because without any slot at all there is no valid Text-Fabric warp to save. A
-zero-sign-only input can be represented by the sidecar schema but this M6 API
-does not emit a standalone sidecar-only corpus. The joined RIAO+RINAP build is
-not affected because it has 792,651 sign slots.
+Unicode coverage remains **778,873 / 792,651 = 98.2618 %** because synthetic
+technical slots are excluded from semantic-sign statistics. The historical
+`zero-span.json` format remains readable for old artifacts, but current builds
+do not require or emit it for textual zero-span entities.
 
 ---
 
 ## 3. Target corpus model
 
 Slot type is **sign**, matching `Nino-cunei/oldbabylonian` so queries port.
-The source model and TF warp cardinalities are intentionally not identical:
-zero-span source entities remain corpus entities in the sidecar (§2.13).
+The TF slot domain has two explicitly distinguished populations: **792,651**
+semantic/source signs and **689** visually empty synthetic technical anchors,
+for **793,340 total TF slots**. Every source textual entity remains addressable
+inside the same TF graph.
 
-| node type | source | source total | TF warp | sidecar |
-|---|---|--:|--:|--:|
-| `document` | one corpusjson file, keyed `subproject:Q` | 2,078 | 1,842 | 236 |
-| `face` | streaming `surface` state, including synthetic recovery faces | 2,312 | 2,036 | 276 |
-| `column` | `d type=column` | 758 | 723 | 35 |
-| `line` | `d type=line-start` | 56,226 | 56,084 | 142 |
-| `chunk` | every `c` node, typed by `chunk_type` | 13,644 | 13,388 | 256 |
-| `phrase` | `c type=phrase` (also a chunk) | 4,499 | 4,499 | 0 |
-| `word` | `l` node | 320,975 | 320,680 | 295 |
-| `lex` | distinct `(lang, cf, gw, pos)` | 8,025 | 8,023 | 2 |
-| `sign` **(slot)** | semantically classified GDL object | 792,651 | 792,651 | — |
-| `translation_unit` | TEI `div3 type="tr"`, spanning `sref`→`eref` slots | ~9,500 | tbd M9 | tbd M9 |
-| `translation_note` | TEI note attached to a unit | tbd | tbd M9 | tbd M9 |
+| node type | source | current TF model |
+|---|---|---|
+| `document` | one corpusjson file, keyed `subproject:Q` | all 2,078 source documents |
+| `face` | streaming `surface` state, including recovery faces | source domain represented in TF |
+| `column` | `d type=column` | source domain represented in TF |
+| `line` | `d type=line-start` | all source lines represented in TF |
+| `chunk` | every `c` node, typed by `chunk_type` | source domain represented in TF |
+| `phrase` | `c type=phrase` (also a chunk) | source domain represented in TF |
+| `word` | `l` node | all 320,975 source words |
+| `lex` | distinct `(lang, cf, gw, pos)` | source-derived lexeme domain represented in TF |
+| `sign` **(slot)** | semantic GDL sign or technical empty anchor | 792,651 semantic + 689 synthetic |
+| `translation_unit` | TEI `div3 type="tr"`, spanning `sref`→`eref` slots | source-supported range nodes |
+| `translation_note` | TEI note attached to a unit | source-supported note nodes |
 
-TF sections are `document / face / line` for slotted content. Sidecar entities
-preserve the same source-facing identities and explicit relation edges; they
-must not be mistaken for extra TF warp nodes.
+Synthetic anchors are positional infrastructure, not additional source signs.
+Code that reports source-sign statistics must exclude `synthetic=1`; code that
+works with TF slot topology uses the total TF slot domain.
 
 **Feature names reuse `oldbabylonian`'s** where they coincide, so existing
 queries transfer: `reading`, `readingu`, `grapheme`, `lnno`, `period`,
@@ -487,10 +469,10 @@ many-to-many `word→lex` edge.
 
 **Source preservation.** Every sign slot carries `src_path` — document, word
 id and the GDL path that produced it (e.g. `Q005620.l0012/gdl[0]`). Every word
-retains a canonical serialisation of its original `gdl` subtree, whether that
-word is a TF warp node or a zero-span sidecar entity. Sidecar relation keys are
-stable and resolve back to slotted TF entities through qualified source
-identity. This makes the flattening auditable and lets the sign ontology be
+retains a canonical serialisation of its original `gdl` subtree, including
+words whose TF extent consists only of a synthetic technical anchor. Qualified
+`document_key` plus source identity keeps the flattening auditable without
+turning technical anchors into source signs.
 revised later without re-deriving from ORACC.
 
 ---
@@ -515,10 +497,10 @@ Fixtures are real files, each chosen for a specific hazard from §2:
 | `rinap/rinap5/Q003840.json` + `rinap5p1/Q003840.json` | **Q collision with differing content** |
 
 Layers: unit (pure functions over inlined CDL) → fixture → whole-corpus
-invariant → round-trip. M6 adds a synthetic adversarial fixture because the
-TF/sidecar relation boundary cannot be exercised by a single natural fixture
-reliably: a signless word alone on a zero-span line followed by a slotted line
-on the same face must preserve `word→line→face` across sidecar→sidecar→TF.
+invariant → round-trip. M6/#37 includes an adversarial signless-word fixture:
+a signless word alone on an otherwise zero-sign line followed by a semantically
+slotted line on the same face must remain a normal `word→line→face` TF path,
+with its technical anchor marked `synthetic=1` and visibly empty.
 
 ---
 
@@ -583,41 +565,36 @@ is `license=2,078`, `license-url=2,078`, `license_type=0` for this snapshot.
 
 ### M6 — Whole-corpus invariants
 *Red/characterisation:* join M0–M5 into one real Text-Fabric graph and assert
-source cardinalities independently from TF warp cardinalities. A source entity
-with no semantic sign span must never receive an invented or borrowed slot.
-Its features and relation edges must survive in deterministic `zero-span.json`;
-an adversarial `word(empty) → line(empty) → face(slotted)` chain must remain
-resolvable across both layers.
+source cardinalities separately from TF slot cardinalities. A source entity
+with no semantic sign span must never borrow or fabricate source sign content;
+its position is represented by a visibly empty `synthetic=1` technical anchor.
 
 **Exit:**
-- source words = **320,975**; documents = **2,078**; populated = **1,845**;
-  stubs = **233**; qualified document keys are unique;
-- signs = **792,651** and each belongs to exactly one source word; every source
-  word belongs to exactly one source line; populated section paths have zero
-  errors;
-- Unicode-bearing signs = **778,873 (98.2618 %)**;
-- TF warp counts are exactly those in §2.13 and `otype`/`oslots` load through
-  Text-Fabric 13.1;
-- sidecar counts are exactly those in §2.13, total **1,242**, with 295 words
-  and 236 documents; the three populated zero-sign documents are pinned by
-  qualified id;
-- repeated builds produce byte-identical `zero-span.json` and stable sidecar
-  relation keys resolve both omitted→omitted and omitted→TF edges;
-- `build_tf()` rejects a corpus with zero total sign slots with typed
-  `CorpusBuildError`; standalone sidecar-only emission is not claimed by M6.
+- source words = **320,975** and TF word nodes = **320,975**; source documents =
+  **2,078** and TF document nodes = **2,078**; populated = **1,845**; stubs =
+  **233**; qualified document keys are unique;
+- semantic/source signs = **792,651**, synthetic technical slots = **689**, and
+  total TF slots = **793,340**;
+- every semantic sign belongs to exactly one source word; every source word
+  belongs to exactly one source line; populated section paths have zero errors;
+- Unicode-bearing semantic/source signs = **778,873 (98.2618 %)**;
+- synthetic slots are visibly/content-empty and excluded from semantic-sign
+  counts while keeping zero-sign textual entities in normal TF topology;
+- `otype`/`oslots` and the complete graph load through Text-Fabric.
 
 ### M7 — Round-trip and source preservation
-*Red:* regenerate each word's `form` from its signs where sign-derived form is
-well-defined and assert equality or enumerate every source-supported exception;
-separately assert every source word's stored `gdl` serialisation is identical
-to the source representation. **The word domain is TF + zero-span sidecar,
-not TF warp nodes alone.** The second test is what makes round-trip achievable
-at all — notation such as `|URU×GU|`, qualifiers and operator nesting cannot
-be reconstructed from a flat sign sequence.
-**Exit:** 100 % of the 320,975 source words are accounted for across TF +
-sidecar; every non-round-tripping sign-derived `form` case is enumerated and
-justified, and every stored source GDL representation is preserved exactly by
-the chosen canonical/byte comparison contract.
+*Red:* regenerate each word's `form` from its semantic signs where sign-derived
+form is well-defined and assert equality or enumerate every source-supported
+exception; separately assert every source word's stored `gdl` serialisation is
+identical to the source representation. **The word domain is the complete TF
+word domain: all 320,975 source words, including words positioned only by
+synthetic anchors.** The second test is what makes round-trip achievable at
+all — notation such as `|URU×GU|`, qualifiers and operator nesting cannot be
+reconstructed from a flat sign sequence.
+**Exit:** 100 % of the 320,975 source words are TF nodes; every
+non-round-tripping sign-derived `form` case is enumerated and justified, and
+every stored source GDL representation is preserved exactly by the chosen
+canonical/byte comparison contract.
 
 ### M9 — Translation layer (v1.1)
 *Red:*
@@ -636,8 +613,8 @@ the chosen canonical/byte comparison contract.
 `oslots` are the sign span of `sref`→`eref`; `translation_note` edges.
 **Exit:** 1,646 documents carry ≥1 translation unit; no unit has empty
 `oslots`; the TEI word ids (`Q001801.l00012`) reconcile 1:1 with our `word`
-nodes for every joined text, treating zero-span corpusjson words explicitly
-rather than assuming every source word is a TF warp node.
+nodes for every joined text, including source words positioned only by
+synthetic anchors rather than assuming every slot is a semantic/source sign.
 
 ### M8 — Cross-validation
 Load beside `akkadian_oldbabylonian`; assert shared feature names
@@ -653,9 +630,9 @@ Load beside `akkadian_oldbabylonian`; assert shared feature names
 | Count-based tests pass while semantics are wrong | M1 asserts *content* of numeral/qualified/compound slots, never just totals |
 | Catalogue attached to the wrong edition | `(subproject, Q)` join + the `Q003840` regression fixture |
 | COF arity assumptions | parser tested to 14 `inst` slots; edge degree asserted ≤3 |
-| Zero-span source entity disappears or gains a fake sign | preserve it in deterministic `zero-span.json`; hard-pin TF/sidecar cardinalities and cross-boundary relation tests (§2.13, M6) |
-| Stub documents corrupt section invariants | invariants scoped to populated documents; all 233 stubs are explicit zero-span document entities rather than fabricated TF sections |
-| Consumer counts only TF warp nodes and mistakes them for source totals | report source, TF and sidecar cardinalities separately; document that v1 is a coordinated TF + sidecar corpus |
+| Zero-sign source entity disappears or gains fake source content | preserve it in TF with a visibly empty `synthetic=1` technical anchor; assert anchor/content semantics (§2.13, M6) |
+| Stub documents corrupt section invariants | invariants are scoped appropriately; all 233 stubs remain explicit TF document nodes supported only by technical anchors where needed |
+| Consumer mistakes technical slots for source signs | report semantic/source signs, synthetic technical slots, and total TF slots separately |
 | Translation licence: JSON/TEI say CC0, edition pages say CC BY-SA 3.0 | treat as BY-SA with attribution; preserve raw source licence fields and explicit translation-source provenance (§2.11) |
 | `rinap5p1` has no TEI translations | reported as an explicit gap, not silently absent; needs a separate source |
 | Forcing word-level translation alignment | units span line ranges only (median 5 lines); no token alignment is attempted |
@@ -664,9 +641,10 @@ Load beside `akkadian_oldbabylonian`; assert shared feature names
 
 ## 7. Scope
 
-**In v1:** the edition layer (§3), built from `corpusjson` alone and published
-as a coordinated Text-Fabric warp plus deterministic zero-span sidecar. The
-sidecar is part of the corpus contract, not an optional diagnostic artifact.
+**In v1:** the edition layer (§3), built from `corpusjson` and represented as
+one Text-Fabric graph. Zero-sign textual entities use visually empty
+`synthetic=1` technical anchors; `zero-span.json` is not required by current
+builds.
 
 **In v1.1 — M9, translations.** Not out of scope: 89.2 % of populated editions
 can be joined to published English translations from one TEI download, and
@@ -688,9 +666,9 @@ does not have.
 
 ## 8. Pinned figures
 
-M1 pins **792,651** sign slots; M2 pins **320,975** source words; M3 pins
-**56,226** source lines; M4 pins **8,025** source lexemes; M5 pins the metadata
-join; M6 now pins the physical TF/sidecar serialisation boundary.
+M1 pins **792,651** semantic/source signs; M2 pins **320,975** source words; M3
+pins **56,226** source lines; M4 pins **8,025** source lexemes; M5 pins the
+metadata join; M6/#37 pins the synthetic-anchor TF representation.
 
 Firm snapshot figures: 2,081 source files, 2,078 parseable, 1,845 populated,
 233 stubs, 320,975 source words, 792,651 sign slots, 56,226 source lines,
@@ -698,31 +676,29 @@ Firm snapshot figures: 2,081 source files, 2,078 parseable, 1,845 populated,
 entries, 2,075 attached parseable editions, 3 missing catalogue members, and
 1,844/1,845 populated editions with `ruler`.
 
-M6 serialisation: Unicode **778,873 / 792,651 (98.2618 %)**; TF warp nodes
-`document=1,842`, `face=2,036`, `column=723`, `line=56,084`, `chunk=13,388`,
-`phrase=4,499`, `word=320,680`, `lex=8,023`, plus all 792,651 sign slots;
-zero-span sidecar nodes `document=236`, `face=276`, `column=35`, `line=142`,
-`chunk=256`, `word=295`, `lex=2`, total **1,242**. The three populated
-zero-sign documents are `rinap/rinap1:Q003633`, `rinap/rinap2:Q006646`, and
-`rinap/rinap4:Q003344`.
+Current serialisation after ADR-0001/#37: Unicode **778,873 / 792,651
+(98.2618 %)** across semantic/source signs; **689** additional synthetic empty
+anchors produce **793,340 total TF slots**. TF contains all **320,975** source
+word nodes and all **2,078** source document nodes. Current builds emit **0**
+zero-span sidecar nodes.
 
 ---
 
 ## 9. Review responses
 
-### Round 3 — M6 Text-Fabric boundary
+### Round 3 — M6 Text-Fabric boundary (historical; superseded by ADR-0001/#37)
 
-**Adopted.** The independent M6 review correctly rejected the then-green PR as
-not yet final: implementation had discovered the TF 13.1 non-empty-`oslots`
-constraint, but this normative plan still claimed every source document and
-word became a TF node. Revision 5 makes the TF + sidecar split explicit,
-freezes both cardinality domains, and propagates that contract into M7 and M9.
+The following records the older sidecar decision for audit history only. It is
+not the current corpus contract; §2.13 and §3 define the current
+`synthetic=1` anchor model.
 
-The review also required an adversarial mixed graph, not merely count checks:
-a zero-span word on a zero-span line followed by a slotted line on the same
-face. Its required relation path crosses sidecar→sidecar→TF. That regression is
-now part of M6's test contract, along with byte-deterministic sidecar output and
-stable source-facing keys.
+**Historically adopted.** The independent M6 review correctly rejected the
+then-green PR because the implementation and plan disagreed about zero-sign
+entities. Revision 5 temporarily made the TF + sidecar split explicit.
+
+ADR-0001/#37 subsequently replaced that representation with synthetic empty TF
+anchors. The historical mixed-boundary regression motivated the current
+adversarial anchor tests, but new builds no longer use a sidecar boundary.
 
 **Measured rather than assumed.** Zero-span documents are **236**, not merely
 the 233 obvious stubs. The additional three are populated source editions with

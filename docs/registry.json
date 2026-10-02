@@ -881,6 +881,20 @@
       "status": "done",
       "issue": 124,
       "evidence_file": "docs/task-state/ISSUE-124.json"
+    },
+    {
+      "id": "ISSUE-83",
+      "title": "Lightweight local installation and resource measurements",
+      "plan": "P-004",
+      "spec": "§ISSUE-83",
+      "priority": "P0",
+      "blocked_by": [
+        "ISSUE-71",
+        "ISSUE-73"
+      ],
+      "status": "todo",
+      "issue": 83,
+      "evidence_file": "docs/task-state/ISSUE-83.json"
     }
   ],
   "selection_rule": "enumerate every claim/start-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; completion_blocked_by gates finalization without suppressing explicitly permitted early research/design; losing sessions reselect unrelated ready work",

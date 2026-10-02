@@ -22,6 +22,7 @@ from oracc_tf import TF_VERSION, corpus, distribution, loader, metadata
 DATASET = "assyrian-royal-inscriptions"
 BUILDER_COMMIT = "a" * 40
 SOURCE_STATE = "sha256:" + "b" * 64
+REPOSITORY_ORG = "example-org"
 
 
 def _app_generation():
@@ -102,6 +103,7 @@ def test_registered_dataset_generates_minimal_deterministic_app_without_manual_t
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
     second = module.generate_app(
         tf_root,
@@ -109,20 +111,29 @@ def test_registered_dataset_generates_minimal_deterministic_app_without_manual_t
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
 
     assert _tree_bytes(first) == _tree_bytes(second)
     assert set(_tree_bytes(first)) == {"config.yaml"}
     assert not (first / "app.py").exists()
     config = yaml.safe_load((first / "config.yaml").read_text(encoding="utf-8"))
-    assert config == {
-        "apiVersion": 3,
-        "provenanceSpec": {
-            "corpus": DATASET,
-            "relative": "/tf",
-            "version": TF_VERSION,
-        },
+    assert config["apiVersion"] == 3
+    assert config["provenanceSpec"] == {
+        "corpus": DATASET,
+        "relative": "/tf",
+        "version": TF_VERSION,
     }
+    assert config["docs"]["docBase"] == (
+        f"https://github.com/{REPOSITORY_ORG}/ORACC-TF-{DATASET}/blob/main/docs"
+    )
+    assert config["dataDisplay"]["excludedFeatures"] == [
+        "catalogue_json",
+        "gdl_json",
+        "sign_json",
+    ]
+    assert config["dataDisplay"]["textFormat"] == "text-trans-full"
+    assert "typeDisplay" in config
 
 
 def test_generation_fails_closed_for_unregistered_dataset_or_missing_warp(tmp_path):
@@ -137,6 +148,7 @@ def test_generation_fails_closed_for_unregistered_dataset_or_missing_warp(tmp_pa
             dataset="unknown-dataset",
             tf_version=TF_VERSION,
             datasets_path=datasets,
+            repository_org=REPOSITORY_ORG,
         )
 
     broken = tmp_path / "broken-tf"
@@ -149,6 +161,7 @@ def test_generation_fails_closed_for_unregistered_dataset_or_missing_warp(tmp_pa
             dataset=DATASET,
             tf_version=TF_VERSION,
             datasets_path=datasets,
+            repository_org=REPOSITORY_ORG,
         )
 
 
@@ -163,6 +176,7 @@ def test_override_is_narrow_and_cannot_replace_generated_identity(tmp_path):
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
         override={"display_css": ".txtu { font-size: 1.1em; }\n"},
     )
     assert (app / "display.css").read_text(encoding="utf-8").startswith(".txtu")
@@ -180,6 +194,7 @@ def test_override_is_narrow_and_cannot_replace_generated_identity(tmp_path):
                 dataset=DATASET,
                 tf_version=TF_VERSION,
                 datasets_path=datasets,
+                repository_org=REPOSITORY_ORG,
                 override=bad,
             )
 
@@ -195,6 +210,7 @@ def test_failed_regeneration_preserves_previous_valid_app(tmp_path):
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
     before = _tree_bytes(target)
 
@@ -205,6 +221,7 @@ def test_failed_regeneration_preserves_previous_valid_app(tmp_path):
             dataset=DATASET,
             tf_version=TF_VERSION,
             datasets_path=datasets,
+            repository_org=REPOSITORY_ORG,
             override={"apiVersion": 99},
         )
     assert _tree_bytes(target) == before
@@ -221,6 +238,7 @@ def test_second_registered_dataset_generates_independent_app_without_copying_fir
         dataset="dataset-one",
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
     two = module.generate_app(
         tf_root,
@@ -228,6 +246,7 @@ def test_second_registered_dataset_generates_independent_app_without_copying_fir
         dataset="dataset-two",
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
     one_cfg = yaml.safe_load((one / "config.yaml").read_text(encoding="utf-8"))
     two_cfg = yaml.safe_load((two / "config.yaml").read_text(encoding="utf-8"))
@@ -246,6 +265,7 @@ def test_generated_app_loads_through_supported_local_app_path(tmp_path):
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
 
     app = use(
@@ -270,6 +290,7 @@ def test_generated_app_is_manifest_owned_by_distribution_transaction(tmp_path):
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
     stage = tmp_path / "stage"
     manifest = distribution.stage_distribution(
@@ -305,6 +326,7 @@ def test_new_release_replaces_stale_app_while_old_tf_version_remains_visible(tmp
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
         override={"display_css": ".old { display: block; }\n"},
     )
     stage = tmp_path / "stage"
@@ -325,6 +347,7 @@ def test_new_release_replaces_stale_app_while_old_tf_version_remains_visible(tmp
         dataset=DATASET,
         tf_version="0.2.1",
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
     manifest = distribution.stage_distribution(
         source_v2,

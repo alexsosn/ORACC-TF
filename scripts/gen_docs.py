@@ -180,7 +180,14 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
     generated_paths: set[Path] = set()
     next_manifest: dict[str, list[str]] = {}
 
-    rows = ["# Feature reference", "", "Generated from TF metadata; do not hand-edit generated fields.", ""]
+    rows = [
+        "# Feature reference",
+        "",
+        '<a id="feature-reference"></a>',
+        "",
+        "Generated from TF metadata; do not hand-edit generated fields.",
+        "",
+    ]
 
     for name in sorted(api.Fall()):
         feature = api.Fs(name)
@@ -197,6 +204,7 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
             value_counts[value] += 1
         scope = next(iter(node_types)) if len(node_types) == 1 else "mixed"
         rel = Path("features") / scope / f"{name}.md"
+        rows.append(f'<a id="{name}"></a>')
         rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
         page = _node_feature_page(
             name=name,
@@ -234,6 +242,7 @@ def generate(tf_dir: Path, docs_dir: Path) -> set[Path]:
             for target in targets:
                 target_types.add(api.F.otype.v(target))
         rel = Path("features") / "edge" / f"{name}.md"
+        rows.append(f'<a id="{name}"></a>')
         rows.append(f"- [`{name}`]({rel.as_posix()}) — {description}")
         page = _edge_feature_page(
             name=name,

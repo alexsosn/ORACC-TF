@@ -14,6 +14,7 @@ from oracc_tf import app_generation
 DATASET = "assyrian-royal-inscriptions"
 BUILDER_COMMIT = "a" * 40
 SOURCE_STATE = "sha256:" + "b" * 64
+REPOSITORY_ORG = "example-org"
 
 
 def _edition(text_id: str = "QHARDEN") -> loader.Edition:
@@ -92,6 +93,7 @@ def test_generator_rejects_source_target_overlap_without_mutating_tf_source(tmp_
             dataset=DATASET,
             tf_version=TF_VERSION,
             datasets_path=datasets,
+            repository_org=REPOSITORY_ORG,
         )
     assert source.is_dir()
     assert _source_bytes(source) == before
@@ -113,6 +115,7 @@ def test_generator_rejects_present_but_unloadable_warp_without_mutating_source(t
             dataset=DATASET,
             tf_version=TF_VERSION,
             datasets_path=datasets,
+            repository_org=REPOSITORY_ORG,
         )
 
     assert _source_bytes(source) == before
@@ -128,6 +131,7 @@ def test_manifest_owned_stage_is_discoverable_from_canonical_app_path_without_lo
         dataset=DATASET,
         tf_version=TF_VERSION,
         datasets_path=datasets,
+        repository_org=REPOSITORY_ORG,
     )
     stage = tmp_path / "stage"
     distribution.stage_distribution(

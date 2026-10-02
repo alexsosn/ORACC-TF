@@ -49,6 +49,14 @@ def _tree_stats(root: Path) -> dict[str, int]:
     return {"logical_bytes": logical, "allocated_bytes": allocated, "files": files}
 
 
+def _feature_payloads(tf_root: Path) -> dict[str, dict[str, int]]:
+    return {
+        path.stem: _tree_stats(path)
+        for path in sorted(tf_root.glob("*.tf"))
+        if path.is_file()
+    }
+
+
 def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
     stage = stage.resolve()
     tf_root = stage / "tf" / version
@@ -56,6 +64,7 @@ def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
     docs_root = stage / "docs"
     before = _tree_stats(stage)
     tf_before = _tree_stats(tf_root)
+    feature_payloads = _feature_payloads(tf_root)
     heavy_payload = {
         feature: _tree_stats(tf_root / f"{feature}.tf")
         for feature in sorted(HEAVY_FEATURES)
@@ -99,6 +108,7 @@ def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
         "tf_payload_before_load": tf_before,
         "tf_payload_after_load": _tree_stats(tf_root),
         "heavy_feature_payload": heavy_payload,
+        "feature_payloads": feature_payloads,
         "app_payload": _tree_stats(app_root),
         "docs_payload": _tree_stats(docs_root),
         "tf_cache": cache,

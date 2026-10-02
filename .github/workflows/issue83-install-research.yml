@@ -157,6 +157,55 @@ jobs:
               --output "/tmp/issue83-results/browser-${i}.json"
           done
 
+      - name: Benchmark conservative lean preload profile
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/issue83-lean
+          cp -a "/tmp/issue83-clean/$DATASET" /tmp/issue83-lean
+          rm -rf "/tmp/issue83-lean/tf/$TF_VERSION/.tf"
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          path = Path("/tmp/issue83-lean/app/config.yaml")
+          config = yaml.safe_load(path.read_text(encoding="utf-8"))
+          additional = {
+              "gdl_form",
+              "gdl_id",
+              "gdl_sexified",
+              "inst",
+              "lexeme",
+              "readingu",
+              "ref",
+              "sig",
+              "src_path",
+              "translation_source_id",
+              "translation_source_license",
+              "translation_source_license_url",
+              "translation_source_name",
+              "translation_source_sha256",
+              "translation_source_url",
+              "translation_text_raw",
+              "word_id",
+          }
+          current = set(config["dataDisplay"].get("excludedFeatures", []))
+          config["dataDisplay"]["excludedFeatures"] = sorted(current | additional)
+          path.write_text(
+              yaml.safe_dump(config, allow_unicode=True, sort_keys=False),
+              encoding="utf-8",
+          )
+          PY
+          cd /tmp
+          python "$GITHUB_WORKSPACE/scripts/measure_issue83_install.py" \
+            "/tmp/issue83-lean" \
+            --version "$TF_VERSION" \
+            --archive /tmp/assyrian-royal-inscriptions-issue83.zip \
+            --output "/tmp/issue83-results/python-lean.json"
+          rm -rf "/tmp/issue83-lean/tf/$TF_VERSION/.tf"
+          python "$GITHUB_WORKSPACE/scripts/measure_issue83_browser.py" \
+            "/tmp/issue83-lean/app" \
+            --output "/tmp/issue83-results/browser-lean.json"
+
       - name: Summarize standalone evidence
         env:
           EVIDENCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -177,6 +226,8 @@ jobs:
               json.loads((result_root / f"browser-{i}.json").read_text())
               for i in range(1, 4)
           ]
+          lean_python = json.loads((result_root / "python-lean.json").read_text())
+          lean_browser = json.loads((result_root / "browser-lean.json").read_text())
           archive = Path("/tmp/assyrian-royal-inscriptions-issue83.zip")
           without_heavy = Path("/tmp/assyrian-royal-inscriptions-issue83-no-heavy.zip")
           digest = hashlib.sha256(archive.read_bytes()).hexdigest()
@@ -191,7 +242,41 @@ jobs:
               assert set(row["routes"].values()) == {200}
               assert all(row["responses_nonempty"].values())
 
+          required_lean = {
+              "cf",
+              "cuneiform_trailer",
+              "designation",
+              "document",
+              "form",
+              "gw",
+              "lang",
+              "lnno",
+              "period",
+              "pos",
+              "ruler",
+              "sense",
+              "source_id",
+              "synthetic",
+              "translation_text",
+              "utf8",
+          }
+          assert required_lean <= set(lean_python["loaded_node_features"])
+          assert lean_python["query_result"]
+          assert lean_browser["app_loaded"] is True
+          assert set(lean_browser["routes"].values()) == {200}
+
           first = python_runs[0]
+          top_feature_payloads = sorted(
+              (
+                  {
+                      "feature": name,
+                      **payload,
+                  }
+                  for name, payload in first["feature_payloads"].items()
+              ),
+              key=lambda row: row["logical_bytes"],
+              reverse=True,
+          )[:20]
           summary = {
               "schema_version": 2,
               "head_sha": os.environ["EVIDENCE_HEAD_SHA"],
@@ -228,6 +313,33 @@ jobs:
               ),
               "browser_routes": browser_runs[0]["routes"],
               "excluded_features": sorted(heavy),
+              "top_feature_payloads": top_feature_payloads,
+              "lean_excluded_features": sorted(
+                  set(first["excluded_heavy_features"])
+                  | {
+                      "gdl_form",
+                      "gdl_id",
+                      "gdl_sexified",
+                      "inst",
+                      "lexeme",
+                      "readingu",
+                      "ref",
+                      "sig",
+                      "src_path",
+                      "translation_source_id",
+                      "translation_source_license",
+                      "translation_source_license_url",
+                      "translation_source_name",
+                      "translation_source_sha256",
+                      "translation_source_url",
+                      "translation_text_raw",
+                      "word_id",
+                  }
+              ),
+              "lean_python_startup_seconds": lean_python["startup_seconds"],
+              "lean_python_peak_rss_kib": lean_python["peak_rss_kib"],
+              "lean_browser_startup_seconds": lean_browser["elapsed_seconds"],
+              "lean_browser_peak_rss_kib": lean_browser["peak_rss_kib"],
               "max_slot": first["max_slot"],
           }
           (result_root / "summary.json").write_text(

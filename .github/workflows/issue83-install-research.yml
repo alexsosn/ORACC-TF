@@ -24,7 +24,6 @@ jobs:
     timeout-minutes: 30
     env:
       DATASET: assyrian-royal-inscriptions
-      TF_VERSION: "0.3.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,6 +32,9 @@ jobs:
 
       - name: Install project and pinned Text-Fabric
         run: pip install -e ".[dev]" "text-fabric==13.1.0"
+
+      - name: Resolve converter TF schema version
+        run: echo "TF_VERSION=$(python -c 'from oracc_tf import TF_VERSION; print(TF_VERSION)')" >> "$GITHUB_ENV"
 
       - name: Download pinned official translation archive
         run: scripts/download_m9_tei.sh "$RUNNER_TEMP/riao-teiCorpus-20241202.zip"

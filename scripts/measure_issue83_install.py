@@ -47,15 +47,15 @@ def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
     app_root = stage / "app"
     docs_root = stage / "docs"
     before = _tree_stats(stage)
+    tf_before = _tree_stats(tf_root)
+    heavy_payload = {
+        feature: _tree_stats(tf_root / f"{feature}.tf")
+        for feature in sorted(HEAVY_FEATURES)
+    }
 
     started = time.perf_counter()
     with redirect_stdout(sys.stderr):
-        app = use(
-            f"app:{app_root}",
-            locations=[str(tf_root)],
-            modules=[""],
-            silent="deep",
-        )
+        app = use(f"app:{app_root}", silent="deep")
     startup = time.perf_counter() - started
     if app is None or app.api is None:
         raise RuntimeError("standalone app failed to load")
@@ -88,7 +88,9 @@ def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
         "archive_name": archive.name,
         "before_first_load": before,
         "after_first_load": after,
-        "tf_payload": _tree_stats(tf_root),
+        "tf_payload_before_load": tf_before,
+        "tf_payload_after_load": _tree_stats(tf_root),
+        "heavy_feature_payload": heavy_payload,
         "app_payload": _tree_stats(app_root),
         "docs_payload": _tree_stats(docs_root),
         "tf_cache": cache,

@@ -1,0 +1,355 @@
+name: issue83-install-research
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/issue83-install-research.yml"
+      - "scripts/measure_issue83_install.py"
+      - "scripts/measure_issue83_browser.py"
+      - "programs/oracc_tf/distribution.py"
+      - "programs/oracc_tf/publishing.py"
+      - "programs/oracc_tf/app_generation.py"
+      - "docs/reference/**"
+      - "docs/task-state/ISSUE-83.json"
+      - "docs/registry.json"
+      - "docs/plans/P-004-agent-coordination.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  standalone-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATASET: assyrian-royal-inscriptions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install builder and pinned Text-Fabric
+        run: pip install -e ".[dev]" "text-fabric==13.1.0"
+
+      - name: Resolve converter TF schema version
+        run: echo "TF_VERSION=$(python -c 'from oracc_tf import TF_VERSION; print(TF_VERSION)')" >> "$GITHUB_ENV"
+
+      - name: Download pinned official translation archive
+        run: scripts/download_m9_tei.sh "$RUNNER_TEMP/riao-teiCorpus-20241202.zip"
+
+      - name: Build and stage standalone candidate
+        env:
+          ORACC_TF_M9_TEI_ARCHIVE: ${{ runner.temp }}/riao-teiCorpus-20241202.zip
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import shutil
+
+          from oracc_tf import TF_VERSION, app_generation, distribution, publishing
+
+          dataset = "assyrian-royal-inscriptions"
+          tf_root, _report = publishing.build_registered_tf(
+              "/tmp/issue83-build",
+              dataset,
+              tf_version=TF_VERSION,
+              translations_archive=os.environ["ORACC_TF_M9_TEI_ARCHIVE"],
+          )
+          app_root = app_generation.generate_app(
+              tf_root,
+              "/tmp/issue83-app",
+              dataset=dataset,
+              tf_version=TF_VERSION,
+              repository_org=os.environ["GITHUB_REPOSITORY_OWNER"],
+          )
+
+          docs_root = Path("/tmp/issue83-docs")
+          (docs_root / "reference").mkdir(parents=True)
+          shutil.copytree("docs/reference", docs_root / "reference", dirs_exist_ok=True)
+          (docs_root / "index.md").write_text(
+              "# assyrian-royal-inscriptions\n\n"
+              "See [researcher reference](reference/index.md).\n",
+              encoding="utf-8",
+          )
+
+          audit_state = json.loads(
+              Path("docs/task-state/ISSUE-124.json").read_text(encoding="utf-8")
+          )
+          source_state = "sha256:" + audit_state["audit"]["source"]["source_state_sha256"]
+          distribution.stage_distribution(
+              tf_root,
+              Path("/tmp/issue83-stage") / dataset,
+              dataset=dataset,
+              release_id="issue83-research-" + os.environ["GITHUB_SHA"][:12],
+              tf_version=TF_VERSION,
+              builder_commit=os.environ["GITHUB_SHA"],
+              source_state=source_state,
+              support_roots={"app": app_root, "docs": docs_root},
+          )
+          PY
+
+      - name: Package full and measurement-only filtered ZIPs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+
+          root = Path("/tmp/issue83-stage/assyrian-royal-inscriptions")
+          full = Path("/tmp/assyrian-royal-inscriptions-issue83.zip")
+          filtered = Path("/tmp/assyrian-royal-inscriptions-issue83-no-heavy.zip")
+          heavy = {"catalogue_json.tf", "gdl_json.tf", "sign_json.tf"}
+
+          with ZipFile(full, "w", compression=ZIP_DEFLATED, compresslevel=6) as zf:
+              for path in sorted(root.rglob("*")):
+                  if path.is_file():
+                      zf.write(path, Path(root.name) / path.relative_to(root))
+
+          with ZipFile(filtered, "w", compression=ZIP_DEFLATED, compresslevel=6) as zf:
+              for path in sorted(root.rglob("*")):
+                  if path.is_file() and path.name not in heavy:
+                      zf.write(path, Path(root.name) / path.relative_to(root))
+          PY
+          rm -rf /tmp/issue83-clean
+          mkdir -p /tmp/issue83-clean
+          python - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile("/tmp/assyrian-royal-inscriptions-issue83.zip") as zf:
+              zf.extractall("/tmp/issue83-clean")
+          PY
+
+      - name: Remove builder package before user-path validation
+        run: |
+          pip uninstall -y oracc-tf
+          cd /tmp
+          python - <<'PY'
+          import importlib.util
+          import tf
+          assert importlib.util.find_spec("oracc_tf") is None
+          print("text-fabric import OK")
+          PY
+
+      - name: Cold-profile Python load and representative query
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/issue83-results
+          cd /tmp
+          for i in 1 2 3; do
+            rm -rf "/tmp/issue83-clean/$DATASET/tf/$TF_VERSION/.tf"
+            python "$GITHUB_WORKSPACE/scripts/measure_issue83_install.py" \
+              "/tmp/issue83-clean/$DATASET" \
+              --version "$TF_VERSION" \
+              --archive /tmp/assyrian-royal-inscriptions-issue83.zip \
+              --output "/tmp/issue83-results/python-${i}.json"
+          done
+
+      - name: Cold-profile browser through documented app path
+        run: |
+          set -euo pipefail
+          cd /tmp
+          for i in 1 2 3; do
+            rm -rf "/tmp/issue83-clean/$DATASET/tf/$TF_VERSION/.tf"
+            python "$GITHUB_WORKSPACE/scripts/measure_issue83_browser.py" \
+              "/tmp/issue83-clean/$DATASET/app" \
+              --output "/tmp/issue83-results/browser-${i}.json"
+          done
+
+      - name: Benchmark conservative lean preload profile
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/issue83-lean
+          cp -a "/tmp/issue83-clean/$DATASET" /tmp/issue83-lean
+          rm -rf "/tmp/issue83-lean/tf/$TF_VERSION/.tf"
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          path = Path("/tmp/issue83-lean/app/config.yaml")
+          config = yaml.safe_load(path.read_text(encoding="utf-8"))
+          additional = {
+              "gdl_form",
+              "gdl_id",
+              "gdl_sexified",
+              "inst",
+              "lexeme",
+              "readingu",
+              "ref",
+              "sig",
+              "src_path",
+              "translation_source_id",
+              "translation_source_license",
+              "translation_source_license_url",
+              "translation_source_name",
+              "translation_source_sha256",
+              "translation_source_url",
+              "translation_text_raw",
+              "word_id",
+          }
+          current = set(config["dataDisplay"].get("excludedFeatures", []))
+          config["dataDisplay"]["excludedFeatures"] = sorted(current | additional)
+          path.write_text(
+              yaml.safe_dump(config, allow_unicode=True, sort_keys=False),
+              encoding="utf-8",
+          )
+          PY
+          cd /tmp
+          python "$GITHUB_WORKSPACE/scripts/measure_issue83_install.py" \
+            "/tmp/issue83-lean" \
+            --version "$TF_VERSION" \
+            --archive /tmp/assyrian-royal-inscriptions-issue83.zip \
+            --output "/tmp/issue83-results/python-lean.json"
+          rm -rf "/tmp/issue83-lean/tf/$TF_VERSION/.tf"
+          python "$GITHUB_WORKSPACE/scripts/measure_issue83_browser.py" \
+            "/tmp/issue83-lean/app" \
+            --output "/tmp/issue83-results/browser-lean.json"
+
+      - name: Summarize standalone evidence
+        env:
+          EVIDENCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from statistics import median
+
+          result_root = Path("/tmp/issue83-results")
+          python_runs = [
+              json.loads((result_root / f"python-{i}.json").read_text())
+              for i in range(1, 4)
+          ]
+          browser_runs = [
+              json.loads((result_root / f"browser-{i}.json").read_text())
+              for i in range(1, 4)
+          ]
+          lean_python = json.loads((result_root / "python-lean.json").read_text())
+          lean_browser = json.loads((result_root / "browser-lean.json").read_text())
+          archive = Path("/tmp/assyrian-royal-inscriptions-issue83.zip")
+          without_heavy = Path("/tmp/assyrian-royal-inscriptions-issue83-no-heavy.zip")
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          heavy = {"catalogue_json", "gdl_json", "sign_json"}
+
+          for row in python_runs:
+              assert row["max_slot"] == 793340
+              assert row["query_result"]
+              assert set(row["loaded_node_features"]).isdisjoint(heavy)
+          for row in browser_runs:
+              assert row["app_loaded"] is True
+              assert set(row["routes"].values()) == {200}
+              assert all(row["responses_nonempty"].values())
+
+          required_lean = {
+              "cf",
+              "cuneiform_trailer",
+              "designation",
+              "document",
+              "form",
+              "gw",
+              "lang",
+              "lnno",
+              "period",
+              "pos",
+              "ruler",
+              "sense",
+              "source_id",
+              "synthetic",
+              "translation_text",
+              "utf8",
+          }
+          assert required_lean <= set(lean_python["loaded_node_features"])
+          assert lean_python["query_result"]
+          assert lean_browser["app_loaded"] is True
+          assert set(lean_browser["routes"].values()) == {200}
+
+          first = python_runs[0]
+          top_feature_payloads = sorted(
+              (
+                  {
+                      "feature": name,
+                      **payload,
+                  }
+                  for name, payload in first["feature_payloads"].items()
+              ),
+              key=lambda row: row["logical_bytes"],
+              reverse=True,
+          )[:20]
+          summary = {
+              "schema_version": 2,
+              "head_sha": os.environ["EVIDENCE_HEAD_SHA"],
+              "archive_bytes": archive.stat().st_size,
+              "archive_without_heavy_bytes": without_heavy.stat().st_size,
+              "archive_heavy_feature_delta_bytes": (
+                  archive.stat().st_size - without_heavy.stat().st_size
+              ),
+              "archive_sha256": digest,
+              "extracted_before_load": first["before_first_load"],
+              "extracted_after_first_load": first["after_first_load"],
+              "tf_payload_before_load": first["tf_payload_before_load"],
+              "tf_payload_after_load": first["tf_payload_after_load"],
+              "heavy_feature_payload": first["heavy_feature_payload"],
+              "app_payload": first["app_payload"],
+              "docs_payload": first["docs_payload"],
+              "tf_cache": first["tf_cache"],
+              "python_cold_repetitions": 3,
+              "python_startup_median_seconds": median(
+                  row["startup_seconds"] for row in python_runs
+              ),
+              "python_peak_rss_median_kib": median(
+                  row["peak_rss_kib"] for row in python_runs
+              ),
+              "query_median_seconds": median(
+                  row["query_seconds"] for row in python_runs
+              ),
+              "browser_cold_repetitions": 3,
+              "browser_startup_median_seconds": median(
+                  row["elapsed_seconds"] for row in browser_runs
+              ),
+              "browser_peak_rss_median_kib": median(
+                  row["peak_rss_kib"] for row in browser_runs
+              ),
+              "browser_routes": browser_runs[0]["routes"],
+              "excluded_features": sorted(heavy),
+              "top_feature_payloads": top_feature_payloads,
+              "lean_excluded_features": sorted(
+                  set(first["excluded_heavy_features"])
+                  | {
+                      "gdl_form",
+                      "gdl_id",
+                      "gdl_sexified",
+                      "inst",
+                      "lexeme",
+                      "readingu",
+                      "ref",
+                      "sig",
+                      "src_path",
+                      "translation_source_id",
+                      "translation_source_license",
+                      "translation_source_license_url",
+                      "translation_source_name",
+                      "translation_source_sha256",
+                      "translation_source_url",
+                      "translation_text_raw",
+                      "word_id",
+                  }
+              ),
+              "lean_python_startup_seconds": lean_python["startup_seconds"],
+              "lean_python_peak_rss_kib": lean_python["peak_rss_kib"],
+              "lean_browser_startup_seconds": lean_browser["elapsed_seconds"],
+              "lean_browser_peak_rss_kib": lean_browser["peak_rss_kib"],
+              "max_slot": first["max_slot"],
+          }
+          (result_root / "summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue83-install-research
+          path: /tmp/issue83-results/*.json
+          if-no-files-found: error

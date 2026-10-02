@@ -267,8 +267,10 @@ candidate_build_source_words == candidate_PH4_source_words
 candidate_build_source_words - accepted_build_source_words == ph4_text_word_delta_sum
 ```
 
-The build totals include the TF warp plus zero-span sidecar domain. Both
-accepted/candidate build-report digests and both accepted/candidate dataset
+The build totals reconcile the complete source-word domain represented in TF,
+including source words whose only positional extent is a visually empty
+`synthetic=1` anchor. Both accepted/candidate build-report digests and both
+accepted/candidate dataset
 contexts participate in the evidence fingerprint. Missing build evidence is a
 non-approvable evaluation-error.
 

@@ -30,6 +30,14 @@ def _tree_stats(root: Path) -> dict[str, int]:
     files = 0
     if not root.exists():
         return {"logical_bytes": 0, "allocated_bytes": 0, "files": 0}
+    if root.is_file():
+        stat = root.stat()
+        blocks = getattr(stat, "st_blocks", 0)
+        return {
+            "logical_bytes": stat.st_size,
+            "allocated_bytes": blocks * 512 if blocks else stat.st_size,
+            "files": 1,
+        }
     for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue

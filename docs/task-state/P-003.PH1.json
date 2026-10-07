@@ -5,14 +5,14 @@
   "registry_status": "todo",
   "runtime_status": "completion-unblocked",
   "research": {
-    "base_head": "34030b8e29779f976a9db9565274b9029f33a639",
-    "finding": "Phase 1 requires an executable line-range translation lookup for final completion, but issue #27 explicitly permits research/content drafting before P-001.M9 is done. The Phase-1 model contract also tracks ADR-0001 semantic-sign versus synthetic-empty-slot separation."
+    "status": "done",
+    "comment": 6049014688,
+    "finding": "Current audit/tests provide source-grounded examples for sign classification, lexical absence/multi-lexeme behavior, qualified identity collisions, translation line ranges, and synthetic-anchor graph semantics."
   },
   "tdd": {
-    "red_run": 34108070316,
-    "red_result": "2 expected failures, 182 passed, 1 skipped under the earlier dependency contract: missing P-001.M9 dependency and stale empty-slot model contract",
-    "intermediate_run": 34108555805,
-    "intermediate_result": "1 expected failure, 183 passed, 1 skipped after the model contract was corrected; the remaining start-blocking assertion was later superseded by issue #27's explicit early-drafting rule"
+    "status": "red-committed",
+    "test": "tests/test_issue27_researcher_hazards.py",
+    "red_commit": "b7422ab9a8273e07351bd4dd61949581320ca434"
   },
   "resume_gate": "P-001.M9 is complete on main. Continue the Phase-1 work and validate the translation-range overlap example against the merged translation graph. Keep P-003.PH1 todo until its own acceptance criteria and checks are complete.",
   "resolved_dependency": {
@@ -21,5 +21,24 @@
     "implementation_pr": 13,
     "merge_commit": "dc3049b81a033bc0532c2026ecfc51c62a105128",
     "resolved_on": "2026-09-25"
-  }
+  },
+  "coordination": {
+    "session": "gpt56sol-20261008-0230-issue27",
+    "claim_comment": 6048997735,
+    "base_main": "293d5c9ddd738eddf08dd7ec9571e1935fb3af29"
+  },
+  "design": {
+    "status": "accepted",
+    "surfaces": [
+      "docs/reference/signs.md",
+      "docs/reference/words-and-lexemes.md",
+      "docs/reference/identity.md",
+      "docs/reference/translations.md",
+      "docs/reference/model.md",
+      "docs/reference/index.md",
+      "docs/reference/model.svg"
+    ],
+    "constraint": "Use current public TF feature/edge names and source-grounded examples; leave #28 quick start/reproducibility and #78/#81 assembly out of scope."
+  },
+  "status": "tdd-red-pending-ci"
 }

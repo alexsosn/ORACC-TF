@@ -10,9 +10,19 @@
     "finding": "Current audit/tests provide source-grounded examples for sign classification, lexical absence/multi-lexeme behavior, qualified identity collisions, translation line ranges, and synthetic-anchor graph semantics."
   },
   "tdd": {
-    "status": "red-committed",
+    "status": "green-implementation-committed",
     "test": "tests/test_issue27_researcher_hazards.py",
-    "red_commit": "b7422ab9a8273e07351bd4dd61949581320ca434"
+    "red_commit": "b7422ab9a8273e07351bd4dd61949581320ca434",
+    "red_observation": "Exact branch contract replay before prose: discoverability=false; all sign/word/identity requirements false; model diagram/relations missing. Existing translation edge lookup passed, while the anti-pattern assertion was corrected to allow explanatory prose.",
+    "implementation_commits": [
+      "8a2d1d225f960e1549d1238889753014a8074888",
+      "20bb9d5d4b0ebac6325934694c3555135f440e5b",
+      "97bc7ea158be5b8438c14becb2839ed5874f67ed",
+      "abc9d83bb7a65c2e2c636fbf24b5924c4dc56504",
+      "81888bc68d7752560c0b690af0b71c10ffc6611a",
+      "ec896201cc53dde675bdd92c2698235efc2891f4"
+    ],
+    "contract_replay": "pass"
   },
   "resume_gate": "P-001.M9 is complete on main. Continue the Phase-1 work and validate the translation-range overlap example against the merged translation graph. Keep P-003.PH1 todo until its own acceptance criteria and checks are complete.",
   "resolved_dependency": {
@@ -40,5 +50,11 @@
     ],
     "constraint": "Use current public TF feature/edge names and source-grounded examples; leave #28 quick start/reproducibility and #78/#81 assembly out of scope."
   },
-  "status": "tdd-red-pending-ci"
+  "status": "implementation-ci-pending",
+  "verification": {
+    "status": "ci-pending"
+  },
+  "review": {
+    "status": "pending"
+  }
 }

@@ -13,7 +13,7 @@ independently positioned zero-span textual entities.
 
 ## Graph overview
 
-The main textual hierarchy is `document → face → line → word → sign`. ORACC
+The main textual hierarchy is `document` → `face` → `line` → `word` → `sign`. ORACC
 source `d` markers are encountered as a flat event stream during conversion;
 the section walker turns that stream into explicit TF `document`, `face`,
 `column`, and `line` nodes without pretending that the original JSON was

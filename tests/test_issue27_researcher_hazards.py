@@ -76,7 +76,7 @@ def test_translation_page_starts_with_real_range_edge_lookup() -> None:
     assert "translation_sref" in first_python
     assert "translation_eref" in first_python
     assert "line.translation" not in first_python
-    assert "no `line.translation` feature" in text
+    assert "There is no `line.translation`" in text
 
 
 def test_model_page_has_researcher_graph_overview_and_svg() -> None:

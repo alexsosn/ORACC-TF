@@ -312,9 +312,11 @@ jobs:
                   row["peak_rss_kib"] for row in browser_runs
               ),
               "browser_routes": browser_runs[0]["routes"],
-              "excluded_features": sorted(heavy),
+              "raw_json_excluded_features": sorted(heavy),
+              "default_excluded_features": first["configured_excluded_features"],
               "top_feature_payloads": top_feature_payloads,
-              "lean_excluded_features": sorted(
+              "lean_excluded_features": lean_python["configured_excluded_features"],
+              "research_candidate_excluded_features": sorted(
                   set(first["excluded_heavy_features"])
                   | {
                       "gdl_form",

@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from oracc_tf import app_generation, distribution
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 EXPECTED_DEFAULT_EXCLUSIONS = {
@@ -48,3 +53,27 @@ def test_standalone_readme_documents_one_clean_local_user_path() -> None:
     assert 'tf "app:$PWD/app"' in readme
     assert "manifest.json" in readme
     assert "docs/" in readme
+
+
+def test_researcher_installation_page_records_measured_resource_profile() -> None:
+    page = ROOT / "docs" / "reference" / "installation.md"
+    assert page.is_file()
+    text = page.read_text(encoding="utf-8")
+    assert "status: active" in text.split("---", 2)[1]
+    assert "text-fabric==13.1.0" in text
+    assert "app:" in text
+    assert "41.3 MB" in text
+    assert "340.8 MB" in text
+    assert "68.3 MB" in text
+    assert "1.84 GiB" in text
+    assert "43 s" in text
+    assert "37078039146" in text
+
+
+def test_standalone_readme_links_resource_documentation() -> None:
+    readme = distribution._standalone_readme(
+        dataset="assyrian-royal-inscriptions",
+        release_id="1.0.0",
+        tf_version="0.2.0",
+    )
+    assert "docs/reference/installation.md" in readme

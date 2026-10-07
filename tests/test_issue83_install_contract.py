@@ -65,7 +65,7 @@ def test_researcher_installation_page_records_measured_resource_profile() -> Non
     assert "41.3 MB" in text
     assert "340.8 MB" in text
     assert "68.3 MB" in text
-    assert "1.84 GiB" in text
+    assert "1.75 GiB" in text
     assert "43 s" in text
     assert "37078039146" in text
 

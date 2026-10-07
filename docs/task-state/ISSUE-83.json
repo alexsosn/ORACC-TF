@@ -62,14 +62,25 @@
     ]
   },
   "tdd": {
-    "status": "red-next",
-    "contract": "Add focused tests for the generated default exclusion set and standalone README user path before production changes."
+    "status": "implementation-committed",
+    "contract": "RED tests require the measured generated-app exclusion set and a standalone README with pinned Text-Fabric 13.1.0 Python/browser app: paths.",
+    "red_evidence": {
+      "workflow_run": 37078039134,
+      "failures": [
+        "missing app_generation._DEFAULT_BROWSER_EXCLUDED_FEATURES",
+        "missing distribution._standalone_readme"
+      ]
+    },
+    "implementation_commits": [
+      "694124c90a2226ccff9e379c36dc328dfc2c6563",
+      "99362d354a4ef099ae6c12b5ce2aef10aafb0740"
+    ]
   },
   "verification": {
-    "status": "pending"
+    "status": "ci-pending"
   },
   "review": {
     "status": "pending"
   },
-  "status": "design-accepted"
+  "status": "implementation-ci-pending"
 }

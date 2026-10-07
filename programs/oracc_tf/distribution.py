@@ -604,6 +604,41 @@ def _check_path_overlap(left: Path, right: Path, *, label: str) -> None:
         )
 
 
+def _standalone_readme(
+    *,
+    dataset: str,
+    release_id: str,
+    tf_version: str,
+) -> str:
+    """Return the minimal researcher-facing README for a staged distribution."""
+    return (
+        f"# {dataset}\n\n"
+        f"Standalone ORACC-TF release **{release_id}** (TF schema **{tf_version}**).\n\n"
+        "This directory is self-contained for corpus use; the central ORACC-TF "
+        "builder/source checkout is not required.\n\n"
+        "## Install the runtime\n\n"
+        "```bash\n"
+        "python -m pip install text-fabric==13.1.0\n"
+        "```\n\n"
+        "## Load in Python\n\n"
+        "Run Python from this extracted directory:\n\n"
+        "```python\n"
+        "from pathlib import Path\n"
+        "from tf.app import use\n\n"
+        "root = Path.cwd()\n"
+        "A = use(f\"app:{root / 'app'}\")\n"
+        "```\n\n"
+        "## Start the Text-Fabric browser\n\n"
+        "```bash\n"
+        "tf \"app:$PWD/app\"\n"
+        "```\n\n"
+        "The generated app discovers the sibling `tf/` data tree. `manifest.json` "
+        "records release/build/source identity. User documentation is under "
+        "`docs/` when shipped with the release. Features excluded from the "
+        "default interactive preload remain present in the TF dataset and can "
+        "be loaded explicitly when needed.\n"
+    )
+
 def stage_distribution(
     source: Path | str,
     stage: Path | str,
@@ -732,7 +767,11 @@ def stage_distribution(
             shutil.copytree(support_source, temp / kind)
 
         (temp / "README.md").write_text(
-            f"# {dataset}\n\nGenerated ORACC-TF distribution.\n",
+            _standalone_readme(
+                dataset=dataset,
+                release_id=release_id,
+                tf_version=tf_version,
+            ),
             encoding="utf-8",
         )
         (temp / "manifest.json").write_bytes(_manifest_bytes(manifest))

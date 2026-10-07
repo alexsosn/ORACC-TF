@@ -11,6 +11,7 @@ import resource
 import sys
 import time
 
+import yaml
 from tf.app import use
 
 
@@ -62,6 +63,10 @@ def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
     tf_root = stage / "tf" / version
     app_root = stage / "app"
     docs_root = stage / "docs"
+    app_config = yaml.safe_load((app_root / "config.yaml").read_text(encoding="utf-8"))
+    configured_excluded = set(
+        app_config.get("dataDisplay", {}).get("excludedFeatures", [])
+    )
     before = _tree_stats(stage)
     tf_before = _tree_stats(tf_root)
     feature_payloads = _feature_payloads(tf_root)
@@ -78,10 +83,11 @@ def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
         raise RuntimeError("standalone app failed to load")
 
     loaded = set(app.api.Fall())
-    if loaded & HEAVY_FEATURES:
+    unexpected = loaded & configured_excluded
+    if unexpected:
         raise RuntimeError(
-            "normal standalone load unexpectedly preloaded heavy features: "
-            + ", ".join(sorted(loaded & HEAVY_FEATURES))
+            "standalone load unexpectedly preloaded configured exclusions: "
+            + ", ".join(sorted(unexpected))
         )
 
     documents = app.api.F.otype.s("document")
@@ -119,6 +125,7 @@ def profile(stage: Path, *, version: str, archive: Path) -> dict[str, object]:
         "first_line_section": list(section) if section is not None else None,
         "max_slot": app.api.F.otype.maxSlot,
         "loaded_node_features": sorted(loaded),
+        "configured_excluded_features": sorted(configured_excluded),
         "excluded_heavy_features": sorted(HEAVY_FEATURES),
     }
 

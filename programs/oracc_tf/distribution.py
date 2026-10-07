@@ -634,7 +634,8 @@ def _standalone_readme(
         "```\n\n"
         "The generated app discovers the sibling `tf/` data tree. `manifest.json` "
         "records release/build/source identity. User documentation is under "
-        "`docs/` when shipped with the release. Features excluded from the "
+        "`docs/` when shipped with the release; measured installation/resource "
+        "guidance is in `docs/reference/installation.md`. Features excluded from the "
         "default interactive preload remain present in the TF dataset and can "
         "be loaded explicitly when needed.\n"
     )

@@ -609,9 +609,26 @@ def _standalone_readme(
     dataset: str,
     release_id: str,
     tf_version: str,
+    has_app: bool = True,
+    has_docs: bool = True,
 ) -> str:
-    """Return the minimal researcher-facing README for a staged distribution."""
-    return (
+    """Document only consumer paths that are actually shipped with this stage."""
+    if not has_app:
+        text = (
+            f"# {dataset}\n\n"
+            f"TF-only release **{release_id}** (schema **{tf_version}**).\n\n"
+            "This stage does not contain a generated `app/` directory, so the "
+            "browser route in the complete researcher release is unavailable.\n\n"
+            "```bash\npython -m pip install text-fabric==13.1.0\n```\n\n"
+            "```python\nfrom pathlib import Path\nfrom tf.fabric import Fabric\n"
+            f"tf_root = Path.cwd() / 'tf' / '{tf_version}'\n"
+            "tf = Fabric(locations=str(tf_root), silent=\"deep\")\n"
+            "assert tf.loadAll(silent=\"deep\")\napi = tf.api\n```\n\n"
+        )
+        if has_docs:
+            text += "Additional material is under `docs/`.\n"
+        return text
+    readme = (
         f"# {dataset}\n\n"
         f"Standalone ORACC-TF release **{release_id}** (TF schema **{tf_version}**).\n\n"
         "This directory is self-contained for corpus use; the central ORACC-TF "
@@ -639,6 +656,15 @@ def _standalone_readme(
         "default interactive preload remain present in the TF dataset and can "
         "be loaded explicitly when needed.\n"
     )
+    if not has_docs:
+        readme = readme.replace(
+            "User documentation is under "
+            "`docs/` when shipped with the release; measured installation/resource "
+            "guidance is in `docs/reference/installation.md`. ",
+            "No researcher documentation is bundled. ",
+        )
+    return readme
+
 
 def stage_distribution(
     source: Path | str,
@@ -772,6 +798,8 @@ def stage_distribution(
                 dataset=dataset,
                 release_id=release_id,
                 tf_version=tf_version,
+                has_app="app" in support_snapshot,
+                has_docs="docs" in support_snapshot,
             ),
             encoding="utf-8",
         )

@@ -88,3 +88,63 @@ def test_model_page_has_researcher_graph_overview_and_svg() -> None:
     assert "word_lex" in text
     assert "translation_line" in text
     assert "synthetic=1" in text
+
+
+def _python_blocks(text: str) -> list[str]:
+    """Return executable published examples in displayed order."""
+    return [part.split("```", 1)[0] for part in text.split("```python")[1:]]
+
+
+def test_researcher_examples_use_qualified_source_identity() -> None:
+    text = _text("words-and-lexemes.md")
+    first = _python_blocks(text)[0]
+    assert 'api.F.document_key.v(n) == "rinap/rinap4:Q003333"' in first
+
+
+def test_misleading_join_and_lexical_examples_execute_on_real_editions(tmp_path) -> None:
+    """Adversarially replay published snippets on multiple real RINAP/RIAO editions."""
+    import pytest
+    from tf.fabric import Fabric
+    from oracc_tf import corpus, loader, metadata, paths
+
+    source_paths = (
+        "rinap/rinap4/corpusjson/Q003333.json",
+        "riao/ria5/corpusjson/Q009276.json",
+        "rinap/rinap5/corpusjson/Q003840.json",
+        "rinap/rinap5p1/corpusjson/Q003840.json",
+    )
+    for rel in source_paths:
+        if not (paths.DATA / rel).is_file():
+            pytest.skip("real ORACC source fixtures are not available")
+
+    root = tmp_path / 'tf'
+    corpus.build_tf(
+        root,
+        editions=[loader.load_edition(paths.DATA / rel) for rel in source_paths],
+        metadata_index=metadata.MetadataIndex.empty(),
+    )
+    tf = Fabric(locations=str(root), silent="deep")
+    assert tf.loadAll(silent="deep")
+    api = tf.api
+    assert api is not None
+
+    # These blocks are copied verbatim from the researcher manual.
+    lexical_blocks = _python_blocks(_text('words-and-lexemes.md'))
+    env = {'api': api}
+    for block in lexical_blocks:
+        exec(compile(block, 'words-and-lexemes.md', 'exec'), env)
+    assert len(env['lexemes']) == 3
+    assert env['correct_words']
+    assert env['missing_from_naive'] == (env['correct_words'] - env['naive_words'])
+
+    identity_blocks = _python_blocks(_text('identity.md'))
+    assert len(identity_blocks) >= 2
+    for block in identity_blocks:
+        exec(compile(block, 'identity.md', 'exec'), env)
+    assert env['rinap5'] != env['rinap5p1']
+    # Two documents share one bare Q; the deliberately wrong dict stores only one.
+    assert api.F.text_id.v(env["rinap5"]) == "Q003840"
+    assert api.F.text_id.v(env["rinap5p1"]) == "Q003840"
+    assert env["by_q"]["Q003840"] in (env["rinap5"], env["rinap5p1"])
+    assert env["by_document_key"]["rinap/rinap5:Q003840"] == env["rinap5"]
+    assert env["by_document_key"]["rinap/rinap5p1:Q003840"] == env["rinap5p1"]

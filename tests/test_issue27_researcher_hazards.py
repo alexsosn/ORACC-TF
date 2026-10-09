@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import pytest
 from pathlib import Path
 
 
@@ -101,9 +102,9 @@ def test_researcher_examples_use_qualified_source_identity() -> None:
     assert 'api.F.document_key.v(n) == "rinap/rinap4:Q003333"' in first
 
 
+@pytest.mark.corpus
 def test_misleading_join_and_lexical_examples_execute_on_real_editions(tmp_path) -> None:
     """Adversarially replay published snippets on multiple real RINAP/RIAO editions."""
-    import pytest
     from tf.fabric import Fabric
     from oracc_tf import corpus, loader, metadata, paths
 

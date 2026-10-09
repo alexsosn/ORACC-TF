@@ -59,6 +59,7 @@ For an occurrence node:
 word = next(
     n for n in api.F.source_id.s("Q003333.l04f6b")
     if api.F.otype.v(n) == "word"
+    and api.F.document_key.v(n) == "rinap/rinap4:Q003333"
 )
 lexemes = api.E.word_lex.f(word)
 assert len(lexemes) == 3

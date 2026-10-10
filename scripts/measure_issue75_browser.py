@@ -278,6 +278,7 @@ def smoke_browser(
                 "passageOpened": lexical_sections[2],
                 "textFormat": "text-trans-full",
                 "features": "cf gw pos",
+                "queryFeatures": "1",  # TF form omits unchecked interface options.
                 "edgeFeatures": "word_lex",
             },
         )

@@ -3,7 +3,7 @@
   "issue": 28,
   "implementation_pr": 135,
   "scope": "Stand-alone user quick start, public TF query recipes, manifest/source reproducibility, and discoverability; no upstream polling or publishing automation.",
-  "status": "implementation-tests-pending",
+  "status": "done",
   "coordination": {
     "session": "gpt6-20261010-1151-issue28",
     "claim_comment": 6095890821
@@ -39,10 +39,19 @@
     ]
   },
   "verification": {
-    "status": "pending",
-    "reason": "Exact-head CI and clean consumer review pending."
+    "status": "passed",
+    "reviewed_head": "b8a08767f45722cdb18d7867f3f9a1bee79b9823",
+    "merged_commit": "d677ef9a4507a55198b9ff9187515c013dd86172",
+    "tests_run": 38041076601,
+    "real_tei_run": 38041076588,
+    "install_run": 38041076569,
+    "other_checks": "8/8 exact-head workflows passed",
+    "fast": "398 passed, 1 skipped",
+    "corpus": "13 passed, 2 skipped"
   },
   "review": {
-    "status": "pending"
+    "status": "pass",
+    "comment_id": 6096719517,
+    "method": "Independent adversarial query and source audit grounded in Q001801 and pinned real TEI"
   }
 }

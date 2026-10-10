@@ -47,6 +47,7 @@ def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: P
     assert result["search_has_result"] is True
     assert result["browser_query_results"] >= 1
     assert result["browser_help_link"].startswith("https://")
+    assert result["browser_help_link"].endswith("#word_lex")
 
 
 def test_browser_smoke_refuses_missing_or_ambiguous_document_key(tmp_path: Path) -> None:

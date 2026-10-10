@@ -39,26 +39,44 @@ the extracted `app` directory. The generated app discovers the sibling
 `tf/<version>` data tree; no ORACC-TF Python package or raw ORACC source tree
 is needed by the consumer.
 
-## Measured 1.0 candidate
+## Measured standalone candidate (10 October 2026)
 
-Clean standalone run **37078039146** measured the translation-bearing candidate
-after the ORACC-TF builder package had been uninstalled. The runner was GitHub
-Actions Ubuntu, so local timings vary with CPU, storage, and available memory.
+The latest source-aware clean-consumer measurement is [GitHub Actions run
+38070730938](https://github.com/alexsosn/ORACC-TF/actions/runs/38070730938),
+job `standalone-candidate` at head
+`4a9c017426fa5faa5b370d3d0959799fab182e16`. The ORACC-TF builder was
+uninstalled before the user-path checks. Cold Python and browser measurements
+were each repeated three times; timings and peak RSS below are medians on a
+GitHub Actions Ubuntu runner, **not minimum hardware requirements or promises
+for a different machine**.
 
-| quantity | measurement |
+| quantity | measured value |
 |---|---:|
-| release ZIP | about **41.3 MB** (41,264,487 bytes in the measured archive) |
-| extracted tree before first load | about **340.8 MB** logical bytes |
-| Text-Fabric cache created by first load | about **68.3 MB** |
-| optimized cold Python startup | about **43 s** |
-| optimized Python peak RSS | **1,839,064 KiB**, about **1.75 GiB** |
-| optimized cold browser startup | about **43 s** |
-| optimized browser peak RSS | **1,833,256 KiB**, about **1.75 GiB** |
+| measurement-only ZIP | **41,294,294 bytes** (41.3 MB decimal) |
+| extracted tree before first load | **340,824,705 bytes** |
+| extracted tree after first load (including generated cache) | **388,746,881 bytes** |
+| cold Python startup, 3-run median | **27.279 s** |
+| cold Python peak RSS, 3-run median | **1,837,544 KiB** (about 1.75 GiB) |
+| cold browser startup, 3-run median | **28.829 s** |
+| cold browser peak RSS, 3-run median | **1,830,660 KiB** (about 1.75 GiB) |
+| representative query, median | **0.044 s** |
+| largest TF node slot | **793,340** |
 
-The measured query after load completed in roughly 70 ms, and the browser
-routes `/`, `/passage`, `/query`, and `/export` all returned HTTP 200.
-These figures are performance evidence for the candidate, not guarantees for
-other machines.
+**Artifact distinction:** the measurement-only ZIP contains an extra
+`assyrian-royal-inscriptions/` root directory to support the resource
+benchmark. The **versioned release-format ZIP** from the same workflow has the
+canonical `manifest.json`, `app/`, `tf/`, `docs/` layout at archive root.
+They are **different archives**, with different bytes and checksums; a
+measurement ZIP's hash must never be used to verify a published release.
+The workflow also extracts and smoke-loads the exact versioned release-format
+candidate independently. Use the sidecar belonging to the *published asset*
+when one exists.
+
+The query, translation/lexeme, original cuneiform/transliteration, and browser
+routes `/`, `/passage`, `/query`, `/export` passed on the candidate.
+The source-aware browser acceptance and public feature-help link are tracked
+separately under [#75](https://github.com/alexsosn/ORACC-TF/issues/75).
+A passing CI run does **not** mean that a v1.0.0 public asset already exists.
 
 ## Default feature loading
 
@@ -79,10 +97,14 @@ when an audit task needs it:
 A.load("src_path sig translation_text_raw")
 ```
 
-The first benchmark that excluded only the three largest raw JSON features used
-about 2,088,904 KiB peak RSS for Python startup. The conservative default
-profile used 1,839,064 KiB while preserving the representative query,
-navigation, browser routes, text/lexical features, and translations.
+The earlier three-JSON-feature preload benchmark used about
+2,088,904 KiB peak RSS for Python. The current conservative default profile
+already excludes additional nonessential provenance fields while retaining
+navigation, word/lexeme inspection, and aligned translations. In the latest
+run, **further** experimental lean exclusions used 1,840,624 KiB for Python
+and 1,833,060 KiB for the browser: no persuasive additional memory reduction
+over the current default was observed. Do not discard researcher-facing
+features or expand the exclusion list based only on run-to-run noise.
 
 ## Release identity
 

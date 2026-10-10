@@ -125,7 +125,7 @@ def test_registered_dataset_generates_minimal_deterministic_app_without_manual_t
         "version": TF_VERSION,
     }
     assert config["docs"]["docBase"] == (
-        f"https://github.com/{REPOSITORY_ORG}/ORACC-TF-{DATASET}/blob/main/docs"
+        f"https://github.com/{REPOSITORY_ORG}/ORACC-TF/blob/main/docs"
     )
     assert config["dataDisplay"]["excludedFeatures"] == list(
         module._DEFAULT_BROWSER_EXCLUDED_FEATURES

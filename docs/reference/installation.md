@@ -41,7 +41,7 @@ is needed by the consumer.
 
 ## Measured standalone candidate (10 October 2026)
 
-The latest source-aware clean-consumer measurement is [GitHub Actions run
+A source-aware clean-consumer measurement is [GitHub Actions run
 38070730938](https://github.com/alexsosn/ORACC-TF/actions/runs/38070730938),
 job `standalone-candidate` at head
 `4a9c017426fa5faa5b370d3d0959799fab182e16`. The ORACC-TF builder was

@@ -5,8 +5,9 @@ status: active
 
 # ORACC-TF reference
 
-Researcher-facing reference for the released
-`assyrian-royal-inscriptions` Text-Fabric corpus.
+Researcher-facing reference for the **pre-1.0 release candidate**
+`assyrian-royal-inscriptions` Text-Fabric corpus. A public release ZIP
+and checksum have not yet been published.
 
 ## Getting started
 

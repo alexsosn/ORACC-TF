@@ -66,6 +66,85 @@ def validate_browser_passage(
     return True
 
 
+class _ExpandedWordParser(HTMLParser):
+    """Collect named TF feature spans inside one expanded focused passage."""
+
+    def __init__(self, section: str, names: set[str]):
+        super().__init__(convert_charrefs=True)
+        self.section = section
+        self.names = names
+        self.details_depth = 0
+        self.focus_depth = 0
+        self.pretty_depth = 0
+        self.feature_depth = 0
+        self.active_feature: str | None = None
+        self.feature_chunks: list[str] = []
+        self.values: dict[str, list[str]] = {name: [] for name in names}
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        fields = dict(attrs)
+        if tag == "details":
+            self.details_depth += 1
+            if (
+                self.focus_depth == 0
+                and fields.get("seq") == self.section
+                and "focus" in (fields.get("class") or "").split()
+                and "open" in fields
+            ):
+                self.focus_depth = self.details_depth
+        elif tag == "div" and self.focus_depth:
+            if self.pretty_depth:
+                self.pretty_depth += 1
+            elif "pretty" in (fields.get("class") or "").split():
+                self.pretty_depth = 1
+        elif tag == "span" and self.focus_depth and self.pretty_depth:
+            if self.feature_depth:
+                self.feature_depth += 1
+            else:
+                classes = set((fields.get("class") or "").split())
+                feature = next((name for name in self.names if name in classes), None)
+                if feature is not None:
+                    self.active_feature = feature
+                    self.feature_depth = 1
+                    self.feature_chunks = []
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "span" and self.feature_depth:
+            self.feature_depth -= 1
+            if self.feature_depth == 0 and self.active_feature:
+                self.values[self.active_feature].append("".join(self.feature_chunks))
+                self.active_feature = None
+                self.feature_chunks = []
+        elif tag == "div" and self.focus_depth and self.pretty_depth:
+            self.pretty_depth -= 1
+        elif tag == "details":
+            if self.focus_depth == self.details_depth:
+                self.focus_depth = 0
+                self.pretty_depth = 0
+            self.details_depth = max(0, self.details_depth - 1)
+
+    def handle_data(self, data: str) -> None:
+        if self.focus_depth and self.pretty_depth and self.active_feature:
+            self.feature_chunks.append(data)
+
+
+def validate_expanded_word_features(
+    payload: object, section: str, features: dict[str, str]
+) -> bool:
+    """Match source values against rendered named TF features in selected line."""
+    if not isinstance(payload, dict) or not isinstance(payload.get("table"), str):
+        raise BrowserSmokeError("expanded browser passage response malformed")
+    parser = _ExpandedWordParser(section, set(features))
+    parser.feed(payload["table"])
+    for feature, value in features.items():
+        rendered = parser.values.get(feature, ())
+        if not value or not any(value in item for item in rendered):
+            raise BrowserSmokeError(
+                f"expanded browser passage did not display source {feature}={value!r}"
+            )
+    return True
+
+
 def smoke_browser(
     tf_root: Path | str,
     app_root: Path | str,
@@ -127,6 +206,28 @@ def smoke_browser(
     )
     if lexical == 0:
         raise BrowserSmokeError("canonical word_lex link missing")
+    # Source-backed expanded lexical inspection may use another line in the
+    # same qualified document when its first line lacks a glossed word.
+    lexical_word = next(
+        (
+            word for word in api.L.d(docs[0], otype="word")
+            if api.E.word_lex.f(word)
+            and isinstance(api.F.cf.v(word), str) and api.F.cf.v(word).strip()
+            and isinstance(api.F.gw.v(word), str) and api.F.gw.v(word).strip()
+            and api.L.u(word, otype="line")
+        ),
+        None,
+    )
+    if lexical_word is None:
+        raise BrowserSmokeError("no source-backed glossed lexical word for browser")
+    lexical_line = api.L.u(lexical_word, otype="line")[0]
+    lexical_sections = tuple(
+        str(value) for value in api.T.sectionFromNode(lexical_line, fillup=True)
+    )
+    browser_word_features = {
+        "cf": api.F.cf.v(lexical_word),
+        "gw": api.F.gw.v(lexical_word),
+    }
     if not next(iter(api.S.search("word", limit=1, silent="deep")), None):
         raise BrowserSmokeError("representative TF search yielded nothing")
 
@@ -165,6 +266,28 @@ def smoke_browser(
             )
             browser_passage_formats[text_format] = expected
 
+        # The prior collapsed passage proves text/navigation but does not
+        # render the inspection panel. Expand a real source-glossed line.
+        expanded = client.post(
+            "/passage",
+            data={
+                "jobName": "oracc-lexical-inspect",
+                "sec0": lexical_sections[0],
+                "sec1": lexical_sections[1],
+                "sec2": lexical_sections[2],
+                "passageOpened": lexical_sections[2],
+                "textFormat": "text-trans-full",
+                "features": "cf gw pos",
+                "queryFeatures": "1",  # TF form omits unchecked interface options.
+                "edgeFeatures": "word_lex",
+            },
+        )
+        if expanded.status_code != 200:
+            raise BrowserSmokeError("expanded browser passage returned an HTTP error")
+        validate_expanded_word_features(
+            expanded.get_json(silent=True), lexical_sections[2], browser_word_features
+        )
+
         response = client.post(
             "/query", data={
                 "jobName": "oracc-smoke",
@@ -185,6 +308,8 @@ def smoke_browser(
         "synthetic_sign_count": len(synthetic),
         "synthetic_signs_visible": False,
         "word_lex_edges": lexical,
+        "browser_lexical_section": lexical_sections[2],
+        "browser_word_features": browser_word_features,
         "search_has_result": True,
         "browser_query_results": browser_results,
         "browser_passage_sections": sections,

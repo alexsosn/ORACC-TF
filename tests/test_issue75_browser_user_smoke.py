@@ -19,6 +19,7 @@ BrowserSmokeError = _module.BrowserSmokeError
 smoke_browser = _module.smoke_browser
 validate_browser_query = _module.validate_browser_query
 validate_browser_passage = _module.validate_browser_passage
+validate_expanded_word_features = _module.validate_expanded_word_features
 
 
 def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: Path) -> None:
@@ -54,6 +55,8 @@ def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: P
     assert result["browser_passage_sections"][0] == "fixture/project:Q000073"
     assert result["browser_passage_sections"][-1] == "Q000073.1"
     assert result["browser_selected_section"] == "Q000073.1"
+    assert result["browser_word_features"] == {"cf": "abu", "gw": "father"}
+    assert result["browser_lexical_section"] == "Q000073.1"
     assert result["browser_help_link"].startswith("https://")
     assert result["browser_help_link"].endswith("#word_lex")
 
@@ -132,3 +135,51 @@ def test_browser_workflow_checks_actual_versioned_release_archive() -> None:
     )[1].split("- name: Cold-profile Python load", 1)[0]
     assert '"/tmp/issue83-release-clean"' in selected_step
     assert '"/tmp/issue83-clean/$DATASET"' not in selected_step
+
+
+def test_expanded_passage_inspects_source_features_not_summary_or_other_line() -> None:
+    import pytest
+
+    selected = '''<details seq="Q000073.1" class="pretty focus" open>
+      <summary>a</summary><div class="pretty"><span class="cf" title="cf">abu</span><span class="gw" title="gw">father</span></div>
+    </details>'''
+    assert validate_expanded_word_features(
+        {"table": selected}, "Q000073.1", {"cf": "abu", "gw": "father"}
+    )
+    for invalid in (
+        {"table": '<details seq="Q000073.1" class="pretty focus"><summary>abu father</summary></details>'},
+        {"table": '<details seq="Q000073.1" class="pretty focus" open><summary>abu father</summary><div class="pretty"></div></details>'},
+        {"table": '<details seq="Q000073.2" class="pretty focus" open><div class="pretty">abu father</div></details>'},
+        {"table": '<details seq="Q000073.1" class="pretty focus" open><div class="pretty">abu</div></details>'},
+        {"table": '<details seq="Q000073.1" class="pretty focus" open><div class="pretty"><span>abu</span><span>father</span></div></details>'},
+        {"table": '<details seq="Q000073.1" class="pretty focus" open><div class="pretty"><span class="cf">father</span><span class="gw">abu</span></div></details>'},
+        {"table": '<div>abu father</div>'},
+        None,
+    ):
+        with pytest.raises(BrowserSmokeError, match="expanded browser"):
+            validate_expanded_word_features(
+                invalid, "Q000073.1", {"cf": "abu", "gw": "father"}
+            )
+
+
+
+def test_browser_workflow_follows_real_pinned_feature_help_link() -> None:
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/issue83-install-research.yml"
+    ).read_text(encoding="utf-8")
+    browser_step = workflow.split(
+        "- name: Source-aware browser query and text smoke without builder", 1
+    )[1].split("- name: Cold-profile Python load", 1)[0]
+    assert 'assert result["browser_help_link"] == expected_help' in browser_step
+    assert 'https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md' in browser_step
+    assert 'grep -Fq ' in browser_step
+    assert '<a id="word_lex"></a>' in browser_step
+
+
+
+def test_expanded_browser_request_enables_feature_inspection_controls() -> None:
+    script = SCRIPT.read_text(encoding="utf-8")
+    expanded_post = script.split('expanded = client.post(', 1)[1].split('response = client.post(', 1)[0]
+    assert '"queryFeatures": "1"' in expanded_post
+    assert '"features": "cf gw pos"' in expanded_post
+    assert '"passageOpened": lexical_sections[2]' in expanded_post

@@ -508,9 +508,15 @@
       "priority": "P1",
       "blocked_by": [],
       "completion_blocked_by": [],
-      "status": "todo",
+      "status": "done",
       "issue": 28,
-      "evidence_file": "docs/task-state/P-003.PH2.json"
+      "evidence_file": "docs/task-state/P-003.PH2.json",
+      "evidence": {
+        "tests": "tests/test_issue28_researcher_quickstart.py",
+        "ci": "PR #135 exact head b8a0876: 8/8 checks green, tests 38041076601, M9 38041076588; source-backed Q001801 replay",
+        "review": "Independent adversarial review PR #135 comment 6096719517",
+        "merged": "d677ef9a4507a55198b9ff9187515c013dd86172"
+      }
     },
     {
       "id": "P-003.PH3",

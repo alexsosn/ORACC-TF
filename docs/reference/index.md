@@ -28,6 +28,13 @@ Researcher-facing reference for the released
 - [Translations](translations.md) — source-supported line ranges, markup,
   notes, and explicit alignment gaps.
 
+## Citation and limitations
+
+- [Citation and upstream source rights](citation.md) — identifying a corpus
+  release, acknowledging original editors, and resolving licence ambiguity.
+- [Known issues and limitations](known-issues.md) — source hazards, annotation
+  gaps, synthetic slots, and translation coverage.
+
 ## Generated feature reference
 
 - [All Text-Fabric features](features.md) — generated scope, type, counts, value

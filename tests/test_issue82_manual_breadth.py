@@ -102,3 +102,9 @@ def test_display_recipe_executes_against_real_riao_edition(tmp_path: Path) -> No
         for word in api.L.d(env["line"], otype="word")
         if api.F.form.v(word)
     )
+
+
+def test_reference_landing_does_not_claim_unpublished_corpus_is_released() -> None:
+    index = page("index.md")
+    assert "for the released" not in index.lower()
+    assert "pre-1.0" in index or "release candidate" in index

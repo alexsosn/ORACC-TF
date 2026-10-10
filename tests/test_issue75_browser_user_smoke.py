@@ -53,6 +53,7 @@ def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: P
     }
     assert result["browser_passage_sections"][0] == "fixture/project:Q000073"
     assert result["browser_passage_sections"][-1] == "Q000073.1"
+    assert result["browser_selected_section"] == "Q000073.1"
     assert result["browser_help_link"].startswith("https://")
     assert result["browser_help_link"].endswith("#word_lex")
 
@@ -96,6 +97,23 @@ def test_browser_passage_response_parser_ignores_navigation_only_text() -> None:
         {"table": "<section><span>𒀀</span></section>", "passages": "other"},
         "𒀀",
     ) is True
+    assert validate_browser_passage(
+        {
+            "table": '<details class="pretty focus" seq="Q000073.1"><summary>𒀀</summary></details>',
+            "passages": "",
+        },
+        "𒀀",
+        selected_section="Q000073.1",
+    ) is True
+    with pytest.raises(BrowserSmokeError, match="browser passage"):
+        validate_browser_passage(
+            {
+                "table": '<details class="pretty" seq="Q000073.2"><summary>𒀀</summary></details>',
+                "passages": "",
+            },
+            "𒀀",
+            selected_section="Q000073.1",
+        )
     for invalid in (
         None,
         [],

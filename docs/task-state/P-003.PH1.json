@@ -1,9 +1,9 @@
 {
   "task": "P-003.PH1",
   "issue": 27,
-  "implementation_pr": 67,
-  "registry_status": "todo",
-  "runtime_status": "completion-unblocked",
+  "implementation_pr": 134,
+  "registry_status": "done",
+  "runtime_status": "complete",
   "research": {
     "status": "done",
     "comment": 6049014688,
@@ -24,7 +24,6 @@
     ],
     "contract_replay": "pass"
   },
-  "resume_gate": "P-001.M9 is complete on main. Continue the Phase-1 work and validate the translation-range overlap example against the merged translation graph. Keep P-003.PH1 todo until its own acceptance criteria and checks are complete.",
   "resolved_dependency": {
     "task": "P-001.M9",
     "issue": 16,
@@ -33,8 +32,8 @@
     "resolved_on": "2026-09-25"
   },
   "coordination": {
-    "session": "gpt56sol-20261008-0230-issue27",
-    "claim_comment": 6048997735,
+    "session": "gpt6-20261010-1151-issue27",
+    "claim_comment": 6095858375,
     "base_main": "293d5c9ddd738eddf08dd7ec9571e1935fb3af29"
   },
   "design": {
@@ -50,11 +49,24 @@
     ],
     "constraint": "Use current public TF feature/edge names and source-grounded examples; leave #28 quick start/reproducibility and #78/#81 assembly out of scope."
   },
-  "status": "implementation-ci-pending",
+  "status": "done",
   "verification": {
-    "status": "ci-pending"
+    "status": "all-exact-semantic-head-green",
+    "semantic_head": "a8da85b69c46152fe21e6e4f6b839a9e3c4f2619",
+    "tests_run": 38002884084,
+    "docs_reference_run": 38002884086,
+    "real_tei_run": 38002884164,
+    "source_audit_run": 38002884161,
+    "fast_tests": "387 passed, 1 skipped",
+    "corpus_tests": "13 passed, 1 skipped",
+    "reconfirm_on_metadata_head": true
   },
   "review": {
-    "status": "pending"
-  }
+    "status": "pass",
+    "independent_session": "gpt6-20261010-1151-issue27-adversarial",
+    "marker_comment": 6095875501,
+    "reviewed_head": "a8da85b69c46152fe21e6e4f6b839a9e3c4f2619",
+    "verdict": "Qualified source joins, compound lexeme edge counts, synthetic slot semantics, TEI translation-range API, and executable published snippets checked against actual source/code; earlier word lookup defect fixed."
+  },
+  "prior_dependency_pr": 67
 }

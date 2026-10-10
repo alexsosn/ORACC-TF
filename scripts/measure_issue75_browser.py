@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 from html import unescape
+from html.parser import HTMLParser
 import json
 from pathlib import Path
 
@@ -31,15 +32,37 @@ def validate_browser_query(payload: object) -> int:
     return count
 
 
-def validate_browser_passage(payload: object, expected_text: str) -> bool:
-    """Require selected text inside TF's rendered passage table, not navigation."""
+class _FocusedSectionParser(HTMLParser):
+    """Read selected TF passage identity without relying on an HTML snapshot."""
+
+    def __init__(self, expected_section: str):
+        super().__init__()
+        self.expected_section = expected_section
+        self.matched = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "details":
+            return
+        fields = dict(attrs)
+        if (fields.get("seq") == self.expected_section
+                and "focus" in (fields.get("class") or "").split()):
+            self.matched = True
+
+
+def validate_browser_passage(
+    payload: object, expected_text: str, *, selected_section: str | None = None
+) -> bool:
+    """Check actual TF passage table text and optional focused section identity."""
     if not isinstance(payload, dict):
         raise BrowserSmokeError("browser passage response malformed")
     table = payload.get("table")
     if not isinstance(table, str) or not table or expected_text not in unescape(table):
-        raise BrowserSmokeError(
-            "browser passage does not render source-selected text"
-        )
+        raise BrowserSmokeError("browser passage does not render source-selected text")
+    if selected_section is not None:
+        selector = _FocusedSectionParser(selected_section)
+        selector.feed(table)
+        if not selector.matched:
+            raise BrowserSmokeError("browser passage failed to focus selected section")
     return True
 
 
@@ -137,7 +160,9 @@ def smoke_browser(
             )
             if selected.status_code != 200:
                 raise BrowserSmokeError("selected browser passage returned an HTTP error")
-            validate_browser_passage(selected.get_json(silent=True), expected)
+            validate_browser_passage(
+                selected.get_json(silent=True), expected, selected_section=sections[2]
+            )
             browser_passage_formats[text_format] = expected
 
         response = client.post(
@@ -163,6 +188,7 @@ def smoke_browser(
         "search_has_result": True,
         "browser_query_results": browser_results,
         "browser_passage_sections": sections,
+        "browser_selected_section": sections[2],
         "browser_passage_formats": browser_passage_formats,
         "browser_routes": routes,
         "browser_help_link": app.context.featureBase.replace("<feature>", "word_lex").format(version=version),

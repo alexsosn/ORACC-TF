@@ -63,11 +63,12 @@ def test_researcher_installation_page_records_measured_resource_profile() -> Non
     assert "text-fabric==13.1.0" in text
     assert "app:" in text
     assert "41.3 MB" in text
-    assert "340.8 MB" in text
-    assert "68.3 MB" in text
+    assert "340,824,705" in text  # measured extracted footprint
+    assert "388,746,881" in text  # measured post-cache footprint
     assert "1.75 GiB" in text
-    assert "43 s" in text
-    assert "37078039146" in text
+    assert "38070730938" in text  # traceable CI evidence, not a fabricated benchmark
+    assert "measurement-only ZIP" in text
+    assert "versioned release-format ZIP" in text
 
 
 def test_standalone_readme_links_resource_documentation() -> None:

@@ -174,3 +174,12 @@ def test_browser_workflow_follows_real_pinned_feature_help_link() -> None:
     assert 'https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md' in browser_step
     assert 'grep -Fq ' in browser_step
     assert '<a id="word_lex"></a>' in browser_step
+
+
+
+def test_expanded_browser_request_enables_feature_inspection_controls() -> None:
+    script = SCRIPT.read_text(encoding="utf-8")
+    expanded_post = script.split('expanded = client.post(', 1)[1].split('response = client.post(', 1)[0]
+    assert '"queryFeatures": "1"' in expanded_post
+    assert '"features": "cf gw pos"' in expanded_post
+    assert '"passageOpened": lexical_sections[2]' in expanded_post

@@ -99,7 +99,12 @@ def smoke_browser(
             if response.status_code != 200 or not response.data:
                 raise BrowserSmokeError(f"browser route unusable: {route}")
         response = client.post(
-            "/query", data={"jobName": "oracc-smoke", "query": "word", "batch": "5"}
+            "/query", data={
+                "jobName": "oracc-smoke",
+                "query": "word",
+                "batch": "5",
+                "condenseType": "line",  # TF 13.1 display requires valid rank.
+            }
         )
         if response.status_code != 200:
             raise BrowserSmokeError("browser query returned an HTTP error")

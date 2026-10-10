@@ -263,3 +263,11 @@ def test_real_standalone_browser_workflow_requires_translation_display() -> None
     )[1].split("- name: Cold-profile Python load", 1)[0]
     assert 'assert result["browser_translation_results"] >= 1' in source_step
     assert 'assert result["browser_translation_text"]' in source_step
+
+
+def test_browser_translation_query_enables_standard_feature_visibility() -> None:
+    script = SCRIPT.read_text(encoding="utf-8")
+    translation_query = script.split('translation_query = {', 1)[1].split('results = client.post', 1)[0]
+    assert '"standardFeatures": "1"' in translation_query
+    assert '"query": "translation_unit"' in translation_query
+    assert '"features": "translation_text"' in translation_query

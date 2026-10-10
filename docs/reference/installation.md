@@ -100,7 +100,7 @@ A.load("src_path sig translation_text_raw")
 The earlier three-JSON-feature preload benchmark used about
 2,088,904 KiB peak RSS for Python. The current conservative default profile
 already excludes additional nonessential provenance fields while retaining
-navigation, word/lexeme inspection, and aligned translations. In the latest
+navigation, word/lexeme inspection, and aligned translations. In the cited October 2026
 run, **further** experimental lean exclusions used 1,840,624 KiB for Python
 and 1,833,060 KiB for the browser: no persuasive additional memory reduction
 over the current default was observed. Do not discard researcher-facing

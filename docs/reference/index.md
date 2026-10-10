@@ -5,9 +5,11 @@ status: active
 
 # ORACC-TF reference
 
-Researcher-facing reference for the **pre-1.0 release candidate**
-`assyrian-royal-inscriptions` Text-Fabric corpus. A public release ZIP
-and checksum have not yet been published.
+Researcher-facing reference for the
+`assyrian-royal-inscriptions` Text-Fabric corpus, including tested candidates
+and versioned published releases. Record the exact `manifest.json` identity
+and verify the corresponding checksum before using a downloaded archive.
+A passing CI candidate is not evidence of a public distribution.
 
 ## Getting started
 

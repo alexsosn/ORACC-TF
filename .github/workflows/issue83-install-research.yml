@@ -475,6 +475,12 @@ jobs:
           test -s assyrian-royal-inscriptions-1.0.0.zip
           test -s assyrian-royal-inscriptions-1.0.0.zip.sha256
           sha256sum -c assyrian-royal-inscriptions-1.0.0.zip.sha256
+          # The browser's generated feature-help URL is pinned to this exact
+          # final main commit; verify public access before publishing assets.
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+            "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md" \
+            -o "$RUNNER_TEMP/public-feature-help.md"
+          grep -q 'word_lex' "$RUNNER_TEMP/public-feature-help.md"
           if gh release view "v1.0.0" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "v1.0.0 GitHub Release already exists; refusing overwrite" >&2
             exit 1

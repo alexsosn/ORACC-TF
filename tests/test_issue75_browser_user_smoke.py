@@ -18,6 +18,7 @@ _spec.loader.exec_module(_module)
 BrowserSmokeError = _module.BrowserSmokeError
 smoke_browser = _module.smoke_browser
 validate_browser_query = _module.validate_browser_query
+validate_browser_passage = _module.validate_browser_passage
 
 
 def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: Path) -> None:
@@ -46,6 +47,12 @@ def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: P
     assert result["word_lex_edges"] >= 1
     assert result["search_has_result"] is True
     assert result["browser_query_results"] >= 1
+    assert result["browser_passage_formats"] == {
+        "text-orig-full": "𒀀",
+        "text-trans-full": "a",
+    }
+    assert result["browser_passage_sections"][0] == "fixture/project:Q000073"
+    assert result["browser_passage_sections"][-1] == "Q000073.1"
     assert result["browser_help_link"].startswith("https://")
     assert result["browser_help_link"].endswith("#word_lex")
 
@@ -80,3 +87,27 @@ def test_workflow_writes_structured_browser_evidence_without_stdout_redirect() -
     workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/issue83-install-research.yml").read_text(encoding="utf-8")
     assert "--output /tmp/issue83-results/browser-semantic.json" in workflow
     assert "> /tmp/issue83-results/browser-semantic.json" not in workflow
+
+
+def test_browser_passage_response_parser_ignores_navigation_only_text() -> None:
+    import pytest
+
+    assert validate_browser_passage(
+        {"table": "<section><span>𒀀</span></section>", "passages": "other"},
+        "𒀀",
+    ) is True
+    for invalid in (
+        None,
+        [],
+        {},
+        {"table": "", "passages": "𒀀"},
+        {"table": "<span>unrelated</span>", "passages": "𒀀"},
+    ):
+        with pytest.raises(BrowserSmokeError, match="browser passage"):
+            validate_browser_passage(invalid, "𒀀")
+
+
+def test_browser_workflow_checks_actual_versioned_release_archive() -> None:
+    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/issue83-install-research.yml").read_text(encoding="utf-8")
+    assert '"/tmp/issue83-release-clean"' in workflow
+    assert '"/tmp/issue83-clean/$DATASET" \\\n            --version' not in workflow

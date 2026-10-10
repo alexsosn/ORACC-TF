@@ -134,6 +134,7 @@ def test_published_first_passage_and_query_recipes_on_real_source(tmp_path) -> N
         exec(compile(block, "quick-start.md", "exec"), env)
     assert api.F.document_key.v(env["doc"]) == "riao/ria1:Q001801"
     assert env["words"]
+    assert any(api.F.form.v(word) for word in env["words"])
 
     recipes = _blocks("query-guide.md")
     assert len(recipes) >= 5

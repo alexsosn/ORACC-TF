@@ -33,8 +33,13 @@ jobs:
           git -C /tmp/agora checkout --quiet FETCH_HEAD
           pip install -e /tmp/agora/plugins/context-fabric
 
+      - name: Download pinned official translation archive
+        run: scripts/download_m9_tei.sh "$RUNNER_TEMP/riao-teiCorpus-20241202.zip"
+
       - name: Prepare equivalent small and whole-corpus repositories
         shell: bash
+        env:
+          ORACC_TF_M9_TEI_ARCHIVE: ${{ runner.temp }}/riao-teiCorpus-20241202.zip
         run: |
           set -euo pipefail
           TF_VERSION=$(python -c 'from oracc_tf import TF_VERSION; print(TF_VERSION)')
@@ -99,6 +104,7 @@ jobs:
               base,
               'assyrian-royal-inscriptions',
               tf_version=os.environ['TF_VERSION'],
+              translations_archive=os.environ['ORACC_TF_M9_TEI_ARCHIVE'],
           )
           distribution.stage_distribution(
               root,

@@ -24,7 +24,7 @@ your methods and query outputs:
 - `source_state` — the pinned input-source state digest;
 - the published archive URL and retrieval date.
 
-A provisional citation template, **not yet a published 1.0 citation**, is:
+A citation template (fill from the actual published release's identity) is:
 
 > ORACC-TF contributors. *Assyrian Royal Inscriptions (RIAO/RINAP),
 > Text-Fabric dataset*, [release_id], [tf_version]. Built with
@@ -85,9 +85,10 @@ See the [translation-specific licence details](translations.md), the
 [repo software/data licence boundary](https://github.com/alexsosn/ORACC-TF/blob/main/LICENSE_SCOPE.md),
 and [known issues](known-issues.md) for other limitations.
 
-## No release version has been asserted
+## Do not infer release status or a DOI
 
-ORACC-TF is **pre-1.0** as of this documentation snapshot; the dataset is **not yet published**. This guide
-does not invent an assigned DOI, final tagged corpus release, published ZIP
-or definitive blanket data licence. Refer to the versioned release and its
-actual checksum once publication work is complete.
+A staged candidate, even if its manifest has a version, is not automatically
+a publicly published dataset. Use the actual versioned GitHub Release URL and
+matching checksum for a released archive. No DOI or blanket data licence is
+implied by the converter or its `CITATION.cff`; cite the upstream source
+editions and contributors separately.

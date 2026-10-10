@@ -15,6 +15,16 @@ Researcher-facing reference for the released
 - [Query guide](query-guide.md) — executable passage, lexical, metadata, and translation-range searches.
 - [Reproducibility](reproducibility.md) — release identity, pinned sources, source audit, and licence boundaries.
 
+## Using the corpus
+
+- [Corpus scope and sources](scope.md) — registered RIAO/RINAP editions,
+  inclusions, exclusions, and source completeness.
+- [Text and display formats](text-formats.md) — cuneiform, transliteration,
+  lexical rendering, and synthetic sign behavior.
+- [Browser guide](browser.md) — local passage, query, export, and feature help.
+- [References](references.md) — upstream editions and Text-Fabric.
+- [Acknowledgements](acknowledgements.md) — original scholarship versus TF conversion.
+
 ## Start with the corpus model
 
 - [Data model](model.md) — node types, slot topology, synthetic anchors, and

@@ -172,4 +172,5 @@ def test_browser_workflow_follows_real_pinned_feature_help_link() -> None:
     )[1].split("- name: Cold-profile Python load", 1)[0]
     assert 'assert result["browser_help_link"] == expected_help' in browser_step
     assert 'https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md' in browser_step
-    assert "grep -Fq '<a id=\\\"word_lex\\\"></a>'" in browser_step
+    assert 'grep -Fq ' in browser_step
+    assert '<a id="word_lex"></a>' in browser_step

@@ -92,3 +92,13 @@ def test_public_archive_pins_feature_help_to_same_builder_commit_as_manifest() -
     assert 'builder_commit=os.environ["GITHUB_SHA"]' in build
     assert 'Path("docs/reference/features.md").is_file()' in build
     assert "publish_1_0" in str(flow["on"]["workflow_dispatch"]["inputs"])
+
+
+def test_first_user_quick_start_is_valid_before_and_after_publication() -> None:
+    quick = (ROOT / "docs/reference/quick-start.md").read_text(encoding="utf-8")
+    assert "until a release asset exists" not in quick.lower()
+    assert "this is an installation *candidate*" not in quick.lower()
+    assert "https://github.com/alexsosn/ORACC-TF/releases" in quick
+    assert "manifest.json" in quick
+    assert "checksum" in quick.lower()
+    assert "CI" in quick or "staged" in quick.lower()  # distinguish candidate from public asset

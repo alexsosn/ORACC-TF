@@ -145,6 +145,49 @@ def validate_expanded_word_features(
     return True
 
 
+class _TranslationTextParser(HTMLParser):
+    """Read actual translation_text feature spans from TF's pretty output."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.depth = 0
+        self.parts: list[str] = []
+        self.values: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "span":
+            return
+        if self.depth:
+            self.depth += 1
+        elif "translation_text" in (dict(attrs).get("class") or "").split():
+            self.depth = 1
+            self.parts = []
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag != "span" or not self.depth:
+            return
+        self.depth -= 1
+        if not self.depth:
+            self.values.append("".join(self.parts))
+            self.parts = []
+
+    def handle_data(self, data: str) -> None:
+        if self.depth:
+            self.parts.append(data)
+
+
+def validate_browser_translation(payload: object, expected_text: str) -> bool:
+    """Do not confuse source text in navigation/messages with rendered translation."""
+    if not isinstance(payload, dict) or not isinstance(payload.get("table"), str):
+        raise BrowserSmokeError("browser translation response malformed")
+    parser = _TranslationTextParser()
+    parser.feed(payload["table"])
+    expected = " ".join(expected_text.split())
+    if not expected or not any(" ".join(v.split()) == expected for v in parser.values):
+        raise BrowserSmokeError("browser translation not rendered in named TF feature")
+    return True
+
+
 def smoke_browser(
     tf_root: Path | str,
     app_root: Path | str,
@@ -154,6 +197,7 @@ def smoke_browser(
     line_ref: str,
     expected_glyph: str,
     expected_form: str,
+    require_translation: bool = False,
 ) -> dict[str, object]:
     tf_root = Path(tf_root).resolve()
     app_root = Path(app_root).resolve()
@@ -288,6 +332,41 @@ def smoke_browser(
             expanded.get_json(silent=True), lexical_sections[2], browser_word_features
         )
 
+        browser_translation_results = 0
+        browser_translation_text = ""
+        if require_translation:
+            found = next(
+                iter(api.S.search("translation_unit", limit=1, silent="deep")),
+                None,
+            )
+            if not found:
+                raise BrowserSmokeError("no aligned translation_unit to inspect")
+            translation_node = found[0]
+            expected_translation = api.F.translation_text.v(translation_node)
+            if not isinstance(expected_translation, str) or not expected_translation.strip():
+                raise BrowserSmokeError("first translation unit has no source text")
+            translation_query = {
+                "jobName": "oracc-translation-inspect",
+                "query": "translation_unit",
+                "batch": "5",
+                "queryFeatures": "1",
+                "features": "translation_text",
+                "condenseType": "translation_unit",
+            }
+            results = client.post("/query", data=translation_query)
+            if results.status_code != 200:
+                raise BrowserSmokeError("browser translation query HTTP error")
+            browser_translation_results = validate_browser_query(
+                results.get_json(silent=True)
+            )
+            expanded_translation = client.post("/query/1", data=translation_query)
+            if expanded_translation.status_code != 200:
+                raise BrowserSmokeError("browser translation expansion HTTP error")
+            validate_browser_translation(
+                expanded_translation.get_json(silent=True), expected_translation
+            )
+            browser_translation_text = expected_translation
+
         response = client.post(
             "/query", data={
                 "jobName": "oracc-smoke",
@@ -312,6 +391,8 @@ def smoke_browser(
         "browser_word_features": browser_word_features,
         "search_has_result": True,
         "browser_query_results": browser_results,
+        "browser_translation_results": browser_translation_results,
+        "browser_translation_text": browser_translation_text,
         "browser_passage_sections": sections,
         "browser_selected_section": sections[2],
         "browser_passage_formats": browser_passage_formats,
@@ -329,6 +410,7 @@ def main() -> int:
     parser.add_argument("--line-ref", default="Q001801.1")
     parser.add_argument("--expected-glyph", default="𒂍")
     parser.add_argument("--expected-form", default="E₂")
+    parser.add_argument("--require-translation", action="store_true")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = smoke_browser(
@@ -338,6 +420,7 @@ def main() -> int:
         line_ref=args.line_ref,
         expected_glyph=args.expected_glyph,
         expected_form=args.expected_form,
+        require_translation=args.require_translation,
     )
     payload = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     if args.output is None:

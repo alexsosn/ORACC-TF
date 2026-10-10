@@ -64,7 +64,15 @@ jobs:
               dataset=dataset,
               tf_version=TF_VERSION,
               repository_org=os.environ["GITHUB_REPOSITORY_OWNER"],
+              docs_ref=os.environ["GITHUB_SHA"],
           )
+          import yaml
+          app_conf = yaml.safe_load((app_root / "config.yaml").read_text(encoding="utf-8"))
+          assert app_conf["docs"]["docBase"] == (
+              f'https://github.com/{os.environ["GITHUB_REPOSITORY_OWNER"]}'
+              f'/ORACC-TF/blob/{os.environ["GITHUB_SHA"]}/docs'
+          )
+          assert Path("docs/reference/features.md").is_file()
 
           docs_root = manual.assemble_manual(
               Path.cwd(),

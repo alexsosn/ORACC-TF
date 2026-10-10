@@ -104,6 +104,15 @@ def _validate_repository_org(repository_org: str) -> str:
     return repository_org
 
 
+def _validate_docs_ref(docs_ref: str) -> str:
+    """Use a live source-repository ref; production builds must pin the Git SHA."""
+    if not isinstance(docs_ref, str) or (
+        docs_ref != "main" and not re.fullmatch(r"[0-9a-f]{40}", docs_ref)
+    ):
+        raise AppGenerationError(f"invalid docs_ref: {docs_ref!r}")
+    return docs_ref
+
+
 def _validate_tf_loadable(tf_root: Path) -> tuple[tuple[str, ...], frozenset[str]]:
     """Load the source without mutating it and return its display-relevant schema."""
     with tempfile.TemporaryDirectory(prefix="oracc-tf-app-validate-") as temp_dir:
@@ -193,6 +202,7 @@ def _config_bytes(
     dataset: str,
     tf_version: str,
     repository_org: str,
+    docs_ref: str,
     node_types: tuple[str, ...],
     node_features: frozenset[str],
 ) -> bytes:
@@ -209,8 +219,8 @@ def _config_bytes(
         },
         "docs": {
             "docBase": (
-                f"https://github.com/{repository_org}/{repository_name(dataset)}"
-                "/blob/main/docs"
+                f"https://github.com/{repository_org}/ORACC-TF"
+                f"/blob/{docs_ref}/docs"
             ),
             "featureBase": "{docBase}/reference/features.md#<feature>",
             "featurePage": "feature-reference",
@@ -259,6 +269,7 @@ def generate_app(
     dataset: str,
     tf_version: str,
     repository_org: str,
+    docs_ref: str = "main",
     datasets_path: Path | str = paths.ROOT / "datasets.toml",
     override: Mapping[str, object] | None = None,
 ) -> Path:
@@ -278,6 +289,7 @@ def generate_app(
     _validate_disjoint_paths(source, output)
     _validate_registered_dataset(dataset, registry)
     org = _validate_repository_org(repository_org)
+    help_ref = _validate_docs_ref(docs_ref)
     node_types, node_features = _validate_tf_root(source, tf_version)
     css = _validate_override(override)
     _validate_target(output)
@@ -290,6 +302,7 @@ def generate_app(
                 dataset=dataset,
                 tf_version=tf_version,
                 repository_org=org,
+                docs_ref=help_ref,
                 node_types=node_types,
                 node_features=node_features,
             )

@@ -143,7 +143,7 @@ def test_generated_config_has_measured_preload_policy_and_docs_contract(tmp_path
 
     assert config["docs"] == {
         "docBase": (
-            f"https://github.com/{ORG}/ORACC-TF-{DATASET}/blob/main/docs"
+            f"https://github.com/{ORG}/ORACC-TF/blob/main/docs"
         ),
         "featureBase": "{docBase}/reference/features.md#<feature>",
         "featurePage": "feature-reference",
@@ -276,7 +276,7 @@ def test_generated_app_browser_mode_serves_core_routes_without_header_failure(
         assert response.data
 
     assert (
-        f"https://github.com/{ORG}/ORACC-TF-{DATASET}/blob/main/docs/"
+        f"https://github.com/{ORG}/ORACC-TF/blob/main/docs/"
         "reference/features.md#feature-reference"
     ) in app.featureLink
 

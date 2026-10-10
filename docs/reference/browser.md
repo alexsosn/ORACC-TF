@@ -40,19 +40,23 @@ For Python examples consult the [query guide](query-guide.md).
 
 ## Feature-help and offline limitations
 
-The app currently generates **feature-help links to GitHub**, at
-`ORACC-TF-assyrian-royal-inscriptions/blob/main/docs/reference/features.md`,
-rather than serving local Markdown help directly from the
-`docs/` directory. Their availability requires the corresponding
-**published dataset repository** and its reference tree to exist.
-A candidate ZIP can have complete offline `docs/` while those online
-help links remain unavailable. Do not consider a staging/browser HTTP
-200 result proof that every external help destination works.
+Feature-help links open **the existing ORACC-TF source repository** on
+GitHub, at `ORACC-TF/blob/<builder_commit>/docs/reference/features.md#<feature>`.
+The registered release build pins `<builder_commit>` to the exact Git SHA
+recorded in the distribution manifest. Ad hoc app generation defaults to the
+current `main` reference; that moving ref is not a suitable published
+release identity. The feature index provides anchors for individual fields
+such as `word_lex` and `translation_line`.
 
-For offline reading, open the bundled `docs/index.md` directly
-and follow the [generated feature inventory](features.md). Future
-publication must check the **actual link destination** and version
-match, not assume it is live because `docs/` was packaged.
+These links still require internet access. The pinned Text-Fabric browser
+does **not** itself serve the local Markdown help from `docs/`. For offline
+reading, open the bundled `docs/index.md` directly and follow the
+[generated feature inventory](features.md). Publication acceptance must
+follow the **actual generated help links** against the pinned source commit,
+not merely assume they work because the browser itself starts.
+
+A candidate ZIP can have complete local docs without being a publicly
+downloadable release; that separate publication check remains necessary.
 
 ## Memory and missing values
 

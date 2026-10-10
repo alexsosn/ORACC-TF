@@ -141,7 +141,7 @@ def test_expanded_passage_inspects_source_features_not_summary_or_other_line() -
     import pytest
 
     selected = '''<details seq="Q000073.1" class="pretty focus" open>
-      <summary>a</summary><div class="pretty"><span>abu</span><span>father</span></div>
+      <summary>a</summary><div class="pretty"><span class="cf" title="cf">abu</span><span class="gw" title="gw">father</span></div>
     </details>'''
     assert validate_expanded_word_features(
         {"table": selected}, "Q000073.1", {"cf": "abu", "gw": "father"}
@@ -151,6 +151,8 @@ def test_expanded_passage_inspects_source_features_not_summary_or_other_line() -
         {"table": '<details seq="Q000073.1" class="pretty focus" open><summary>abu father</summary><div class="pretty"></div></details>'},
         {"table": '<details seq="Q000073.2" class="pretty focus" open><div class="pretty">abu father</div></details>'},
         {"table": '<details seq="Q000073.1" class="pretty focus" open><div class="pretty">abu</div></details>'},
+        {"table": '<details seq="Q000073.1" class="pretty focus" open><div class="pretty"><span>abu</span><span>father</span></div></details>'},
+        {"table": '<details seq="Q000073.1" class="pretty focus" open><div class="pretty"><span class="cf">father</span><span class="gw">abu</span></div></details>'},
         {"table": '<div>abu father</div>'},
         None,
     ):

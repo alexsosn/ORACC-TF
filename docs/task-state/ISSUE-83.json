@@ -1,0 +1,109 @@
+{
+  "task": "ISSUE-83",
+  "issue": 83,
+  "scope": "One canonical lightweight researcher acquisition/load path for assyrian-royal-inscriptions, with clean standalone disk/startup/RAM measurements and no central builder checkout.",
+  "coordination": {
+    "session": "gpt6-20261010-1151-issue83",
+    "claim_comment": 6095858117,
+    "base_main": "75fcade2369264098e3d3f318a9cc483833be2e3"
+  },
+  "research": {
+    "status": "done",
+    "evidence": {
+      "workflow_run": 37076038130,
+      "artifact_digest": "sha256:2117637aa5d704c958a068f3918bda502ff580126a4b96c103fff8020ebc26f1",
+      "head_sha": "853020fe36cdcb00985892abb14946f7da442a0a",
+      "archive_bytes": 41264487,
+      "extracted_before_load_bytes": 340769995,
+      "first_load_cache_bytes": 68304710,
+      "normal_python_startup_median_seconds": 51.996231151000075,
+      "normal_python_peak_rss_median_kib": 2088976,
+      "normal_browser_startup_median_seconds": 52.06479745299998,
+      "normal_browser_peak_rss_median_kib": 2098184,
+      "lean_python_startup_seconds": 43.74193338500004,
+      "lean_python_peak_rss_kib": 1838060,
+      "lean_browser_startup_seconds": 44.214187822999975,
+      "lean_browser_peak_rss_kib": 1831824
+    },
+    "finding": "Pinned Text-Fabric 13.1 standalone app works after uninstalling the ORACC-TF builder. Keep all TF features in the distribution, but exclude measured audit/duplicate/provenance fields from the advanced-app default preload. The release ZIP plus local app: path is the canonical 1.0 consumer route; Agora remains post-1.0."
+  },
+  "design": {
+    "status": "accepted",
+    "canonical_route": "Versioned standalone release ZIP with checksum; extract and load its local app/ with pinned text-fabric==13.1.0.",
+    "local_fallback": "Use the same extracted distribution directly from an absolute local app: path.",
+    "default_excluded_features": [
+      "catalogue_json",
+      "gdl_form",
+      "gdl_id",
+      "gdl_json",
+      "gdl_sexified",
+      "inst",
+      "lexeme",
+      "readingu",
+      "ref",
+      "sig",
+      "sign_json",
+      "src_path",
+      "translation_source_id",
+      "translation_source_license",
+      "translation_source_license_url",
+      "translation_source_name",
+      "translation_source_sha256",
+      "translation_source_url",
+      "translation_text_raw",
+      "word_id"
+    ],
+    "constraints": [
+      "Do not remove excluded features from TF data; Text-Fabric users may load them explicitly on demand.",
+      "Keep document_key and source_id in the normal preload because qualified/source identity is a core research contract.",
+      "Keep form, utf8, cf, gw, sense, pos, lang, translation_text, navigation/section features, and synthetic in the normal preload.",
+      "The standalone README must replace the placeholder and document the pinned Text-Fabric runtime plus Python/browser local app path without requiring the builder checkout.",
+      "Full manual assembly remains owned by #81; release publication/checksum remains owned by #23."
+    ]
+  },
+  "tdd": {
+    "status": "implementation-committed",
+    "contract": "RED tests require the measured generated-app exclusion set and a standalone README with pinned Text-Fabric 13.1.0 Python/browser app: paths.",
+    "red_evidence": {
+      "workflow_run": 37078039134,
+      "failures": [
+        "missing app_generation._DEFAULT_BROWSER_EXCLUDED_FEATURES",
+        "missing distribution._standalone_readme"
+      ]
+    },
+    "implementation_commits": [
+      "694124c90a2226ccff9e379c36dc328dfc2c6563",
+      "99362d354a4ef099ae6c12b5ce2aef10aafb0740"
+    ]
+  },
+  "verification": {
+    "status": "passed-on-semantic-head",
+    "semantic_head": "29f208945a4bf09603eef0fb48de2a3cdbde474f",
+    "exact_head_runs": {
+      "tests": 38002995952,
+      "install": 38002996050,
+      "source_audit": 38002996041,
+      "reference": 38002995986,
+      "distribution_benchmark": 38002996082,
+      "app_research": 38002995967,
+      "browser": 38002996032,
+      "real_tei": 38002995958,
+      "m8_cross_validation": 38002995951
+    },
+    "result": "9/9 workflows passed; clean ZIP extraction and load without installed ORACC-TF builder verified; metadata-only update will rerun checks.",
+    "reconfirm_on_metadata_head": true
+  },
+  "review": {
+    "status": "pass-for-implementation",
+    "independent_session": "gpt6-20261010-1151-issue83-adversarial",
+    "marker_comment": 6095875740,
+    "reviewed_head": "29f208945a4bf09603eef0fb48de2a3cdbde474f",
+    "verdict": "Independently checked TF-only and partial support staging, pinned real translation input, genuine local browser and Python consumer without builder, and 20-feature preload regression; former defects fixed."
+  },
+  "status": "implementation-reviewed-publication-pending",
+  "remaining_release_gate": {
+    "publication_issue": 23,
+    "documentation_issue": 81,
+    "condition": "Published, downloadable versioned ZIP and checksum must exist and be checked from canonical user-facing acquisition instructions before issue 83 public acquisition acceptance can close."
+  }
+}

@@ -141,5 +141,9 @@ def test_published_first_passage_and_query_recipes_on_real_source(tmp_path) -> N
         exec(compile(block, "query-guide.md", "exec"), env)
     assert env["passage"]
     assert env["occurrences"]  # real source contains mātu[land]N
-    assert isinstance(env["reigns"].most_common(10), list)
-    assert isinstance(env["ranges_and_text"], list)
+    assert env["reigns"].most_common(10), "real joined catalogue must expose ruler/period"
+    assert env["ranges_and_text"], "actual Q001801 line must have an aligned TEI unit"
+    assert any(
+        first == "Q001801.1" and last == "Q001801.15" and text
+        for first, last, text in env["ranges_and_text"]
+    ), "the documented line lookup must recover the real official 1–15 range"

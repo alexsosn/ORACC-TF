@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 from pathlib import Path
+from importlib.util import module_from_spec, spec_from_file_location
 
 from test_issue73_browser_usability import TF_VERSION, _generate
 
 
+# pytest's pythonpath intentionally contains tests/ and programs/, not the
+# repository root. Import the CLI directly by its canonical file path.
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "measure_issue75_browser.py"
+_spec = spec_from_file_location("measure_issue75_browser", SCRIPT)
+assert _spec is not None and _spec.loader is not None
+_module = module_from_spec(_spec)
+_spec.loader.exec_module(_module)
+BrowserSmokeError = _module.BrowserSmokeError
+smoke_browser = _module.smoke_browser
+validate_browser_query = _module.validate_browser_query
+
+
 def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: Path) -> None:
-    from scripts.measure_issue75_browser import smoke_browser
 
     tf_root, app_root = _generate(tmp_path)
     result = smoke_browser(
@@ -38,7 +50,6 @@ def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: P
 
 
 def test_browser_smoke_refuses_missing_or_ambiguous_document_key(tmp_path: Path) -> None:
-    from scripts.measure_issue75_browser import BrowserSmokeError, smoke_browser
     import pytest
 
     tf_root, app_root = _generate(tmp_path)
@@ -57,7 +68,6 @@ def test_browser_smoke_refuses_missing_or_ambiguous_document_key(tmp_path: Path)
 
 def test_browser_query_response_parser_rejects_missing_or_false_results() -> None:
     import pytest
-    from scripts.measure_issue75_browser import BrowserSmokeError, validate_browser_query
 
     for invalid in (None, [], {}, {"status": True}, {"status": False, "nResults": 10}, {"status": True, "nResults": 0}):
         with pytest.raises(BrowserSmokeError, match="browser query"):

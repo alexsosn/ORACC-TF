@@ -466,3 +466,35 @@ def test_unavailable_source_state_is_explicit_not_fabricated(tmp_path: Path) -> 
 def test_distribution_identity_rejects_unsafe_or_ambiguous_dataset_names(dataset: str) -> None:
     with pytest.raises(ValueError):
         distribution.repository_name(dataset)
+
+
+def test_tf_only_distribution_readme_does_not_advertise_absent_support(tmp_path: Path) -> None:
+    source = _minimal_tf(tmp_path / 'source')
+    stage = tmp_path / 'stage'
+    distribution.stage_distribution(
+        source, stage,
+        dataset="assyrian-royal-inscriptions",
+        release_id="tf-only",
+        tf_version="0.2.0",
+        builder_commit="a" * 40,
+        source_state=None,
+    )
+    readme = (stage / "README.md").read_text(encoding="utf-8")
+    assert "TF-only release" in readme
+    assert "from tf.fabric import Fabric" in readme
+    assert "assert tf.loadAll" in readme
+    assert "does not contain a generated `app/`" in readme
+    assert 'tf "app:$PWD/app"' not in readme
+    assert "docs/reference/installation.md" not in readme
+
+
+def test_standalone_readme_respects_app_and_docs_absence_independently() -> None:
+    readme = distribution._standalone_readme(
+        dataset="assyrian-royal-inscriptions",
+        release_id="no-docs",
+        tf_version="0.3.0",
+        has_app=True, has_docs=False,
+    )
+    assert 'tf "app:$PWD/app"' in readme
+    assert "No researcher documentation is bundled" in readme
+    assert "docs/reference/installation.md" not in readme

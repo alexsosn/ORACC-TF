@@ -73,8 +73,12 @@ def smoke_browser(
     if expected_form not in transliteration:
         raise BrowserSmokeError("transliteration output missing source form")
 
-    all_signs = api.L.d(docs[0], otype="sign")
-    synthetic = [n for n in all_signs if api.F.synthetic.v(n) == 1]
+    # A selected document need not have an empty-sign source word. Check
+    # the actual corpus-wide technical anchors (689 in the pinned edition).
+    synthetic = [
+        n for n in api.F.otype.s("sign")
+        if api.F.synthetic.v(n) == 1
+    ]
     if any(api.T.text(n, fmt="text-orig-full").strip() for n in synthetic):
         raise BrowserSmokeError("technical synthetic sign rendered visible text")
 

@@ -8,6 +8,13 @@ status: active
 Researcher-facing reference for the released
 `assyrian-royal-inscriptions` Text-Fabric corpus.
 
+## Getting started
+
+- [Quick start](quick-start.md) — unpack the standalone RIAO/RINAP corpus, load Text-Fabric, and read a first passage.
+- [Lightweight installation](installation.md) — the measured download, disk, startup, and memory requirements.
+- [Query guide](query-guide.md) — executable passage, lexical, metadata, and translation-range searches.
+- [Reproducibility](reproducibility.md) — release identity, pinned sources, source audit, and licence boundaries.
+
 ## Start with the corpus model
 
 - [Data model](model.md) — node types, slot topology, synthetic anchors, and

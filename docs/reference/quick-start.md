@@ -1,0 +1,110 @@
+---
+title: Quick start
+status: active
+---
+
+# Quick start: Assyrian royal inscriptions
+
+`assyrian-royal-inscriptions` is the joined **RIAO and RINAP** Text-Fabric
+dataset of Assyrian royal inscriptions. It represents the editorial ORACC
+corpusjson/GDL text structure as signs, word occurrences, lines, faces,
+documents, and lexemes, with a separate line-range relation for those official
+translations that could be aligned to the texts.
+
+It is **not** every ORACC project or a photographic edition of the physical
+inscriptions. Witness-only `scores` and `sources` subprojects are outside
+this semantic dataset. Some published source members are unreadable or stubs;
+some words have no lemma; and official running translations do not cover every
+document. See the [source-to-TF audit](data-audit.md) and
+[translations](translations.md) for those limits.
+
+## 1. Obtain and extract the standalone corpus
+
+Use the **versioned `assyrian-royal-inscriptions` release ZIP**, together with
+the checksum published for that same asset. Publication is tracked separately
+from the already-tested local distribution mechanism; until a release asset
+exists, this is an installation *candidate*, not a public download claim.
+
+Extract the ZIP and change into the **corpus root**, the directory containing
+`manifest.json`, `app/`, `tf/`, and `docs/`. You do not need to clone the
+ORACC-TF builder repository, download its multi-GB source tree, or install the
+`oracc-tf` converter to *use* the released dataset.
+
+Install the pinned consumer runtime:
+
+```bash
+python -m pip install text-fabric==13.1.0
+```
+
+For expected archive size, installed footprint, RAM, and startup measurements,
+see [Lightweight installation](installation.md).
+
+## 2. Load the Text-Fabric app in Python
+
+Run Python **from the extracted corpus root**:
+
+```python
+from pathlib import Path
+from tf.app import use
+
+root = Path.cwd()  # extracted release root, containing app/ and tf/
+A = use(f"app:{root / 'app'}")
+api = A.api
+assert api is not None
+```
+
+The generated app locates the sibling `tf/<version>` tree. No maintainer-local
+`locations=` setting or developer cache is required.
+
+## 3. Retrieve your first passage
+
+Here, the identity contains both the ORACC subproject and its Q-number.
+Do not use the bare Q-number as a cross-project key.
+
+```python
+key = "riao/ria1:Q001801"
+doc = next(
+    n for n in api.F.otype.s("document")
+    if api.F.document_key.v(n) == key
+)
+line = next(
+    n for n in api.L.d(doc, otype="line")
+    if api.F.line.v(n) == "Q001801.1"
+)
+words = api.L.d(line, otype="word")
+print([api.F.form.v(word) for word in words])
+```
+
+This prints the source transliterations for the first numbered line. To
+retrieve the official translated range covering the same line, follow the
+*incoming* `translation_line` edge:
+
+```python
+units = api.E.translation_line.t(line)
+print([api.F.translation_text.v(unit) for unit in units])
+```
+
+The returned list can be empty: a document without an aligned official
+translation is not a failed load. See [Translations](translations.md).
+
+## 4. Open the browser
+
+From that same extracted root:
+
+```bash
+tf "app:$PWD/app"
+```
+
+This is the Text-Fabric 13.1 browser route tested against a clean staged
+distribution. Use an absolute path to `app/` on shells without `$PWD`.
+
+## Next steps
+
+Start with the [query guide](query-guide.md) for lexical, metadata, and
+translation-range examples; then read the [data model](model.md),
+[signs and synthetic anchors](signs.md),
+[words and lexemes](words-and-lexemes.md),
+[qualified document identity](identity.md), and
+[generated feature reference](features.md). See
+[reproducibility](reproducibility.md) to identify a source snapshot and release
+build without confusing a user installation with a maintainer rebuild.

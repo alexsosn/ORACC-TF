@@ -20,3 +20,7 @@ jobs:
         env:
           ORACC_TF_M9_TEI_ARCHIVE: ${{ runner.temp }}/riao-teiCorpus-20241202.zip
         run: pytest tests/test_m9_real_tei.py -q -m corpus
+      - name: Replay published first-user translation-bearing queries on actual RIAO/RINAP data
+        env:
+          ORACC_TF_M9_TEI_ARCHIVE: ${{ runner.temp }}/riao-teiCorpus-20241202.zip
+        run: pytest tests/test_issue28_researcher_quickstart.py -q -m corpus

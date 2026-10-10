@@ -226,7 +226,7 @@ jobs:
           cd /tmp
           mkdir -p /tmp/issue83-results
           python "$GITHUB_WORKSPACE/scripts/measure_issue75_browser.py" \
-            "/tmp/issue83-clean/$DATASET" \
+            "/tmp/issue83-release-clean" \
             --version "$TF_VERSION" \
             --output /tmp/issue83-results/browser-semantic.json
           python - <<'PY'
@@ -239,6 +239,8 @@ jobs:
           assert not result["synthetic_signs_visible"]
           assert result["synthetic_sign_count"] >= 1
           assert result["browser_routes"]["/query"] == 200
+          assert result["browser_passage_formats"]["text-orig-full"] == "𒂍"
+          assert result["browser_passage_formats"]["text-trans-full"] == "E₂"
           assert result["help_url_verified"] is False  # separate #23 publication gate
           PY
 

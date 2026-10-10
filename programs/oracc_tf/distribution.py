@@ -604,6 +604,68 @@ def _check_path_overlap(left: Path, right: Path, *, label: str) -> None:
         )
 
 
+def _standalone_readme(
+    *,
+    dataset: str,
+    release_id: str,
+    tf_version: str,
+    has_app: bool = True,
+    has_docs: bool = True,
+) -> str:
+    """Document only consumer paths that are actually shipped with this stage."""
+    if not has_app:
+        text = (
+            f"# {dataset}\n\n"
+            f"TF-only release **{release_id}** (schema **{tf_version}**).\n\n"
+            "This stage does not contain a generated `app/` directory, so the "
+            "browser route in the complete researcher release is unavailable.\n\n"
+            "```bash\npython -m pip install text-fabric==13.1.0\n```\n\n"
+            "```python\nfrom pathlib import Path\nfrom tf.fabric import Fabric\n"
+            f"tf_root = Path.cwd() / 'tf' / '{tf_version}'\n"
+            "tf = Fabric(locations=str(tf_root), silent=\"deep\")\n"
+            "assert tf.loadAll(silent=\"deep\")\napi = tf.api\n```\n\n"
+        )
+        if has_docs:
+            text += "Additional material is under `docs/`.\n"
+        return text
+    readme = (
+        f"# {dataset}\n\n"
+        f"Standalone ORACC-TF release **{release_id}** (TF schema **{tf_version}**).\n\n"
+        "This directory is self-contained for corpus use; the central ORACC-TF "
+        "builder/source checkout is not required.\n\n"
+        "## Install the runtime\n\n"
+        "```bash\n"
+        "python -m pip install text-fabric==13.1.0\n"
+        "```\n\n"
+        "## Load in Python\n\n"
+        "Run Python from this extracted directory:\n\n"
+        "```python\n"
+        "from pathlib import Path\n"
+        "from tf.app import use\n\n"
+        "root = Path.cwd()\n"
+        "A = use(f\"app:{root / 'app'}\")\n"
+        "```\n\n"
+        "## Start the Text-Fabric browser\n\n"
+        "```bash\n"
+        "tf \"app:$PWD/app\"\n"
+        "```\n\n"
+        "The generated app discovers the sibling `tf/` data tree. `manifest.json` "
+        "records release/build/source identity. User documentation is under "
+        "`docs/` when shipped with the release; measured installation/resource "
+        "guidance is in `docs/reference/installation.md`. Features excluded from the "
+        "default interactive preload remain present in the TF dataset and can "
+        "be loaded explicitly when needed.\n"
+    )
+    if not has_docs:
+        readme = readme.replace(
+            "User documentation is under "
+            "`docs/` when shipped with the release; measured installation/resource "
+            "guidance is in `docs/reference/installation.md`. ",
+            "No researcher documentation is bundled. ",
+        )
+    return readme
+
+
 def stage_distribution(
     source: Path | str,
     stage: Path | str,
@@ -732,7 +794,13 @@ def stage_distribution(
             shutil.copytree(support_source, temp / kind)
 
         (temp / "README.md").write_text(
-            f"# {dataset}\n\nGenerated ORACC-TF distribution.\n",
+            _standalone_readme(
+                dataset=dataset,
+                release_id=release_id,
+                tf_version=tf_version,
+                has_app="app" in support_snapshot,
+                has_docs="docs" in support_snapshot,
+            ),
             encoding="utf-8",
         )
         (temp / "manifest.json").write_bytes(_manifest_bytes(manifest))

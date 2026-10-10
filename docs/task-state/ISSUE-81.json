@@ -31,7 +31,8 @@
     "first_red_commit": "35103b01a32e587a3f63570baf8ff6e45f7fc452",
     "additional_red_commits": [
       "0fdda8b603e61c40438adbcaa83c0b20bce29818",
-      "3e24295f649090f261a5ac2af746957dab703588"
+      "3e24295f649090f261a5ac2af746957dab703588",
+      "bcefd79d5dd69d637059844cc9b31165a49d6f20"
     ],
     "review_repairs": [
       "review finding 6096188815, source ancestor symlink",
@@ -39,8 +40,8 @@
     ]
   },
   "verification": {
-    "status": "pending",
-    "exact_head": "4052afd2ca0faa06a38ca5e1eb315ec390a4c4de",
+    "status": "exact-head-ci-pending",
+    "exact_head": "57368544ff72660b02e6ef547ed6aed061d8b2a3",
     "required_workflows": [
       "tests",
       "issue83-install-research",
@@ -48,7 +49,9 @@
       "p003-docs-reference",
       "m8-oldbabylonian-cross-validation"
     ],
-    "note": "No final green until this integrated branch runs: prior head failed missing quick start because #28/#31/#82 pages were not yet integrated."
+    "note": "No final green until this integrated branch runs: prior head failed missing quick start because #28/#31/#82 pages were not yet integrated.",
+    "repaired_failure": "Historical CI 38050432030 and fast tests 38050432052 showed canonical .manual-regions.json was incorrectly rejected. New RED contracts keep unknown hidden files rejected while excluding just known builder metadata; complete tree transplanted atop merged #138.",
+    "reconfirm_on_current_commit": true
   },
   "independent_review": {
     "status": "pending-final",

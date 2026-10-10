@@ -127,11 +127,10 @@ def test_generated_config_has_measured_preload_policy_and_docs_contract(tmp_path
     _tf, app_root = _generate(tmp_path)
     config = yaml.safe_load((app_root / "config.yaml").read_text(encoding="utf-8"))
 
-    assert config["dataDisplay"]["excludedFeatures"] == [
-        "catalogue_json",
-        "gdl_json",
-        "sign_json",
-    ]
+    from oracc_tf.app_generation import _DEFAULT_BROWSER_EXCLUDED_FEATURES
+    assert config["dataDisplay"]["excludedFeatures"] == list(
+        _DEFAULT_BROWSER_EXCLUDED_FEATURES
+    )
     assert config["dataDisplay"]["textFormat"] == "text-trans-full"
     assert "noneValues" not in config["dataDisplay"]
 
@@ -264,11 +263,10 @@ def test_generated_app_browser_mode_serves_core_routes_without_header_failure(
         silent="deep",
     )
     assert app is not None and app.api is not None
-    assert app.context.excludedFeatures == [
-        "catalogue_json",
-        "gdl_json",
-        "sign_json",
-    ]
+    from oracc_tf.app_generation import _DEFAULT_BROWSER_EXCLUDED_FEATURES
+    assert app.context.excludedFeatures == list(
+        _DEFAULT_BROWSER_EXCLUDED_FEATURES
+    )
 
     webapp = factory(Web(makeTfKernel(app, app_name)))
     client = webapp.test_client()

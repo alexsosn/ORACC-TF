@@ -112,6 +112,32 @@ See the [data-model reference](docs/reference/model.md) and
 [ADR-0001](docs/reference/architecture/ADR-0001-empty-slots-not-sidecars.md) for
 the current rule.
 
+## Packaging a standalone candidate (maintainers)
+
+After a registered build, app generation and researcher-manual assembly have
+already been validated and staged with `distribution.stage_distribution`,
+package the **same complete staged tree** for manual publication:
+
+```bash
+python -m oracc_tf.release_archive \
+  --stage /path/to/assyrian-royal-inscriptions \
+  --output-dir /path/to/release-output
+
+(cd /path/to/release-output && sha256sum -c assyrian-royal-inscriptions-*.zip.sha256)
+```
+
+The resulting ZIP includes TF data, the app and researcher documentation;
+the sidecar is computed from its exact archive bytes. `<release_id>` comes
+from the staged `manifest.json`; it is **not** inferred from the builder's
+Python package version. The CLI deliberately refuses incomplete/unowned trees
+and never uploads assets or creates tags.
+
+A **public 1.0 release does not yet exist** merely because these files were
+packaged. Issue [#23](https://github.com/alexsosn/ORACC-TF/issues/23)
+requires the versioned asset and checksum to be published, retrieved from
+their *actual public URLs*, and independently checked in a clean
+Text-Fabric-only environment before claiming release completion.
+
 ## Licence
 
 Software authored for this repository—including converter code, scripts, tests,

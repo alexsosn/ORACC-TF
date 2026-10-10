@@ -241,10 +241,16 @@ jobs:
             --output /tmp/issue83-results/browser-semantic.json
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
           result = json.loads(
               Path("/tmp/issue83-results/browser-semantic.json").read_text(encoding="utf-8")
           )
+          expected_help = (
+              f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+              f"/blob/{os.environ['GITHUB_SHA']}/docs/reference/features.md#word_lex"
+          )
+          assert result["browser_help_link"] == expected_help
           assert result["browser_query_results"] >= 1
           assert not result["synthetic_signs_visible"]
           assert result["synthetic_sign_count"] >= 1
@@ -254,8 +260,16 @@ jobs:
           assert result["browser_lexical_section"]
           assert result["browser_word_features"]["cf"]
           assert result["browser_word_features"]["gw"]
-          assert result["help_url_verified"] is False  # separate #23 publication gate
+          assert result["help_url_verified"] is False  # offline script never claims a network check
           PY
+          # Follow the URL actually configured in the staged app. The exact
+          # GitHub blob permalink was matched above; fetch its raw Markdown
+          # over HTTP and require the real feature-specific target anchor.
+          # This check does not depend on local builder docs or a release tag.
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+            "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md" \
+            -o /tmp/issue83-results/feature-help.md
+          grep -Fq '<a id="word_lex"></a>' /tmp/issue83-results/feature-help.md
 
       - name: Cold-profile Python load and representative query
         run: |

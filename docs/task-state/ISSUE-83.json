@@ -3,8 +3,8 @@
   "issue": 83,
   "scope": "One canonical lightweight researcher acquisition/load path for assyrian-royal-inscriptions, with clean standalone disk/startup/RAM measurements and no central builder checkout.",
   "coordination": {
-    "session": "gpt56sol-20261003-0018-issue83",
-    "claim_comment": 5961681226,
+    "session": "gpt6-20261010-1151-issue83",
+    "claim_comment": 6095858117,
     "base_main": "75fcade2369264098e3d3f318a9cc483833be2e3"
   },
   "research": {
@@ -77,10 +77,33 @@
     ]
   },
   "verification": {
-    "status": "ci-pending"
+    "status": "passed-on-semantic-head",
+    "semantic_head": "29f208945a4bf09603eef0fb48de2a3cdbde474f",
+    "exact_head_runs": {
+      "tests": 38002995952,
+      "install": 38002996050,
+      "source_audit": 38002996041,
+      "reference": 38002995986,
+      "distribution_benchmark": 38002996082,
+      "app_research": 38002995967,
+      "browser": 38002996032,
+      "real_tei": 38002995958,
+      "m8_cross_validation": 38002995951
+    },
+    "result": "9/9 workflows passed; clean ZIP extraction and load without installed ORACC-TF builder verified; metadata-only update will rerun checks.",
+    "reconfirm_on_metadata_head": true
   },
   "review": {
-    "status": "pending"
+    "status": "pass-for-implementation",
+    "independent_session": "gpt6-20261010-1151-issue83-adversarial",
+    "marker_comment": 6095875740,
+    "reviewed_head": "29f208945a4bf09603eef0fb48de2a3cdbde474f",
+    "verdict": "Independently checked TF-only and partial support staging, pinned real translation input, genuine local browser and Python consumer without builder, and 20-feature preload regression; former defects fixed."
   },
-  "status": "implementation-ci-pending"
+  "status": "implementation-reviewed-publication-pending",
+  "remaining_release_gate": {
+    "publication_issue": 23,
+    "documentation_issue": 81,
+    "condition": "Published, downloadable versioned ZIP and checksum must exist and be checked from canonical user-facing acquisition instructions before issue 83 public acquisition acceptance can close."
+  }
 }

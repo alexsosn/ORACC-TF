@@ -121,7 +121,7 @@ def smoke_browser(
         "search_has_result": True,
         "browser_query_results": browser_results,
         "browser_routes": routes,
-        "browser_help_link": str(app.featureLink),
+        "browser_help_link": app.context.featureBase.replace("<feature>", "word_lex").format(version=version),
         "help_url_verified": False,  # Requires actual public help publication.
     }
 

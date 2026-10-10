@@ -8,6 +8,7 @@ directory with Text-Fabric 13.1 available; it never imports oracc_tf.
 from __future__ import annotations
 
 import argparse
+from html import unescape
 import json
 from pathlib import Path
 
@@ -28,6 +29,18 @@ def validate_browser_query(payload: object) -> int:
     if not isinstance(count, int) or isinstance(count, bool) or count < 1:
         raise BrowserSmokeError("browser query returned no valid results")
     return count
+
+
+def validate_browser_passage(payload: object, expected_text: str) -> bool:
+    """Require selected text inside TF's rendered passage table, not navigation."""
+    if not isinstance(payload, dict):
+        raise BrowserSmokeError("browser passage response malformed")
+    table = payload.get("table")
+    if not isinstance(table, str) or not table or expected_text not in unescape(table):
+        raise BrowserSmokeError(
+            "browser passage does not render source-selected text"
+        )
+    return True
 
 
 def smoke_browser(
@@ -66,6 +79,9 @@ def smoke_browser(
     if len(lines) != 1:
         raise BrowserSmokeError(f"passage lookup failed: {document_key}:{line_ref}")
     line = lines[0]
+    sections = tuple(str(value) for value in api.T.sectionFromNode(line, fillup=True))
+    if len(sections) != 3 or sections[0] != document_key or sections[2] != line_ref:
+        raise BrowserSmokeError("selected browser passage section identity mismatches source")
     cuneiform = api.T.text(line, fmt="text-orig-full")
     transliteration = api.T.text(line, fmt="text-trans-full")
     if expected_glyph not in cuneiform:
@@ -96,12 +112,34 @@ def smoke_browser(
         raise BrowserSmokeError("browser kernel failed to start")
     webapp = factory(Web(kernel))
     routes: dict[str, int] = {}
+    browser_passage_formats = {}
     with webapp.test_client() as client:
         for route in ("/", "/passage", "/query", "/export"):
             response = client.get(route)
             routes[route] = response.status_code
             if response.status_code != 200 or not response.data:
                 raise BrowserSmokeError(f"browser route unusable: {route}")
+        for text_format, expected in (
+            ("text-orig-full", expected_glyph),
+            ("text-trans-full", expected_form),
+        ):
+            selected = client.post(
+                "/passage",
+                data={
+                    "jobName": "oracc-source-passage",
+                    "sec0": sections[0],
+                    "sec1": sections[1],
+                    "sec2": sections[2],
+                    "textFormat": text_format,
+                    "features": "cf pos",
+                    "edgeFeatures": "word_lex",
+                },
+            )
+            if selected.status_code != 200:
+                raise BrowserSmokeError("selected browser passage returned an HTTP error")
+            validate_browser_passage(selected.get_json(silent=True), expected)
+            browser_passage_formats[text_format] = expected
+
         response = client.post(
             "/query", data={
                 "jobName": "oracc-smoke",
@@ -124,6 +162,8 @@ def smoke_browser(
         "word_lex_edges": lexical,
         "search_has_result": True,
         "browser_query_results": browser_results,
+        "browser_passage_sections": sections,
+        "browser_passage_formats": browser_passage_formats,
         "browser_routes": routes,
         "browser_help_link": app.context.featureBase.replace("<feature>", "word_lex").format(version=version),
         "help_url_verified": False,  # Requires actual public help publication.

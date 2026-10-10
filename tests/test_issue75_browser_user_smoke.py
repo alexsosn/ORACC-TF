@@ -20,6 +20,7 @@ smoke_browser = _module.smoke_browser
 validate_browser_query = _module.validate_browser_query
 validate_browser_passage = _module.validate_browser_passage
 validate_expanded_word_features = _module.validate_expanded_word_features
+validate_browser_translation = _module.validate_browser_translation
 
 
 def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: Path) -> None:
@@ -183,3 +184,90 @@ def test_expanded_browser_request_enables_feature_inspection_controls() -> None:
     assert '"queryFeatures": "1"' in expanded_post
     assert '"features": "cf gw pos"' in expanded_post
     assert '"passageOpened": lexical_sections[2]' in expanded_post
+
+
+def test_translation_search_expansion_renders_source_text_in_real_browser(
+    tmp_path: Path,
+) -> None:
+    from oracc_tf import app_generation, corpus, metadata, translations
+    from test_issue73_browser_usability import (
+        _edition, _datasets, DATASET, ORG,
+    )
+
+    edition = _edition()
+    unit = translations.TranslationUnit(
+        sref="Q000073.1",
+        eref="Q000073.1",
+        rows=1,
+        subtype="tr",
+        label="1",
+        se_label=None,
+        text="Father.",
+        text_raw="Father.",
+        notes=(),
+        source_id="tr-fixture",
+    )
+    tf_root = tmp_path / "translation" / "tf" / TF_VERSION
+    corpus.build_tf(
+        tf_root,
+        editions=[edition],
+        metadata_index=metadata.MetadataIndex.empty(),
+        translations_by_document={edition.key: (unit,)},
+    )
+    app_root = app_generation.generate_app(
+        tf_root,
+        tmp_path / "translation" / "app",
+        dataset=DATASET,
+        tf_version=TF_VERSION,
+        datasets_path=_datasets(tmp_path),
+        repository_org=ORG,
+    )
+    result = smoke_browser(
+        tf_root,
+        app_root,
+        version=TF_VERSION,
+        document_key="fixture/project:Q000073",
+        line_ref="Q000073.1",
+        expected_glyph="𒀀",
+        expected_form="a",
+        require_translation=True,
+    )
+    assert result["browser_translation_text"] == "Father."
+    assert result["browser_translation_results"] >= 1
+
+
+def test_translation_parser_rejects_nonrendered_source_or_fake_page_text() -> None:
+    import pytest
+
+    assert validate_browser_translation(
+        {"table": '<div class="pretty"><span class="translation_text" title="translation_text">Father.</span></div>'},
+        "Father.",
+    )
+    for invalid in (
+        None,
+        {},
+        {"table": "<div>Father.</div>"},
+        {"table": '<span class="translation_text">Mother.</span><div>Father.</div>'},
+        {"table": '<span class="translation_text"></span><div>Father.</div>'},
+    ):
+        with pytest.raises(BrowserSmokeError, match="browser translation"):
+            validate_browser_translation(invalid, "Father.")
+
+
+def test_real_standalone_browser_workflow_requires_translation_display() -> None:
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/issue83-install-research.yml"
+    ).read_text(encoding="utf-8")
+    source_step = workflow.split(
+        "- name: Source-aware browser query and text smoke without builder", 1
+    )[1].split("- name: Cold-profile Python load", 1)[0]
+    assert 'assert result["browser_translation_results"] >= 1' in source_step
+    assert 'assert result["browser_translation_text"]' in source_step
+
+
+def test_browser_translation_query_enables_standard_feature_visibility() -> None:
+    script = SCRIPT.read_text(encoding="utf-8")
+    translation_query = script.split('translation_query = {', 1)[1].split('results = client.post', 1)[0]
+    assert '"standardFeatures": "1"' in translation_query
+    assert '"query": "translation_unit"' in translation_query
+    assert '"features": "translation_text"' in translation_query

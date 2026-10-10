@@ -127,11 +127,9 @@ def test_registered_dataset_generates_minimal_deterministic_app_without_manual_t
     assert config["docs"]["docBase"] == (
         f"https://github.com/{REPOSITORY_ORG}/ORACC-TF-{DATASET}/blob/main/docs"
     )
-    assert config["dataDisplay"]["excludedFeatures"] == [
-        "catalogue_json",
-        "gdl_json",
-        "sign_json",
-    ]
+    assert config["dataDisplay"]["excludedFeatures"] == list(
+        module._DEFAULT_BROWSER_EXCLUDED_FEATURES
+    )
     assert config["dataDisplay"]["textFormat"] == "text-trans-full"
     assert "typeDisplay" in config
 

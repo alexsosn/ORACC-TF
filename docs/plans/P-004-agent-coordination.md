@@ -220,6 +220,9 @@ Standalone researcher manual — GitHub #78.
 ### ISSUE-79
 Canonical app/docs/release support path ownership — GitHub #79.
 
+### ISSUE-83
+Lightweight local installation, standalone acquisition path, and disk/RAM measurements — GitHub #83.
+
 ### ISSUE-124
 Final source-to-TF correctness and completeness audit — GitHub #124.
 

@@ -1,0 +1,71 @@
+"""RED acceptance contracts for a source-aware standalone TF browser smoke (#75)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from test_issue73_browser_usability import TF_VERSION, _generate
+
+
+def test_real_browser_smoke_uses_source_glyph_word_and_empty_anchors(tmp_path: Path) -> None:
+    from scripts.measure_issue75_browser import smoke_browser
+
+    tf_root, app_root = _generate(tmp_path)
+    result = smoke_browser(
+        tf_root,
+        app_root,
+        version=TF_VERSION,
+        document_key="fixture/project:Q000073",
+        line_ref="Q000073.1",
+        expected_glyph="𒀀",
+        expected_form="a",
+    )
+    assert result["browser_routes"] == {
+        "/": 200,
+        "/passage": 200,
+        "/query": 200,
+        "/export": 200,
+    }
+    assert result["document_key"] == "fixture/project:Q000073"
+    assert result["cuneiform_verified"] is True
+    assert result["transliteration_verified"] is True
+    assert result["synthetic_sign_count"] >= 1
+    assert result["synthetic_signs_visible"] is False
+    assert result["word_lex_edges"] >= 1
+    assert result["search_has_result"] is True
+    assert result["browser_query_results"] >= 1
+    assert result["browser_help_link"].startswith("https://")
+
+
+def test_browser_smoke_refuses_missing_or_ambiguous_document_key(tmp_path: Path) -> None:
+    from scripts.measure_issue75_browser import BrowserSmokeError, smoke_browser
+    import pytest
+
+    tf_root, app_root = _generate(tmp_path)
+    for bad_key in ("Q000073", "other-project:Q000073"):
+        with pytest.raises(BrowserSmokeError, match="document_key"):
+            smoke_browser(
+                tf_root,
+                app_root,
+                version=TF_VERSION,
+                document_key=bad_key,
+                line_ref="Q000073.1",
+                expected_glyph="𒀀",
+                expected_form="a",
+            )
+
+
+def test_browser_query_response_parser_rejects_missing_or_false_results() -> None:
+    import pytest
+    from scripts.measure_issue75_browser import BrowserSmokeError, validate_browser_query
+
+    for invalid in (None, [], {}, {"status": True}, {"status": False, "nResults": 10}, {"status": True, "nResults": 0}):
+        with pytest.raises(BrowserSmokeError, match="browser query"):
+            validate_browser_query(invalid)
+    assert validate_browser_query({"status": True, "nResults": 1}) == 1
+
+
+def test_workflow_writes_structured_browser_evidence_without_stdout_redirect() -> None:
+    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/issue83-install-research.yml").read_text(encoding="utf-8")
+    assert "--output /tmp/issue83-results/browser-semantic.json" in workflow
+    assert "> /tmp/issue83-results/browser-semantic.json" not in workflow

@@ -87,6 +87,7 @@ from preload, but they remain on disk and can be loaded explicitly; some
 queries may require substantially more memory. Consult the
 [measured installation profile](installation.md).
 
-The **standalone publication and checksum are not yet published** as part
-of the pre-1.0 state described here. A successful builder/CI staging test
-is not evidence that a versioned corpus ZIP is publicly downloadable.
+A successful builder or CI staging test is not evidence that a versioned
+corpus ZIP is publicly downloadable. Confirm the exact archive, checksum,
+and manifest identity from a published GitHub Release when using a public
+dataset distribution.

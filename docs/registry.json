@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-09-29",
+  "updated": "2026-10-10",
   "documents": [
     {
       "id": "G-001",
@@ -491,9 +491,14 @@
         "P-001.M6",
         "P-003.PH0"
       ],
-      "status": "todo",
+      "status": "done",
       "issue": 27,
-      "evidence_file": "docs/task-state/P-003.PH1.json"
+      "evidence_file": "docs/task-state/P-003.PH1.json",
+      "evidence": {
+        "test": "tests/test_issue27_researcher_hazards.py",
+        "ci": "Head a8da85b69c46152fe21e6e4f6b839a9e3c4f2619: tests 38002884084 (387 fast, 13 corpus); M9 real TEI 38002884164; P003 docs 38002884086; source audit 38002884161 all passed",
+        "review": "Independent adversarial review PR #134 comment 6095875501, after unqualified-source-id repair"
+      }
     },
     {
       "id": "P-003.PH2",

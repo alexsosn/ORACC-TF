@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-labelledby="title desc">
+  <title id="title">ORACC-TF corpus graph</title>
+  <desc id="desc">Document, face, line, word, lexeme, translation unit, and sign relations in ORACC-TF.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="currentColor"/>
+    </marker>
+    <style>
+      text { font-family: sans-serif; fill: #111; }
+      .box { fill: #fff; stroke: #111; stroke-width: 2; rx: 8; }
+      .edge { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrow); }
+      .warp { fill: none; stroke: #666; stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .small { font-size: 14px; }
+      .label { font-size: 18px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <text x="30" y="35" class="label">Section / occurrence graph</text>
+
+  <rect class="box" x="40" y="70" width="150" height="55"/>
+  <text x="115" y="104" text-anchor="middle" class="label">document</text>
+
+  <rect class="box" x="235" y="70" width="130" height="55"/>
+  <text x="300" y="104" text-anchor="middle" class="label">face</text>
+
+  <rect class="box" x="410" y="70" width="130" height="55"/>
+  <text x="475" y="104" text-anchor="middle" class="label">line</text>
+
+  <rect class="box" x="585" y="70" width="130" height="55"/>
+  <text x="650" y="104" text-anchor="middle" class="label">word</text>
+
+  <path class="edge" d="M190 97 H235"/>
+  <path class="edge" d="M365 97 H410"/>
+  <path class="edge" d="M540 97 H585"/>
+  <text x="387" y="85" class="small">section order</text>
+
+  <rect class="box" x="775" y="35" width="145" height="55"/>
+  <text x="847" y="69" text-anchor="middle" class="label">lex</text>
+  <path class="edge" d="M715 88 C745 75 750 65 775 63"/>
+  <text x="728" y="55" class="small">word_lex</text>
+
+  <rect class="box" x="585" y="170" width="190" height="55"/>
+  <text x="680" y="204" text-anchor="middle" class="label">translation_unit</text>
+  <path class="edge" d="M585 197 C540 185 515 145 490 125"/>
+  <text x="505" y="183" class="small">translation_line</text>
+
+  <text x="30" y="285" class="label">Text-Fabric slot topology</text>
+
+  <rect class="box" x="350" y="315" width="170" height="60"/>
+  <text x="435" y="340" text-anchor="middle" class="label">sign slot</text>
+  <text x="435" y="362" text-anchor="middle" class="small">semantic/source</text>
+
+  <rect class="box" x="585" y="315" width="190" height="60"/>
+  <text x="680" y="340" text-anchor="middle" class="label">sign slot</text>
+  <text x="680" y="362" text-anchor="middle" class="small">synthetic=1, empty</text>
+
+  <path class="warp" d="M115 125 C155 250 280 305 350 335"/>
+  <path class="warp" d="M475 125 C455 220 445 270 440 315"/>
+  <path class="warp" d="M650 125 C600 240 520 290 490 315"/>
+  <path class="warp" d="M680 225 C635 265 555 300 505 325"/>
+  <text x="260" y="250" class="small">oslots</text>
+
+  <path class="warp" d="M650 125 C675 220 680 270 680 315"/>
+  <text x="690" y="265" class="small">only when a textual locus</text>
+  <text x="690" y="284" class="small">has no semantic sign extent</text>
+
+  <text x="40" y="430" class="small">Columns, chunks, and phrases are additional structural nodes. All non-slot textual nodes reach sign slots through oslots.</text>
+  <text x="40" y="455" class="small">Synthetic sign slots preserve position but do not assert cuneiform content; source-sign statistics exclude them.</text>
+</svg>

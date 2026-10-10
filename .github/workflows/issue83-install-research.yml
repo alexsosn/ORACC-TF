@@ -95,6 +95,48 @@ jobs:
           )
           PY
 
+      - name: Validate production release ZIP against full RIAO/RINAP/M9 stage
+        run: |
+          python -m oracc_tf.release_archive \
+            --stage /tmp/issue83-stage/assyrian-royal-inscriptions \
+            --output-dir /tmp/issue83-release
+          (cd /tmp/issue83-release && sha256sum -c *.zip.sha256)
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          archive, = Path("/tmp/issue83-release").glob("*.zip")
+          stage = Path("/tmp/issue83-stage/assyrian-royal-inscriptions")
+          with ZipFile(archive) as zf:
+              files = set(zf.namelist())
+              for required in (
+                  "manifest.json", "README.md",
+                  "app/config.yaml",
+                  "docs/index.md", "docs/CITATION.cff",
+                  "docs/LICENSE_SCOPE.md",
+                  "docs/reference/quick-start.md",
+                  "docs/reference/citation.md",
+                  "docs/reference/text-formats.md",
+                  "docs/reference/known-issues.md",
+              ):
+                  assert required in files, required
+              manifest = json.loads(zf.read("manifest.json"))
+              assert zf.read("manifest.json") == (stage / "manifest.json").read_bytes()
+              assert manifest["tf_root"] + "/otype.tf" in files
+              assert manifest["tf_root"] + "/oslots.tf" in files
+              assert "app" in manifest["support_roots"]
+              assert "docs" in manifest["support_roots"]
+              assert not any(path.startswith(("data/", "programs/", "docs/task-state/")) for path in files)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue83-versioned-release-candidate
+          path: /tmp/issue83-release/*.zip*
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Package full and measurement-only filtered ZIPs
         run: |
           python - <<'PY'
@@ -133,6 +175,41 @@ jobs:
           import tf
           assert importlib.util.find_spec("oracc_tf") is None
           print("text-fabric import OK")
+          PY
+
+      - name: Independently load the exact release-format ZIP without builder
+        run: |
+          cd /tmp
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          assert importlib.util.find_spec("oracc_tf") is None
+          archive, = Path("/tmp/issue83-release").glob("*.zip")
+          root = Path("/tmp/issue83-release-clean")
+          root.mkdir(exist_ok=True)
+          with ZipFile(archive) as zf:
+              zf.extractall(root)
+
+          from tf.app import use
+          app = use(f"app:{root / 'app'}", silent="deep")
+          assert app is not None and app.api is not None
+          api = app.api
+          doc = next(
+              n for n in api.F.otype.s("document")
+              if api.F.document_key.v(n) == "riao/ria1:Q001801"
+          )
+          line = next(
+              n for n in api.L.d(doc, otype="line")
+              if api.F.line.v(n) == "Q001801.1"
+          )
+          assert "E₂" in api.T.text(line, fmt="text-trans-full")
+          assert "𒂍" in api.T.text(line, fmt="text-orig-full")
+          assert api.E.translation_line.t(line)
+          assert any(api.E.word_lex.f(w) for w in api.L.d(line, otype="word"))
+          assert (root / "docs/reference/query-guide.md").is_file()
+          print("Versioned release ZIP: source form, glyph, translation and lexical edges OK")
           PY
 
       - name: Cold-profile Python load and representative query

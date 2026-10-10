@@ -2,7 +2,7 @@
   "task": "ISSUE-81",
   "issue": 81,
   "implementation_pr": 137,
-  "status": "implementation-ci-pending",
+  "status": "done",
   "scope": "Assemble source-of-truth researcher docs, generated feature pages, software-only citation and licence boundary, and lightweight standalone app/TF without developer evidence or raw source tree.",
   "research": {
     "status": "complete",
@@ -40,21 +40,21 @@
     ]
   },
   "verification": {
-    "status": "exact-head-ci-pending",
-    "exact_head": "57368544ff72660b02e6ef547ed6aed061d8b2a3",
-    "required_workflows": [
-      "tests",
-      "issue83-install-research",
-      "m9-real-tei",
-      "p003-docs-reference",
-      "m8-oldbabylonian-cross-validation"
-    ],
-    "note": "No final green until this integrated branch runs: prior head failed missing quick start because #28/#31/#82 pages were not yet integrated.",
-    "repaired_failure": "Historical CI 38050432030 and fast tests 38050432052 showed canonical .manual-regions.json was incorrectly rejected. New RED contracts keep unknown hidden files rejected while excluding just known builder metadata; complete tree transplanted atop merged #138.",
-    "reconfirm_on_current_commit": true
+    "status": "passed",
+    "tested_head": "7ef48cb6d57be028c3fa867b03f9b8efdf7cf84f",
+    "merged_commit": "5f26eb9f2b720c30f2c1d3136060a28e788dde05",
+    "workflows": {
+      "tests": 38056058064,
+      "standalone_install": 38056058047,
+      "m8": 38056058048,
+      "m9": 38056058065,
+      "reference": 38056058058
+    },
+    "results": "5/5 workflows passed; fast 422 passed 1 skipped; corpus 14 passed 2 skipped; pinned M9 verified; clean Text-Fabric-only standalone install."
   },
   "independent_review": {
-    "status": "pending-final",
-    "criteria": "Inspect real staged ZIP/docs/app with clean consumer; prior source/boundary fixes must be checked against final tested code."
+    "status": "pass",
+    "comment_id": 6098463589,
+    "scope": "Real canonical docs, hidden editor metadata exclusion, path/symlink protection, portable links and full staged corpus load"
   }
 }

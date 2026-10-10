@@ -160,3 +160,16 @@ def test_expanded_passage_inspects_source_features_not_summary_or_other_line() -
             validate_expanded_word_features(
                 invalid, "Q000073.1", {"cf": "abu", "gw": "father"}
             )
+
+
+
+def test_browser_workflow_follows_real_pinned_feature_help_link() -> None:
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/issue83-install-research.yml"
+    ).read_text(encoding="utf-8")
+    browser_step = workflow.split(
+        "- name: Source-aware browser query and text smoke without builder", 1
+    )[1].split("- name: Cold-profile Python load", 1)[0]
+    assert 'assert result["browser_help_link"] == expected_help' in browser_step
+    assert 'https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md' in browser_step
+    assert "grep -Fq '<a id=\\\"word_lex\\\"></a>'" in browser_step

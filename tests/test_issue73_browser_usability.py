@@ -276,7 +276,7 @@ def test_generated_app_browser_mode_serves_core_routes_without_header_failure(
         assert response.data
 
     assert (
-        f"https://github.com/{ORG}/ORACC-TF-{DATASET}/blob/main/docs/"
+        f"https://github.com/{ORG}/ORACC-TF/blob/main/docs/"
         "reference/features.md#feature-reference"
     ) in app.featureLink
 

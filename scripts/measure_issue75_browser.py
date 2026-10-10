@@ -67,15 +67,19 @@ def validate_browser_passage(
 
 
 class _ExpandedWordParser(HTMLParser):
-    """Extract text from the opened pretty display of one focused TF line."""
+    """Collect named TF feature spans inside one expanded focused passage."""
 
-    def __init__(self, section: str):
+    def __init__(self, section: str, names: set[str]):
         super().__init__(convert_charrefs=True)
         self.section = section
+        self.names = names
         self.details_depth = 0
         self.focus_depth = 0
         self.pretty_depth = 0
-        self.text: list[str] = []
+        self.feature_depth = 0
+        self.active_feature: str | None = None
+        self.feature_chunks: list[str] = []
+        self.values: dict[str, list[str]] = {name: [] for name in names}
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         fields = dict(attrs)
@@ -93,9 +97,25 @@ class _ExpandedWordParser(HTMLParser):
                 self.pretty_depth += 1
             elif "pretty" in (fields.get("class") or "").split():
                 self.pretty_depth = 1
+        elif tag == "span" and self.focus_depth and self.pretty_depth:
+            if self.feature_depth:
+                self.feature_depth += 1
+            else:
+                classes = set((fields.get("class") or "").split())
+                feature = next((name for name in self.names if name in classes), None)
+                if feature is not None:
+                    self.active_feature = feature
+                    self.feature_depth = 1
+                    self.feature_chunks = []
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "div" and self.focus_depth and self.pretty_depth:
+        if tag == "span" and self.feature_depth:
+            self.feature_depth -= 1
+            if self.feature_depth == 0 and self.active_feature:
+                self.values[self.active_feature].append("".join(self.feature_chunks))
+                self.active_feature = None
+                self.feature_chunks = []
+        elif tag == "div" and self.focus_depth and self.pretty_depth:
             self.pretty_depth -= 1
         elif tag == "details":
             if self.focus_depth == self.details_depth:
@@ -104,23 +124,21 @@ class _ExpandedWordParser(HTMLParser):
             self.details_depth = max(0, self.details_depth - 1)
 
     def handle_data(self, data: str) -> None:
-        if self.focus_depth and self.pretty_depth:
-            self.text.append(data)
+        if self.focus_depth and self.pretty_depth and self.active_feature:
+            self.feature_chunks.append(data)
 
 
 def validate_expanded_word_features(
     payload: object, section: str, features: dict[str, str]
 ) -> bool:
-    """Require source lexemes in browser-expanded word display, not navigation."""
+    """Match source values against rendered named TF features in selected line."""
     if not isinstance(payload, dict) or not isinstance(payload.get("table"), str):
         raise BrowserSmokeError("expanded browser passage response malformed")
-    parser = _ExpandedWordParser(section)
+    parser = _ExpandedWordParser(section, set(features))
     parser.feed(payload["table"])
-    pretty_text = " ".join(parser.text)
-    if not pretty_text.strip():
-        raise BrowserSmokeError("expanded browser passage has no selected pretty text")
     for feature, value in features.items():
-        if not value or value not in pretty_text:
+        rendered = parser.values.get(feature, ())
+        if not value or not any(value in item for item in rendered):
             raise BrowserSmokeError(
                 f"expanded browser passage did not display source {feature}={value!r}"
             )

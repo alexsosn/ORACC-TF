@@ -15,6 +15,11 @@ on:
       - "docs/registry.json"
       - "docs/plans/P-004-agent-coordination.md"
   workflow_dispatch:
+    inputs:
+      publish_1_0:
+        description: "Publish 1.0.0 as a public GitHub Release after successful full-corpus checks"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -43,6 +48,7 @@ jobs:
       - name: Build and stage standalone candidate
         env:
           ORACC_TF_M9_TEI_ARCHIVE: ${{ runner.temp }}/riao-teiCorpus-20241202.zip
+          ORACC_TF_PUBLISH_1_0: ${{ inputs.publish_1_0 }}
         run: |
           python - <<'PY'
           import json
@@ -95,7 +101,11 @@ jobs:
               tf_root,
               Path("/tmp/issue83-stage") / dataset,
               dataset=dataset,
-              release_id="issue83-research-" + os.environ["GITHUB_SHA"][:12],
+              release_id=(
+                  "1.0.0"
+                  if os.environ.get("ORACC_TF_PUBLISH_1_0", "").lower() == "true"
+                  else "issue83-research-" + os.environ["GITHUB_SHA"][:12]
+              ),
               tf_version=TF_VERSION,
               builder_commit=os.environ["GITHUB_SHA"],
               source_state=source_state,
@@ -443,3 +453,50 @@ jobs:
           name: issue83-install-research
           path: /tmp/issue83-results/*.json
           if-no-files-found: error
+
+  publish-release:
+    needs: standalone-candidate
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_1_0 }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue83-versioned-release-candidate
+          path: release
+
+      - name: Verify exact tested archive and publish one public 1.0 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd release
+          test -s assyrian-royal-inscriptions-1.0.0.zip
+          test -s assyrian-royal-inscriptions-1.0.0.zip.sha256
+          sha256sum -c assyrian-royal-inscriptions-1.0.0.zip.sha256
+          # The browser's generated feature-help URL is pinned to this exact
+          # final main commit; verify public access before publishing assets.
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+            "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md" \
+            -o "$RUNNER_TEMP/public-feature-help.md"
+          grep -q 'word_lex' "$RUNNER_TEMP/public-feature-help.md"
+          if gh release view "v1.0.0" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v1.0.0 GitHub Release already exists; refusing overwrite" >&2
+            exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v1.0.0" >/dev/null 2>&1; then
+            echo "v1.0.0 tag already exists; refusing ambiguous publish" >&2
+            exit 1
+          fi
+          gh release create "v1.0.0"             "assyrian-royal-inscriptions-1.0.0.zip"             "assyrian-royal-inscriptions-1.0.0.zip.sha256"             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA"             --title "Assyrian Royal Inscriptions TF 1.0.0"             --notes "Standalone RIAO/RINAP TF corpus, app and researcher manual. See the bundled manifest, upstream editor credits and licence scope."
+
+      - name: Verify publicly downloadable 1.0 ZIP and checksum
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/public-release"
+          cd "$RUNNER_TEMP/public-release"
+          for item in assyrian-royal-inscriptions-1.0.0.zip assyrian-royal-inscriptions-1.0.0.zip.sha256; do
+            curl --fail --location --retry 5 --retry-all-errors --retry-delay 2               "https://github.com/$GITHUB_REPOSITORY/releases/download/v1.0.0/$item" -o "$item"
+          done
+          sha256sum -c assyrian-royal-inscriptions-1.0.0.zip.sha256

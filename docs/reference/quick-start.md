@@ -20,10 +20,13 @@ document. See the [source-to-TF audit](data-audit.md) and
 
 ## 1. Obtain and extract the standalone corpus
 
-Use the **versioned `assyrian-royal-inscriptions` release ZIP**, together with
-the checksum published for that same asset. Publication is tracked separately
-from the already-tested local distribution mechanism; until a release asset
-exists, this is an installation *candidate*, not a public download claim.
+Use the **versioned `assyrian-royal-inscriptions` release ZIP** and
+its matching checksum from the
+[ORACC-TF GitHub Releases page](https://github.com/alexsosn/ORACC-TF/releases).
+Verify the checksum before extracting, and record the `release_id`,
+`builder_commit`, and `source_state` from `manifest.json`. A green CI
+build or staged candidate archive is not itself evidence of a public release;
+follow the actual release asset URL and its matching checksum.
 
 Extract the ZIP and change into the **corpus root**, the directory containing
 `manifest.json`, `app/`, `tf/`, and `docs/`. You do not need to clone the

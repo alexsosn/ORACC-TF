@@ -107,4 +107,7 @@ def test_display_recipe_executes_against_real_riao_edition(tmp_path: Path) -> No
 def test_reference_landing_does_not_claim_unpublished_corpus_is_released() -> None:
     index = page("index.md")
     assert "for the released" not in index.lower()
-    assert "pre-1.0" in index or "release candidate" in index
+    assert "tested candidates" in index
+    assert "versioned published releases" in index
+    assert "manifest.json" in index and "checksum" in index
+    assert "not evidence of a public distribution" in index

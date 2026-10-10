@@ -24,7 +24,7 @@ def test_software_citation_is_valid_and_does_not_relicense_data() -> None:
     assert cff["title"] and cff["authors"]
     assert "ORACC-TF" in cff["title"]
     assert "github.com/alexsosn/ORACC-TF" in cff["repository-code"]
-    assert "1.0" not in str(cff.get("version", ""))  # not published yet
+    assert "1.0" not in str(cff.get("version", ""))  # software CFF must not assert a dataset 1.0 release version
     assert "ORACC" in cff["abstract"]
     assert "not" in cff["abstract"].lower() and "data" in cff["abstract"].lower()
 
@@ -39,7 +39,10 @@ def test_researcher_citation_documents_versioned_dataset_and_rights_boundaries()
     ):
         assert marker in text
     assert "CITATION.cff" in text
-    assert "not yet published" in text.lower() or "before publication" in text.lower()
+    assert "not automatically" in text.lower()
+    assert "actual versioned GitHub Release URL" in text
+    assert "matching checksum" in text
+    assert "No DOI" in text
 
 
 def test_known_issues_are_real_source_and_tei_hazards_not_software_hype() -> None:

@@ -88,8 +88,14 @@ import pytest
 
 @pytest.mark.corpus
 def test_published_first_passage_and_query_recipes_on_real_source(tmp_path) -> None:
+    import os
     from tf.fabric import Fabric
-    from oracc_tf import corpus, loader, metadata, paths
+    from oracc_tf import corpus, loader, metadata, paths, translations
+
+    archive = os.environ.get("ORACC_TF_M9_TEI_ARCHIVE")
+    if not archive:
+        pytest.skip("pinned official TEI archive required for translation-range replay")
+    translation_index = translations.parse_tei_archive(archive)
 
     source_paths = (
         "riao/ria1/corpusjson/Q001801.json",
@@ -105,6 +111,7 @@ def test_published_first_passage_and_query_recipes_on_real_source(tmp_path) -> N
     corpus.build_tf(
         root,
         editions=[loader.load_edition(paths.DATA / rel) for rel in source_paths],
+        translations_by_document=translation_index.as_document_map(),
         metadata_index=metadata.load_index(
             paths.DATA,
             subprojects=(

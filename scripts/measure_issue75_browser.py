@@ -350,6 +350,9 @@ def smoke_browser(
                 "query": "translation_unit",
                 "batch": "5",
                 "queryFeatures": "1",
+                # TF's typeDisplay.featuresBare is suppressed unless standard
+                # features are enabled or explicitly named by the query.
+                "standardFeatures": "1",
                 "features": "translation_text",
                 "condenseType": "translation_unit",
             }

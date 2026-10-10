@@ -25,6 +25,28 @@ _REQUIRED_WARP = ("otype.tf", "oslots.tf", "otext.tf")
 _ALLOWED_OVERRIDE_KEYS = frozenset({"display_css"})
 _REPOSITORY_ORG_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
 _HEAVY_BROWSER_FEATURES = ("catalogue_json", "gdl_json", "sign_json")
+_DEFAULT_BROWSER_EXCLUDED_FEATURES = (
+    "catalogue_json",
+    "gdl_form",
+    "gdl_id",
+    "gdl_json",
+    "gdl_sexified",
+    "inst",
+    "lexeme",
+    "readingu",
+    "ref",
+    "sig",
+    "sign_json",
+    "src_path",
+    "translation_source_id",
+    "translation_source_license",
+    "translation_source_license_url",
+    "translation_source_name",
+    "translation_source_sha256",
+    "translation_source_url",
+    "translation_text_raw",
+    "word_id",
+)
 _TYPE_DISPLAY_POLICY: dict[str, dict[str, object]] = {
     "document": {"label": "{document}"},
     "face": {"label": "{source_id}"},
@@ -182,7 +204,7 @@ def _config_bytes(
             "version": tf_version,
         },
         "dataDisplay": {
-            "excludedFeatures": list(_HEAVY_BROWSER_FEATURES),
+            "excludedFeatures": list(_DEFAULT_BROWSER_EXCLUDED_FEATURES),
             "textFormat": "text-trans-full",
         },
         "docs": {

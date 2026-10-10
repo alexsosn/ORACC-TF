@@ -238,6 +238,7 @@ jobs:
           python "$GITHUB_WORKSPACE/scripts/measure_issue75_browser.py" \
             "/tmp/issue83-release-clean" \
             --version "$TF_VERSION" \
+            --require-translation \
             --output /tmp/issue83-results/browser-semantic.json
           python - <<'PY'
           import json
@@ -260,6 +261,8 @@ jobs:
           assert result["browser_lexical_section"]
           assert result["browser_word_features"]["cf"]
           assert result["browser_word_features"]["gw"]
+          assert result["browser_translation_results"] >= 1
+          assert result["browser_translation_text"]
           assert result["help_url_verified"] is False  # offline script never claims a network check
           PY
           # Follow the URL actually configured in the staged app. The exact

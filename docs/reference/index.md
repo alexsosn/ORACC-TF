@@ -5,8 +5,9 @@ status: active
 
 # ORACC-TF reference
 
-Researcher-facing reference for the released
-`assyrian-royal-inscriptions` Text-Fabric corpus.
+Researcher-facing reference for the **pre-1.0 release candidate**
+`assyrian-royal-inscriptions` Text-Fabric corpus. A public release ZIP
+and checksum have not yet been published.
 
 ## Getting started
 
@@ -14,6 +15,16 @@ Researcher-facing reference for the released
 - [Lightweight installation](installation.md) — the measured download, disk, startup, and memory requirements.
 - [Query guide](query-guide.md) — executable passage, lexical, metadata, and translation-range searches.
 - [Reproducibility](reproducibility.md) — release identity, pinned sources, source audit, and licence boundaries.
+
+## Using the corpus
+
+- [Corpus scope and sources](scope.md) — registered RIAO/RINAP editions,
+  inclusions, exclusions, and source completeness.
+- [Text and display formats](text-formats.md) — cuneiform, transliteration,
+  lexical rendering, and synthetic sign behavior.
+- [Browser guide](browser.md) — local passage, query, export, and feature help.
+- [References](references.md) — upstream editions and Text-Fabric.
+- [Acknowledgements](acknowledgements.md) — original scholarship versus TF conversion.
 
 ## Start with the corpus model
 

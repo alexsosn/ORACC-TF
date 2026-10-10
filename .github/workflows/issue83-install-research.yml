@@ -48,9 +48,8 @@ jobs:
           import json
           import os
           from pathlib import Path
-          import shutil
 
-          from oracc_tf import TF_VERSION, app_generation, distribution, publishing
+          from oracc_tf import TF_VERSION, app_generation, distribution, manual, publishing
 
           dataset = "assyrian-royal-inscriptions"
           tf_root, _report = publishing.build_registered_tf(
@@ -67,14 +66,18 @@ jobs:
               repository_org=os.environ["GITHUB_REPOSITORY_OWNER"],
           )
 
-          docs_root = Path("/tmp/issue83-docs")
-          (docs_root / "reference").mkdir(parents=True)
-          shutil.copytree("docs/reference", docs_root / "reference", dirs_exist_ok=True)
-          (docs_root / "index.md").write_text(
-              "# assyrian-royal-inscriptions\n\n"
-              "See [researcher reference](reference/index.md).\n",
-              encoding="utf-8",
+          docs_root = manual.assemble_manual(
+              Path.cwd(),
+              Path("/tmp/issue83-docs"),
+              dataset=dataset,
           )
+          assert (docs_root / "reference" / "features.md").is_file()
+          assert (docs_root / "reference" / "citation.md").is_file()
+          assert (docs_root / "reference" / "known-issues.md").is_file()
+          assert (docs_root / "reference" / "text-formats.md").is_file()
+          assert (docs_root / "reference" / "browser.md").is_file()
+          assert (docs_root / "reference" / "acknowledgements.md").is_file()
+          assert (docs_root / "CITATION.cff").is_file()
 
           audit_state = json.loads(
               Path("docs/task-state/ISSUE-124.json").read_text(encoding="utf-8")

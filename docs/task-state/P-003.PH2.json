@@ -1,0 +1,48 @@
+{
+  "task": "P-003.PH2",
+  "issue": 28,
+  "implementation_pr": 135,
+  "scope": "Stand-alone user quick start, public TF query recipes, manifest/source reproducibility, and discoverability; no upstream polling or publishing automation.",
+  "status": "implementation-tests-pending",
+  "coordination": {
+    "session": "gpt6-20261010-1151-issue28",
+    "claim_comment": 6095890821
+  },
+  "research": {
+    "status": "done",
+    "issue_comment": 6090825413,
+    "design_comment": 6095895240,
+    "findings": "Public app: load uses Text-Fabric 13.1, corpus joins need document_key; word_lex/translation_line edges supply lexical and translation queries; damage lacks normalized break feature; manifest and pinned M9 archive identify rebuild."
+  },
+  "tdd": {
+    "status": "red-demonstrated",
+    "red_commit": "92837d569a3baf0970064e31640dd246af7bfa0a",
+    "red_run": 38039750667,
+    "red_result": "5 expected documentation/registry failures; 380 previously existing fast tests passed, 1 skipped",
+    "test": "tests/test_issue28_researcher_quickstart.py",
+    "real_source_replay": "Five real source editions with joined catalogue metadata, executable first passage, lexeme, metadata, translation query examples."
+  },
+  "design": {
+    "status": "accepted",
+    "surfaces": [
+      "docs/reference/quick-start.md",
+      "docs/reference/query-guide.md",
+      "docs/reference/reproducibility.md",
+      "docs/reference/index.md",
+      "docs/registry.json"
+    ],
+    "constraints": [
+      "Avoid builder checkout in consumer instructions",
+      "P-002 upstream automation is not a PH2 completion blocker",
+      "Maintain #134 hazard docs and #132 installation route without duplication",
+      "No fictitious source-damage flag"
+    ]
+  },
+  "verification": {
+    "status": "pending",
+    "reason": "Exact-head CI and clean consumer review pending."
+  },
+  "review": {
+    "status": "pending"
+  }
+}

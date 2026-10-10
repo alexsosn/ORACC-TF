@@ -251,6 +251,9 @@ jobs:
           assert result["browser_routes"]["/query"] == 200
           assert result["browser_passage_formats"]["text-orig-full"] == "𒂍"
           assert result["browser_passage_formats"]["text-trans-full"] == "E₂"
+          assert result["browser_lexical_section"]
+          assert result["browser_word_features"]["cf"]
+          assert result["browser_word_features"]["gw"]
           assert result["help_url_verified"] is False  # separate #23 publication gate
           PY
 

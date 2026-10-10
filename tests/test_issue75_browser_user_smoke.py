@@ -109,5 +109,8 @@ def test_browser_passage_response_parser_ignores_navigation_only_text() -> None:
 
 def test_browser_workflow_checks_actual_versioned_release_archive() -> None:
     workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/issue83-install-research.yml").read_text(encoding="utf-8")
-    assert '"/tmp/issue83-release-clean"' in workflow
-    assert '"/tmp/issue83-clean/$DATASET" \\\n            --version' not in workflow
+    selected_step = workflow.split(
+        "- name: Source-aware browser query and text smoke without builder", 1
+    )[1].split("- name: Cold-profile Python load", 1)[0]
+    assert '"/tmp/issue83-release-clean"' in selected_step
+    assert '"/tmp/issue83-clean/$DATASET"' not in selected_step

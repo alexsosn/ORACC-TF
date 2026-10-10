@@ -80,3 +80,15 @@ def test_researcher_publication_instructions_do_not_use_abstract_repo_as_url() -
     assert "ORACC-TF-assyrian-royal-inscriptions" in text
     assert "logical" in text.lower()
     assert "https://github.com/alexsosn/ORACC-TF/releases" in text
+
+
+def test_public_archive_pins_feature_help_to_same_builder_commit_as_manifest() -> None:
+    flow = _workflow()
+    build = "\n".join(
+        str(step.get("run", ""))
+        for step in flow["jobs"]["standalone-candidate"]["steps"]
+    )
+    assert 'docs_ref=os.environ["GITHUB_SHA"]' in build
+    assert 'builder_commit=os.environ["GITHUB_SHA"]' in build
+    assert 'Path("docs/reference/features.md").is_file()' in build
+    assert "publish_1_0" in str(flow["on"]["workflow_dispatch"]["inputs"])

@@ -102,3 +102,17 @@ def test_first_user_quick_start_is_valid_before_and_after_publication() -> None:
     assert "manifest.json" in quick
     assert "checksum" in quick.lower()
     assert "CI" in quick or "staged" in quick.lower()  # distinguish candidate from public asset
+
+
+def test_publish_fails_closed_when_pinned_public_feature_help_is_missing() -> None:
+    flow = _workflow()
+    publish_steps = flow["jobs"]["publish-release"]["steps"]
+    upload = next(
+        str(step.get("run", ""))
+        for step in publish_steps
+        if "gh release create" in str(step.get("run", ""))
+    )
+    assert "raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/reference/features.md" in upload
+    assert "curl --fail" in upload
+    assert "word_lex" in upload
+    assert upload.index("raw.githubusercontent.com") < upload.index("gh release create")

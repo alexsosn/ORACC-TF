@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
+import os
+import shutil
+import subprocess
+from zipfile import ZipFile
 
 from oracc_tf import app_generation, distribution
 
@@ -114,3 +119,69 @@ def test_installation_guide_not_misleading_after_browser_acceptance() -> None:
     assert "public feature-help link are tracked\nseparately" not in page
     assert "browser translation" in page
     assert "issues/23" in page
+
+
+def test_actual_quickstart_shell_fails_closed_and_exits_nonzero(tmp_path: Path) -> None:
+    """Exercise shipped Bash snippet, real ZIP/SHA256 tools and mocked downloads."""
+    guide = (ROOT / "docs/reference/quick-start.md").read_text(encoding="utf-8")
+    fence = chr(96) * 3
+    snippet = guide.split(f"{fence}bash\n", 1)[1].split(f"\n{fence}", 1)[0]
+    name = "assyrian-royal-inscriptions-1.0.0.zip"
+    release_files = tmp_path / "mock-public-release"
+    release_files.mkdir()
+    archive = release_files / name
+    with ZipFile(archive, "w") as bundle:
+        bundle.writestr("manifest.json", '{"dataset": "assyrian-royal-inscriptions"}')
+    sidecar = release_files / (name + ".sha256")
+    valid_digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+    sidecar.write_text(f"{valid_digest}  {name}\n", encoding="utf-8")
+
+    # Intercept only curl. Real sha256sum, Python zipfile and Bash flow execute.
+    fake_curl = '''
+curl() {
+  if [ "$ORACC_TEST_CURL_FAIL" = "1" ]; then
+    return 22
+  fi
+  cp "$ORACC_TEST_ASSETS/$(basename "$2")" "$4"
+}
+'''
+    for case in ("failed-download", "bad-hash", "existing-directory", "success"):
+        work = tmp_path / case
+        work.mkdir()
+        env = os.environ.copy()
+        env.update(
+            ORACC_TEST_ASSETS=str(release_files),
+            ORACC_TEST_CURL_FAIL="1" if case == "failed-download" else "0",
+        )
+        extracted = work / "assyrian-royal-inscriptions"
+        if case == "failed-download":
+            # Stale local files would pass SHA256 if HTTP failures are ignored.
+            shutil.copy2(archive, work / name)
+            shutil.copy2(sidecar, work / (name + ".sha256"))
+        if case == "bad-hash":
+            sidecar.write_text(f"{'0' * 64}  {name}\n", encoding="utf-8")
+        if case == "existing-directory":
+            extracted.mkdir()
+            (extracted / "do-not-overwrite.txt").write_text("old", encoding="utf-8")
+        if case in {"existing-directory", "success"}:
+            sidecar.write_text(f"{valid_digest}  {name}\n", encoding="utf-8")
+
+        result = subprocess.run(
+            ["bash", "-c", fake_curl + "\n" + snippet],
+            cwd=work,
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=20,
+            check=False,
+        )
+        if case == "success":
+            assert result.returncode == 0, result.stderr
+            assert (extracted / "manifest.json").is_file()
+        else:
+            assert result.returncode != 0, (
+                f"{case} incorrectly reported shell success: {result.stderr}"
+            )
+            assert not (extracted / "manifest.json").exists(), (
+                f"{case} incorrectly extracted the archive"
+            )

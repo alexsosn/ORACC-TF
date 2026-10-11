@@ -35,6 +35,7 @@ DESCRIPTIONS: dict[str, str] = {
     "base": "ETCSRI source f.base, preserved verbatim as a word feature; do not infer a parsed stem.",
     "morph": "ETCSRI source f.morph segmentation string, preserved verbatim without inferred morphological parsing.",
     "morph2": "ETCSRI source f.morph2 gloss sequence, preserved separately from morph without inferred alignment.",
+    "morphology_json": "Canonical JSON of the source-present ETCSRI base/morph/morph2 fields, preserving explicit JSON null versus omitted fields.",
     "para_json": "Canonical lossless JSON of source word-level para boundary/syntax records in their original order.",
     "props_json": "Canonical lossless JSON of source word-level props/environment annotations in their original order.",
     # Document/catalogue metadata

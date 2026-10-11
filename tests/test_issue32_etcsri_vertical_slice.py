@@ -75,6 +75,12 @@ def test_etcsri_real_morphology_is_separately_queryable_and_roundtrips(tmp_path:
             assert api.F.para_json.v(node) is None
     assert len(api.F.otype.s("discourse")) == 1
     assert len(api.F.otype.s("sentence")) == 1
+    first_line = next(n for n in api.F.otype.s("line")
+                      if api.F.line.v(n) == "Q000935.1")
+    enclosing = api.E.line_chunk.f(first_line)
+    assert len(enclosing) == 1
+    assert api.F.otype.v(enclosing[0]) == "sentence"
+    assert api.F.source_id.v(enclosing[0]) == "Q000935.U2"
 
 
 @pytest.mark.corpus
@@ -165,3 +171,13 @@ def test_etcsri_missing_morph2_is_preserved_as_absence_not_invented(tmp_path: Pa
     assert json.loads(api.F.f_json.v(node)) == next(
         n["f"] for n in _words(doc) if n["id"] == "Q000935.l04855"
     )
+
+
+def test_etcsri_duplicate_chunk_identity_fails_closed(tmp_path: Path) -> None:
+    doc = _source(Q935)
+    sentence = doc["cdl"][0]["cdl"][0]["cdl"][0]
+    sentence["id"] = doc["cdl"][0]["id"]
+    fake = tmp_path / "Q000935.json"
+    fake.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="duplicate chunk"):
+        etcsri.build_tf(tmp_path / "tf", source_paths=[fake])

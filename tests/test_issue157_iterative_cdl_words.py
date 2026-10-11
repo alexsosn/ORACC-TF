@@ -59,3 +59,24 @@ def test_invalid_children_and_non_list_cdl_still_fail_closed() -> None:
             "node": "d",
             "cdl": [{"node": "d", "cdl": [_word("first"), 3]}],
         }))
+
+
+def test_wide_cdl_stays_lazy_instead_of_prefetching_all_siblings() -> None:
+    """A streaming walker must not touch late siblings until they are visited."""
+    class GuardedSiblings(list):
+        allow_tail = False
+
+        def __getitem__(self, index: int) -> object:
+            if index > 0 and not self.allow_tail:
+                raise AssertionError("walker eagerly inspected a later sibling")
+            return super().__getitem__(index)
+
+        def __iter__(self):
+            for index in range(len(self)):
+                yield self[index]
+
+    siblings = GuardedSiblings([_word("early"), *(_word(f"late-{i}") for i in range(100))])
+    source = words.source_words({"node": "d", "cdl": siblings})
+    assert next(source)["id"] == "early"
+    siblings.allow_tail = True
+    assert [node["id"] for node in source] == [f"late-{i}" for i in range(100)]

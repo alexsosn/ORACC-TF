@@ -121,3 +121,57 @@ def test_raw_cache_fails_closed_without_nested_etcsri_bundle(tmp_path: Path):
     assert completed.returncode != 0
     assert "etcsri" in completed.stderr.lower()
     assert not report.exists()
+
+
+def test_raw_cache_rejects_traversal_even_in_unused_project(tmp_path: Path):
+    archive = tmp_path / "corrupt.zip"
+    _raw_cache(archive)
+    # A corrupt sibling must not silently pass through the source trust boundary.
+    with zipfile.ZipFile(archive, "a") as outer:
+        outer.writestr("jsonzip/../escape.json", "{}")
+    output = tmp_path / "report.json"
+    result = subprocess.run(
+        [sys.executable, "scripts/research_etcsri_snapshot.py",
+         "--raw-cache", str(archive), "--output", str(output)],
+        check=False, capture_output=True, text=True,
+    )
+    assert result.returncode != 0
+    assert "unsafe" in result.stderr.lower()
+    assert not output.exists()
+
+
+def test_raw_cache_rejects_duplicate_nested_project_member(tmp_path: Path):
+    archive = tmp_path / "duplicate.zip"
+    _raw_cache(archive)
+    with zipfile.ZipFile(archive, "a") as outer:
+        outer.writestr("jsonzip/etcsri.zip", b"not the authoritative archive")
+    output = tmp_path / "report.json"
+    result = subprocess.run(
+        [sys.executable, "scripts/research_etcsri_snapshot.py",
+         "--raw-cache", str(archive), "--output", str(output)],
+        check=False, capture_output=True, text=True,
+    )
+    assert result.returncode != 0
+    assert "duplicate" in result.stderr.lower()
+    assert not output.exists()
+
+
+def test_raw_cache_rejects_malformed_etcsri_cdl(tmp_path: Path):
+    inner = BytesIO()
+    with zipfile.ZipFile(inner, "w") as project:
+        project.writestr(
+            "etcsri/corpusjson/P000001.json",
+            '{"type":"cdl","textid":"P000001","cdl":{"node":"l"}}',
+        )
+    archive = tmp_path / "invalid.zip"
+    with zipfile.ZipFile(archive, "w") as outer:
+        outer.writestr("jsonzip/etcsri.zip", inner.getvalue())
+    output = tmp_path / "report.json"
+    result = subprocess.run(
+        [sys.executable, "scripts/research_etcsri_snapshot.py",
+         "--raw-cache", str(archive), "--output", str(output)],
+        check=False, capture_output=True, text=True,
+    )
+    assert result.returncode != 0
+    assert "cdl" in result.stderr.lower()
+    assert not output.exists()

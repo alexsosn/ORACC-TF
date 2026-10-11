@@ -107,3 +107,10 @@ def test_researcher_release_status_and_download_example_match_actual_product() -
     ):
         assert token in quickstart
     assert "not yet public" in quickstart or "not yet published" in quickstart
+
+
+def test_installation_guide_not_misleading_after_browser_acceptance() -> None:
+    page = (ROOT / "docs/reference/installation.md").read_text(encoding="utf-8")
+    assert "public feature-help link are tracked\nseparately" not in page
+    assert "browser translation" in page
+    assert "issues/23" in page

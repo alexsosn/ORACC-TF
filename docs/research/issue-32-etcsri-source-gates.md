@@ -26,6 +26,33 @@ updated: 2026-10-11
   by this research work. ETCSRI must not be registered in `datasets.toml`
   before a source-grounded model and build actually exist.
 
+## Real ETCSRI witnesses checked in at first pass
+
+The following are **document-local** observations from the project source tree
+on `main` at `8eb498b1a2898d086928efc556466392af02fdb7`, not
+whole-corpus coverage claims:
+
+| Source document | Git blob SHA | words | f.morph + f.morph2 both present | node.para present | sentence chunks | phrase chunks | line-start markers |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `data/etcsri/corpusjson/Q000376.json` | `b2b99268db05b6cbbd1dc4571a5d28592d766a85` | 286 | 279 | 51 | 51 | 17 | 128 |
+| `data/etcsri/corpusjson/Q000935.json` | `a2eef2a0337d276191fbda85a4269948fb00f9c3` | 7 | 7 | 1 | 1 | 0 | 4 |
+
+The tested `para` annotation is attached **directly to a `node=l` word**
+as a list of source objects such as
+`{"class":"boundary","type":"sentence",...}`, and is not in `f`.
+This is independently corroborated by the older generic
+`scripts/scan_annotation.py` collector, which reads `n.get("para")`.
+`morph`/`morph2` are in `f`; observed morpheme tags include
+`N1=NAME`, `N5=GEN`, `V2=FIN`, `V14=3-SG-P`.
+The sign layer has wrapper objects such as
+`{"det":"semantic","pos":"pre","seq":[...]}`: do not count every
+GDL dictionary as a distinct textual sign.
+
+The raw source objects declare CC0 in their JSON `license` field. This
+observation does not independently resolve the rights of annotated-edition
+material or third-party derived data, and should not be paraphrased as blanket
+redistribution permission.
+
 ## Research gate — source evidence before conversion design
 
 The research script supports two **mutually exclusive** modes:

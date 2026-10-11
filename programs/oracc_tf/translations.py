@@ -13,7 +13,7 @@ import hashlib
 from html import escape
 import io
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Iterator
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -104,20 +104,40 @@ def _attr_local(element: ET.Element, name: str) -> str | None:
 
 
 def _clean_text(element: ET.Element) -> str:
-    """Plain translation text, excluding editorial notes."""
-    chunks: list[str] = []
+    """Plain translation text in source order, excluding editorial notes."""
+    if _local(element.tag) == "note":
+        return ""
 
-    def visit(node: ET.Element) -> None:
-        if _local(node.tag) == "note":
-            return
-        if node.text:
-            chunks.append(node.text)
-        for child in node:
-            visit(child)
+    chunks: list[str] = []
+    if element.text:
+        chunks.append(element.text)
+
+    # A recursive visit() exhausts Python's call stack on deeply nested TEI.
+    # Iterator frames retain the next sibling without copying whole subtrees.
+    frames: list[tuple[ET.Element, Iterator[ET.Element]]] = [
+        (element, iter(element))
+    ]
+    while frames:
+        node, children = frames[-1]
+        try:
+            child = next(children)
+        except StopIteration:
+            frames.pop()
+            # A child's tail belongs to the surrounding translation even
+            # when the child itself contains deeply nested markup.
+            if frames and node.tail:
+                chunks.append(node.tail)
+            continue
+
+        if _local(child.tag) == "note":
+            # Exclude the note's entire subtree, but *not* its trailing text.
             if child.tail:
                 chunks.append(child.tail)
+            continue
+        if child.text:
+            chunks.append(child.text)
+        frames.append((child, iter(child)))
 
-    visit(element)
     return " ".join("".join(chunks).split())
 
 
@@ -127,21 +147,45 @@ def _all_text(element: ET.Element) -> str:
 
 
 def _render_element(element: ET.Element) -> str:
-    """Render source markup canonically without namespace prefixes."""
-    tag = _local(element.tag)
-    attrs = "".join(
-        f' {_local(key)}="{escape(value, quote=True)}"'
-        for key, value in sorted(element.attrib.items(), key=lambda item: _local(item[0]))
-    )
-    parts = [f"<{tag}{attrs}>"]
+    """Render source markup canonically with depth-safe mixed-content order."""
+    def opening(node: ET.Element) -> str:
+        tag = _local(node.tag)
+        attrs = "".join(
+            f' {_local(key)}="{escape(value, quote=True)}"'
+            for key, value in sorted(
+                node.attrib.items(), key=lambda item: _local(item[0])
+            )
+        )
+        return f"<{tag}{attrs}>"
+
+    parts = [opening(element)]
     if element.text:
         parts.append(escape(element.text))
-    for child in element:
-        if _local(child.tag) != "note":
-            parts.append(_render_element(child))
-        if child.tail:
-            parts.append(escape(child.tail))
-    parts.append(f"</{tag}>")
+
+    frames: list[tuple[ET.Element, Iterator[ET.Element]]] = [
+        (element, iter(element))
+    ]
+    while frames:
+        node, children = frames[-1]
+        try:
+            child = next(children)
+        except StopIteration:
+            frames.pop()
+            parts.append(f"</{_local(node.tag)}>")
+            if frames and node.tail:
+                parts.append(escape(node.tail))
+            continue
+
+        if _local(child.tag) == "note":
+            if child.tail:
+                parts.append(escape(child.tail))
+            continue
+
+        parts.append(opening(child))
+        if child.text:
+            parts.append(escape(child.text))
+        frames.append((child, iter(child)))
+
     return "".join(parts)
 
 

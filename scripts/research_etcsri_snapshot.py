@@ -175,6 +175,7 @@ def _observe_document(
     marker_types: Counter[str],
     features: dict[str, Counter[str]],
     gdl_shapes: Counter[str],
+    para_records: Counter[str],
     anomalies: Counter[str],
 ) -> int:
     if not isinstance(document, dict):
@@ -212,6 +213,17 @@ def _observe_document(
                     value = container[field]
                     if value is not None and (not isinstance(value, str) or value.strip()):
                         features[field]["populated"] += 1
+                    if field == "para":
+                        if not isinstance(value, list):
+                            raise CensusError("source word para must be an array")
+                        for record in value:
+                            if not isinstance(record, dict):
+                                raise CensusError("source para record must be an object")
+                            klass = record.get("class")
+                            subtype = record.get("type")
+                            if not isinstance(klass, str) or not isinstance(subtype, str):
+                                raise CensusError("source para class/type must be strings")
+                            para_records[f"{klass}/{subtype}"] += 1
             gdl = word.get("gdl")
             if gdl is None:
                 anomalies["words_without_gdl"] += 1
@@ -252,6 +264,7 @@ def census_raw_cache(path: Path) -> dict[str, object]:
         chunk_types: Counter[str] = Counter()
         marker_types: Counter[str] = Counter()
         gdl_shapes: Counter[str] = Counter()
+        para_records: Counter[str] = Counter()
         anomalies: Counter[str] = Counter()
         features = {field: Counter() for field in RAW_WORD_FEATURES}
         documents = 0
@@ -298,7 +311,8 @@ def census_raw_cache(path: Path) -> dict[str, object]:
                 source_ids.add(textid)
                 words += _observe_document(
                     doc, chunk_types=chunk_types, marker_types=marker_types,
-                    features=features, gdl_shapes=gdl_shapes, anomalies=anomalies,
+                    features=features, gdl_shapes=gdl_shapes,
+                    para_records=para_records, anomalies=anomalies,
                 )
                 documents += 1
         return {
@@ -319,6 +333,7 @@ def census_raw_cache(path: Path) -> dict[str, object]:
             "chunk_types": dict(sorted(chunk_types.items())),
             "marker_types": dict(sorted(marker_types.items())),
             "gdl_object_keys": dict(sorted(gdl_shapes.items())),
+            "para_records": dict(sorted(para_records.items())),
             "anomalies": dict(sorted(anomalies.items())),
         }
     except (zipfile.BadZipFile, RuntimeError, EOFError) as exc:

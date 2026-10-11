@@ -775,6 +775,16 @@ def build_tf(
                             f"{edition.key}:{word.source_id}: {feature} must be a string"
                         )
                     native[feature] = value
+                morphology_source = {
+                    feature: word.features[feature]
+                    for feature in ("base", "morph", "morph2")
+                    if feature in word.features
+                }
+                # A compact canonical source tuple distinguishes missing keys
+                # from explicit JSON nulls, while individual TF features stay
+                # directly queryable. No inferred morpheme grammar is used.
+                if morphology_source:
+                    native["morphology_json"] = _json(morphology_source)
                 for name in ("para", "props"):
                     if name not in word.source:
                         continue

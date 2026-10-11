@@ -218,3 +218,41 @@ def test_etcsri_rejects_nonempty_output_to_avoid_stale_tf_features(tmp_path: Pat
     with pytest.raises(etcsri.ETCSRISourceError, match="non-empty|not empty"):
         etcsri.build_tf(output, source_paths=[Q935])
     assert (output / "stale-feature.tf").is_file()
+
+
+@pytest.mark.corpus
+def test_etcsri_real_q000376_linkbase_is_preserved_without_word_or_sign_inflation(
+    tmp_path: Path,
+) -> None:
+    """Actual corpusjson carries a top-level linkbase outside its CDL node grammar."""
+    doc = _source(Q376)
+    raw_links = [entry for entry in doc["cdl"] if "linkbase" in entry]
+    assert len(raw_links) == 1
+    assert len(raw_links[0]["linkbase"]) == 17
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[Q935, Q376])
+    api = _api(tmp_path / "tf")
+    node = next(
+        n for n in api.F.otype.s("document")
+        if api.F.document_key.v(n) == "etcsri:Q000376"
+    )
+    assert json.loads(api.F.linkbase_json.v(node)) == raw_links[0]["linkbase"]
+    assert report.words == 293
+    assert report.semantic_signs == (
+        _source_sign_count(_source(Q935)) + _source_sign_count(doc)
+    )
+
+
+def test_etcsri_rejects_ambiguous_or_malformed_linkbase(tmp_path: Path) -> None:
+    doc = _source(Q376)
+    original = next(entry for entry in doc["cdl"] if "linkbase" in entry)
+    doc["cdl"].append(original.copy())
+    source = tmp_path / "Q000376.json"
+    source.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="duplicate linkbase"):
+        etcsri.build_tf(tmp_path / "tf", source_paths=[source])
+
+    doc["cdl"].pop()
+    original["linkbase"] = {"links": "not the actual list"}
+    source.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="linkbase"):
+        etcsri.build_tf(tmp_path / "tf2", source_paths=[source])

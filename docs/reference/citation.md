@@ -12,13 +12,15 @@ the source material must be cited separately.
 
 ## Cite the exact dataset you queried
 
-When the standalone `assyrian-royal-inscriptions` corpus is published,
-identify that **specific release**, not just the converter's source repository.
+The `assyrian-royal-inscriptions` corpus is now available as the
+[published v1.0.0 release](https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0).
+Identify that **specific public archive**, not just the converter's source
+repository. For future releases, record the precise version used.
 Its distribution root includes `manifest.json`. Record these fields with
 your methods and query outputs:
 
 - `dataset` — `assyrian-royal-inscriptions`;
-- `release_id` — the particular published archive/ref, once assigned;
+- `release_id` — the particular published archive/ref (for v1.0.0, `1.0.0`);
 - `tf_version` — the Text-Fabric data schema version;
 - `builder_commit` — the ORACC-TF converter commit;
 - `source_state` — the pinned input-source state digest;

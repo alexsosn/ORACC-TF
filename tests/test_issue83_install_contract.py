@@ -78,3 +78,32 @@ def test_standalone_readme_links_resource_documentation() -> None:
         tf_version="0.2.0",
     )
     assert "docs/reference/installation.md" in readme
+
+
+def test_researcher_release_status_and_download_example_match_actual_product() -> None:
+    """RED contract: do not claim unfinished docs or a nonexistent public asset."""
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    quickstart = (ROOT / "docs/reference/quick-start.md").read_text(
+        encoding="utf-8"
+    )
+    workflow = (ROOT / ".github/workflows/issue83-install-research.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "manual is still being completed" not in root_readme
+    assert "Translation import, the standalone app, installation path" not in root_readme
+    assert "docs/reference/quick-start.md" in root_readme
+    assert "docs/reference/installation.md" in root_readme
+    assert "issue #23" in root_readme or "issues/23" in root_readme
+    asset = "assyrian-royal-inscriptions-1.0.0.zip"
+    assert asset in workflow and asset + ".sha256" in workflow
+    for token in (
+        "releases/download/v1.0.0",
+        asset,
+        asset + ".sha256",
+        "curl -fL",
+        "sha256sum --check",
+        "python -m zipfile -e",
+        "text-fabric==13.1.0",
+    ):
+        assert token in quickstart
+    assert "not yet public" in quickstart or "not yet published" in quickstart

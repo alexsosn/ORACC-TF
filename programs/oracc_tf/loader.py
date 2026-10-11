@@ -140,6 +140,13 @@ def count_words(doc: dict) -> int:
             raise InvalidCDLSource(
                 f"{where}: 'cdl' is {type(children).__name__}, expected list"
             )
+        # Word and documentary marker events are leaves in section conversion.
+        # Counting their descendants here would admit words that never receive
+        # a line/section assignment downstream: fail closed before acceptance.
+        if children and node.get("node") in {"l", "d"}:
+            raise InvalidCDLSource(
+                f"{where}: nonempty 'cdl' under leaf node {node['node']!r}"
+            )
         # Pop in source order while bounding memory to pending siblings.
         for index in range(len(children) - 1, -1, -1):
             pending.append((children[index], f"{where}/cdl[{index}]"))

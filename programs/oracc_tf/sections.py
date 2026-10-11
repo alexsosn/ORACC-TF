@@ -406,6 +406,16 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
         source_order = event_seq
         kind = node.get("node")
 
+        # Marker and word events have no nested CDL traversal in this walker.
+        # A nonempty subtree here would be silently omitted from line/word
+        # membership even though the source word counter sees it.
+        if kind in {"l", "d"}:
+            descendants = _children(node, where=where)
+            if descendants:
+                raise InvalidSectionSource(
+                    f"{where}: nonempty 'cdl' under leaf node {kind!r}"
+                )
+
         if kind == "c":
             chunk_type = _optional_str(node, "type", where=where)
             if chunk_type not in CHUNK_TYPES:

@@ -94,3 +94,16 @@ def test_legal_nested_text_chunks_remain_traversable() -> None:
     walk = sections.walk_document(doc)
     assert walk.source_words == 2
     assert set(walk.word_to_line) == {"QLEAF.l1", "QLEAF.l2"}
+
+
+@pytest.mark.parametrize("malformed", ["", 0, False, {}, [False]])
+@pytest.mark.parametrize("leaf_kind", ["l", "d"])
+def test_section_leaf_cdl_shape_is_fail_closed(
+    leaf_kind: str, malformed: object
+) -> None:
+    doc = _doc()
+    line = doc["cdl"][0]["cdl"]
+    target = line[-1] if leaf_kind == "l" else line[1]
+    target["cdl"] = malformed
+    with pytest.raises(sections.InvalidSectionSource, match="cdl|child is"):
+        sections.walk_document(doc)

@@ -1,0 +1,124 @@
+name: issue155-public-release-smoke
+
+# Read-only acceptance of the *published* archive, not a builder workspace.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/issue155-public-release-smoke.yml"
+      - "tests/test_issue155_public_release_acceptance.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-consumer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Deliberately no actions/checkout and no ORACC-TF editable installation.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install only the pinned consumer runtime
+        run: python -m pip install "text-fabric==13.1.0"
+
+      - name: Download exact public v1.0.0 ZIP and sidecar, verify, extract
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/release-check"
+          cd "$RUNNER_TEMP/release-check"
+          ARCHIVE=assyrian-royal-inscriptions-1.0.0.zip
+          BASE=https://github.com/alexsosn/ORACC-TF/releases/download/v1.0.0
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+            "$BASE/$ARCHIVE" -o "$ARCHIVE"
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+            "$BASE/$ARCHIVE.sha256" -o "$ARCHIVE.sha256"
+          test "$(stat -c %s "$ARCHIVE")" -eq 41285702
+          # Cross-check independently against GitHub's published asset digest,
+          # not only the companion .sha256 file from the same publisher.
+          echo "788f580604e30054fab34c4c3ea60ec3eb4f399412f1da90f778469d03507468  $ARCHIVE" \
+            | sha256sum -c -
+          sha256sum -c "$ARCHIVE.sha256"
+          mkdir corpus
+          python -m zipfile -e "$ARCHIVE" corpus
+          test -s corpus/manifest.json
+          test -s corpus/app/config.yaml
+          test -s corpus/docs/reference/query-guide.md
+
+      - name: Exercise real pinned RIAO/RINAP, translation and lexeme API
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          python - <<'PY'
+          import importlib.util
+          import json
+          import os
+          from pathlib import Path
+
+          assert importlib.util.find_spec("oracc_tf") is None
+          root = Path(os.environ["RUNNER_TEMP"]) / "release-check/corpus"
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          assert manifest["dataset"] == "assyrian-royal-inscriptions"
+          assert manifest["release_id"] == "1.0.0"
+          assert manifest["tf_version"] == "0.4.0"
+          assert manifest["builder_commit"] == "60db4b724a687c0f425e78eae924fce89454e106"
+          assert (root / "tf/0.4.0/otype.tf").is_file()
+          assert (root / "docs/reference/quick-start.md").is_file()
+          assert (root / "docs/reference/citation.md").is_file()
+
+          from tf.app import use
+          A = use(f"app:{root / 'app'}", silent="deep")
+          assert A is not None and A.api is not None
+          api = A.api
+          doc = next(
+              n for n in api.F.otype.s("document")
+              if api.F.document_key.v(n) == "riao/ria1:Q001801"
+          )
+          line = next(
+              n for n in api.L.d(doc, otype="line")
+              if api.F.line.v(n) == "Q001801.1"
+          )
+          assert "𒂍" in api.T.text(line, fmt="text-orig-full")
+          assert "E₂" in api.T.text(line, fmt="text-trans-full")
+          assert api.E.translation_line.t(line)
+          assert any(api.E.word_lex.f(w) for w in api.L.d(line, otype="word"))
+          assert len(api.F.otype.s("translation_unit")) == 6792
+          print("PUBLIC v1.0.0 TF-only first-user passage, cuneiform, lexical and TEI: OK")
+          PY
+
+      - name: Exercise real TF browser without checking out the builder
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/release-check"
+          # Fetch only the previously tested read-only browser probe from the
+          # immutable published tag, not from the development checkout.
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+            https://raw.githubusercontent.com/alexsosn/ORACC-TF/v1.0.0/scripts/measure_issue75_browser.py \
+            -o browser-smoke.py
+          python browser-smoke.py "$RUNNER_TEMP/release-check/corpus" \
+            --version 0.4.0 --require-translation --output browser.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("browser.json").read_text(encoding="utf-8"))
+          assert report["cuneiform_verified"] is True
+          assert report["transliteration_verified"] is True
+          assert report["synthetic_signs_visible"] is False
+          assert report["word_lex_edges"] >= 1
+          assert report["browser_query_results"] >= 1
+          assert report["browser_translation_results"] >= 1
+          assert report["browser_translation_text"]
+          assert set(report["browser_routes"].values()) == {200}
+          print("PUBLIC v1.0.0 TF-only browser routes, lexical and translation: OK")
+          PY
+
+      - name: Report installed footprint from the public ZIP
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/release-check"
+          du -sb corpus
+          du -sh corpus
+          echo "Published ZIP and SHA-256 verified in the same fresh TF-only runner"

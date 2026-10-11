@@ -46,7 +46,10 @@ def _raw_cache(path: Path) -> None:
                                                     {"v": "LUGAL", "utf8": "𒈗"}
                                                 ],
                                             },
-                                            "para": [{"class": "boundary", "type": "sentence"}],
+                                            "para": [
+                                                {"class": "boundary", "type": "sentence"},
+                                                {"class": "syntax", "type": "label"},
+                                            ],
                                         }
                                     ],
                                 },
@@ -91,6 +94,7 @@ def test_raw_cache_census_targets_only_etcsri_and_supports_raw_claims(tmp_path: 
     assert data["word_features"]["morph"]["populated"] == 1
     assert data["word_features"]["morph2"]["populated"] == 1
     assert data["word_features"]["para"]["populated"] == 1
+    assert data["para_records"] == {"boundary/sentence": 1, "syntax/label": 1}
     assert data["chunk_types"] == {"sentence": 1, "text": 1}
     assert data["marker_types"] == {"line-start": 1, "surface": 1}
     assert data["gdl_object_keys"] == {"utf8,v": 1}

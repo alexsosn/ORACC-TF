@@ -111,7 +111,8 @@ def test_researcher_release_status_and_download_example_match_actual_product() -
         "text-fabric==13.1.0",
     ):
         assert token in quickstart
-    assert "not yet public" in quickstart or "not yet published" in quickstart
+    assert "not yet public" not in quickstart and "not yet published" not in quickstart
+    assert "releases/tag/v1.0.0" in quickstart
 
 
 def test_installation_guide_not_misleading_after_browser_acceptance() -> None:
@@ -185,3 +186,28 @@ curl() {
             assert not (extracted / "manifest.json").exists(), (
                 f"{case} incorrectly extracted the archive"
             )
+
+
+def test_published_v1_reader_docs_match_real_release_not_measurement_zip() -> None:
+    """RED: published GitHub Release has separate, precise asset identity."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    quick = (ROOT / "docs/reference/quick-start.md").read_text(encoding="utf-8")
+    install = (ROOT / "docs/reference/installation.md").read_text(encoding="utf-8")
+    citation = (ROOT / "docs/reference/citation.md").read_text(encoding="utf-8")
+
+    tag = "https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0"
+    digest = "788f580604e30054fab34c4c3ea60ec3eb4f399412f1da90f778469d03507468"
+    assert tag in readme and tag in quick and tag in install
+    assert "Public release publication and clean acquisition from the public asset are" not in readme
+    assert "enable `publish_1_0`" not in readme
+    assert "already exists" in readme
+    assert "41,285,702" in install  # exact published archive size, not benchmark ZIP
+    assert digest in install
+    assert "measurement-only" in install
+    assert "38128162676" in install  # actual publishing run
+    assert "published" in citation.lower() and tag in citation
+    assert "when one exists" not in install
+    assert "v1.0.0 public asset already exists" not in install
+    # The public ZIP is immutable; updating main documentation does not
+    # rewrite its originally bundled manual.
+    assert "immutable" in readme.lower()

@@ -111,7 +111,12 @@ print(ranges_and_text)
 
 An empty result is meaningful, not permission to align a nearby translation
 heuristically. The pinned official archive has **no `rinap5p1` TEI running
-translations**; other source ranges are explicitly unresolved. Read the
+translations**; other source ranges are explicitly unresolved. A nonempty
+result is **not** proof of substantive translation either: an aligned TEI
+unit can contain only the literal source notice `(Not yet translated.)`
+(as in `riao/ria2:Q009244`). Inspect each unit's `translation_text`
+before counting translated passages; that example is not a complete list
+of editorial placeholders. Read the
 [translation model and coverage gaps](translations.md).
 
 ## Source-aware damage/unreadable inspection

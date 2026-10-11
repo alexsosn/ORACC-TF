@@ -28,6 +28,17 @@ graph. It is never assigned a guessed line. The pinned 2024 archive produced
 record in the archive (0 of its 138 populated editions). The real-source test
 rechecks the complete graph and representative 1–15 and 1–72 line ranges.
 
+**Alignment is not the same as translation coverage.** The 6,792 aligned units are not a count of substantively translated passages or lines. For example, the real source unit
+`riao/ria2:Q009244:Q009244_project-en.0` covers **72** source lines, through
+`Q009244.72`, but its entire preserved `translation_text` is
+`(Not yet translated.)`. The range is correctly aligned, and its literal
+editorial placeholder must remain visible; those 72 lines must **not** be
+described as translated. Conversely, the **2,509** explicit alignment gaps
+count TEI units whose source position could not be resolved or whose document
+was absent; they are not a census of untranslated corpus lines. Do not infer
+percentage-of-text translated from either count without examining the TEI
+content and source coverage.
+
 Each corpus build writes a deterministic `translation-gaps.json` beside the
 Text-Fabric feature files. Its `gaps` records preserve the qualified document
 key, stable translation identity, source `xml:id` when present, subtype, range,

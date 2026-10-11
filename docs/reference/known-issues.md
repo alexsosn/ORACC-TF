@@ -67,8 +67,12 @@ A normal consumer can query aligned units through
 `E.translation_line.t(line)`. The build records unresolved TEI units in
 `translation-gaps.json` next to the TF feature files. This gap
 inventory does not mean that every source line is translated.
-Read [Translations](translations.md) for the inclusive range model,
-TEI markup handling, and the exact gap categories.
+In particular, alignment gaps do not measure untranslated lines: a correctly
+aligned unit can still contain only an editorial placeholder. The pinned
+`riao/ria2:Q009244` TEI unit spans **72** lines but its preserved content is
+`(Not yet translated.)`. Its edge is accurate while the lines are not
+substantively translated. Read [Translations](translations.md) for the
+inclusive range model, TEI markup handling, and the exact gap categories.
 
 ## Upstream licences and attribution
 

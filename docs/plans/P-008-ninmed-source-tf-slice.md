@@ -2,7 +2,7 @@
 id: P-008
 title: Source-faithful NINMED Text-Fabric vertical slice
 type: plan
-status: in-progress
+status: active
 priority: P1
 depends_on: [ISSUE-33]
 updated: 2026-10-12

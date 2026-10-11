@@ -82,3 +82,24 @@ def test_ninmed_does_not_invent_nino_lemma_analysis(tmp_path: Path) -> None:
     assert first["f"]["cf"] == "DÙ.DÙ.BI"
     assert first["f"]["gw"] == "ritual (instructions)"
     assert first["f"]["pos"] == "N"
+
+
+@pytest.mark.corpus
+def test_existing_assyrian_default_emits_no_ninmed_source_word_feature(
+    tmp_path: Path,
+) -> None:
+    from oracc_tf import corpus, loader, metadata
+
+    source = paths.DATA / "riao/ria1/corpusjson/Q001801.json"
+    edition = loader.load_edition(source)
+    root = tmp_path / "royal"
+    report = corpus.build_tf(
+        root,
+        editions=[edition],
+        metadata_index=metadata.MetadataIndex.empty(),
+    )
+    assert report.documents == 1
+    assert not (root / "word_json.tf").exists()
+    assert "ORACC-TF RIAO + RINAP" in (root / "otext.tf").read_text(
+        encoding="utf-8"
+    )

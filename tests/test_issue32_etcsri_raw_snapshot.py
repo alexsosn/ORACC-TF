@@ -38,8 +38,7 @@ def _raw_cache(path: Path) -> None:
                                                 "base": "lugal",
                                                 "morph": "lugal=ak",
                                                 "morph2": "king=GEN",
-                                                "para": "1",
-                                                "cf": "lugal",
+                                                    "cf": "lugal",
                                                 "gw": "king",
                                                 "pos": "N",
                                                 "lang": "sux",
@@ -47,6 +46,7 @@ def _raw_cache(path: Path) -> None:
                                                     {"v": "LUGAL", "utf8": "𒈗"}
                                                 ],
                                             },
+                                            "para": [{"class": "boundary", "type": "sentence"}],
                                         }
                                     ],
                                 },

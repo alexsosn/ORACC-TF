@@ -7,6 +7,8 @@ priority: P1
 issue: 32
 updated: 2026-10-11
 fact_policy: snapshot-evidence
+evidence_date: 2026-10-11
+evidence_basis: R-007 ETCSRI checked-in source census and pinned Q000935/Q000376 source Git blobs; RED-first PR #173 evidence
 ---
 
 # P-007 — ETCSRI source-grounded TF vertical slice

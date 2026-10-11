@@ -1,0 +1,167 @@
+"""RED-first source-semantic gates for the isolated ETCSRI TF vertical slice.
+
+These assertions exercise real checked-in editions, never fabricated ORACC text.
+No ETCSRI dataset is considered complete/publishable by these two witnesses.
+"""
+from __future__ import annotations
+
+from hashlib import sha256
+import json
+from pathlib import Path
+
+import pytest
+from tf.fabric import Fabric
+
+from oracc_tf import etcsri, gdl, paths
+
+
+Q935 = paths.DATA / "etcsri/corpusjson/Q000935.json"
+Q376 = paths.DATA / "etcsri/corpusjson/Q000376.json"
+
+
+def _source(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _words(doc: dict) -> list[dict]:
+    out: list[dict] = []
+    def walk(node: dict) -> None:
+        if node.get("node") == "l":
+            out.append(node)
+        for child in node.get("cdl", []):
+            walk(child)
+    for child in doc["cdl"]:
+        walk(child)
+    return out
+
+
+def _source_sign_count(doc: dict) -> int:
+    return sum(
+        len(tuple(gdl.signs(word["f"].get("gdl", []), word_id=word["id"])))
+        for word in _words(doc)
+    )
+
+
+def _api(root: Path):
+    tf = Fabric(locations=str(root), silent="deep")
+    assert tf.loadAll(silent="deep")
+    return tf.api
+
+
+@pytest.mark.corpus
+def test_etcsri_real_morphology_is_separately_queryable_and_roundtrips(tmp_path: Path) -> None:
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[Q935])
+    api = _api(tmp_path / "tf")
+    words = {api.F.source_id.v(n): n for n in api.F.otype.s("word")}
+    assert report.words == 7
+    assert report.lines == 4
+    assert report.sentences == 1
+    assert report.semantic_signs == _source_sign_count(_source(Q935))
+    assert len(words) == 7
+    king = words["Q000935.l04855"]
+    assert api.F.base.v(king) == "ur-{d}namma"
+    assert api.F.morph.v(king) == "N1=Urnammak"
+    assert api.F.morph2.v(king) == "N1=NAME"
+    assert api.F.form.v(king) == "ur-{d}namma"
+    assert api.F.document_key.v(king) == "etcsri:Q000935"
+    source_words = {n["id"]: n for n in _words(_source(Q935))}
+    for word_id, node in words.items():
+        source = source_words[word_id]
+        assert json.loads(api.F.f_json.v(node)) == source["f"]
+        assert json.loads(api.F.props_json.v(node)) == source["props"]
+        if "para" in source:
+            assert json.loads(api.F.para_json.v(node)) == source["para"]
+        else:
+            assert api.F.para_json.v(node) is None
+    assert len(api.F.otype.s("discourse")) == 1
+    assert len(api.F.otype.s("sentence")) == 1
+
+
+@pytest.mark.corpus
+def test_etcsri_determinative_wrapper_is_not_second_sign_slot(tmp_path: Path) -> None:
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[Q935])
+    api = _api(tmp_path / "tf")
+    words = {api.F.source_id.v(n): n for n in api.F.otype.s("word")}
+    king = words["Q000935.l04855"]
+    signs = api.L.d(king, otype="sign")
+    assert len(signs) == 3   # ur, semantic {d}, namma
+    assert report.semantic_signs == 14
+    assert len(api.F.otype.s("sign")) == report.semantic_signs + report.synthetic_slots
+    pre = [
+        node for node in api.F.otype.s("determinative")
+        if api.F.det_kind.v(node) == "semantic"
+        and api.F.det_pos.v(node) == "pre"
+        and api.F.document_key.v(node) == "etcsri:Q000935"
+        and "l04855/gdl[1]" in api.F.src_path.v(node)
+    ]
+    assert len(pre) == 1
+    owned = api.E.det_sign.f(pre[0])
+    assert len(owned) == 1 and api.F.utf8.v(owned[0]) == "𒀭"
+    assert api.F.src_path.v(owned[0]).endswith("/gdl[1]/seq[0]")
+    assert json.loads(api.F.det_json.v(pre[0]))["det"] == "semantic"
+
+
+@pytest.mark.corpus
+def test_etcsri_source_sentence_phrase_para_and_lines_are_not_lost(tmp_path: Path) -> None:
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[Q935, Q376])
+    api = _api(tmp_path / "tf")
+    assert report.documents == 2
+    assert report.words == 293
+    assert report.sentences == 52
+    assert report.phrases == 17
+    assert report.lines == 132
+    assert report.semantic_signs == (
+        _source_sign_count(_source(Q935)) + _source_sign_count(_source(Q376))
+    )
+    assert len(api.F.otype.s("sentence")) == 52
+    assert len(api.F.otype.s("phrase")) == 17
+    assert len(api.F.otype.s("line")) == 132
+    para_source = next(n for n in _words(_source(Q376)) if n.get("para"))
+    node = next(
+        n for n in api.F.otype.s("word")
+        if api.F.source_id.v(n) == para_source["id"]
+    )
+    assert json.loads(api.F.para_json.v(node)) == para_source["para"]
+    assert api.F.document_key.v(node) == "etcsri:Q000376"
+    assert len(api.L.u(node, otype="sentence")) >= 1
+    # Distinct structural parent relations must be explicit, not inferred from morphology.
+    assert api.E.chunk_parent.f(next(iter(api.F.otype.s("sentence"))))
+
+
+@pytest.mark.corpus
+def test_etcsri_rebuild_produces_identical_feature_bytes(tmp_path: Path) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    etcsri.build_tf(first, source_paths=[Q935])
+    etcsri.build_tf(second, source_paths=[Q935])
+    a = {p.name: sha256(p.read_bytes()).hexdigest() for p in first.glob("*.tf")}
+    b = {p.name: sha256(p.read_bytes()).hexdigest() for p in second.glob("*.tf")}
+    assert a and a == b
+
+
+def test_etcsri_unknown_cdl_shape_fails_closed(tmp_path: Path) -> None:
+    doc = _source(Q935)
+    doc["cdl"][0]["cdl"][0]["cdl"].insert(
+        0, {"node": "d", "type": "unrecognized-glyph-control"}
+    )
+    fake = tmp_path / "Q000935.json"
+    fake.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="unknown|unsupported"):
+        etcsri.build_tf(tmp_path / "tf", source_paths=[fake])
+
+
+def test_etcsri_missing_morph2_is_preserved_as_absence_not_invented(tmp_path: Path) -> None:
+    doc = _source(Q935)
+    next(n for n in _words(doc) if n["id"] == "Q000935.l04855")["f"].pop("morph2")
+    fake = tmp_path / "Q000935.json"
+    fake.write_text(json.dumps(doc), encoding="utf-8")
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[fake])
+    assert report.words == 7
+    api = _api(tmp_path / "tf")
+    node = next(n for n in api.F.otype.s("word")
+                if api.F.source_id.v(n) == "Q000935.l04855")
+    assert api.F.morph.v(node) == "N1=Urnammak"
+    assert api.F.morph2.v(node) is None
+    assert json.loads(api.F.f_json.v(node)) == next(
+        n["f"] for n in _words(doc) if n["id"] == "Q000935.l04855"
+    )

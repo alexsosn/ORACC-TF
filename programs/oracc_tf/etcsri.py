@@ -193,6 +193,11 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
     sources = sorted((Path(p) for p in source_paths), key=lambda p: p.as_posix())
     if not sources:
         raise ETCSRISourceError("ETCSRI vertical slice requires at least one source")
+    target = Path(out_dir)
+    if target.exists() and (not target.is_dir() or any(target.iterdir())):
+        raise ETCSRISourceError(
+            f"refusing non-empty ETCSRI TF output (would retain stale features): {target}"
+        )
     nodes: list[_Node] = []
     slots: list[dict[str, str | int]] = []
     edges: dict[str, dict[int, set[int]]] = defaultdict(lambda: defaultdict(set))

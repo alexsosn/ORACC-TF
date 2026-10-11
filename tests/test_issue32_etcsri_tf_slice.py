@@ -8,6 +8,7 @@ dataset, parsed morpheme ontology, or claim about all 1,456 editions.
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -24,7 +25,12 @@ PINS = {
 def edition_for(textid: str) -> loader.Edition:
     path = paths.DATA / "etcsri" / "corpusjson" / f"{textid}.json"
     assert path.is_file(), "real ETCSRI corpusjson witness required"
-    doc = json.loads(path.read_text(encoding="utf-8"))
+    raw = path.read_bytes()
+    # A Git SHA-1 blob is calculated over the header plus exact file bytes,
+    # not the JSON decoded object (where whitespace/order may drift).
+    git_blob = hashlib.sha1(f"blob {len(raw)}\\0".encode("ascii") + raw).hexdigest()
+    assert git_blob == PINS[textid], "real ETCSRI source witness changed; re-review before conversion"
+    doc = json.loads(raw.decode("utf-8"))
     assert doc["project"] == "etcsri"
     assert doc["textid"] == textid
     return loader.Edition(

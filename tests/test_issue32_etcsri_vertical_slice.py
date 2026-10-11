@@ -181,3 +181,40 @@ def test_etcsri_duplicate_chunk_identity_fails_closed(tmp_path: Path) -> None:
     fake.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(etcsri.ETCSRISourceError, match="duplicate chunk"):
         etcsri.build_tf(tmp_path / "tf", source_paths=[fake])
+
+
+def test_etcsri_zero_sign_word_uses_nontextual_anchor_not_fabricated_sign(tmp_path: Path) -> None:
+    doc = _source(Q935)
+    first_word = next(n for n in _words(doc) if n["id"] == "Q000935.l04855")
+    first_word["f"]["gdl"] = []
+    fake = tmp_path / "Q000935.json"
+    fake.write_text(json.dumps(doc), encoding="utf-8")
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[fake])
+    assert report.synthetic_slots == 1
+    assert report.semantic_signs == _source_sign_count(doc)
+    api = _api(tmp_path / "tf")
+    node = next(n for n in api.F.otype.s("word")
+                if api.F.source_id.v(n) == "Q000935.l04855")
+    slots = api.L.d(node, otype="sign")
+    assert len(slots) == 1
+    assert api.F.synthetic.v(slots[0]) == 1
+    assert api.F.utf8.v(slots[0]) is None
+
+
+def test_etcsri_unknown_gdl_shape_fails_closed(tmp_path: Path) -> None:
+    doc = _source(Q935)
+    first_word = next(n for n in _words(doc) if n["id"] == "Q000935.l04855")
+    first_word["f"]["gdl"] = [{"unknown_sign_shape": "unreadable"}]
+    fake = tmp_path / "Q000935.json"
+    fake.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="unsupported GDL"):
+        etcsri.build_tf(tmp_path / "tf", source_paths=[fake])
+
+
+def test_etcsri_rejects_nonempty_output_to_avoid_stale_tf_features(tmp_path: Path) -> None:
+    output = tmp_path / "tf"
+    output.mkdir()
+    (output / "stale-feature.tf").write_text("@node\\n", encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="non-empty|not empty"):
+        etcsri.build_tf(output, source_paths=[Q935])
+    assert (output / "stale-feature.tf").is_file()

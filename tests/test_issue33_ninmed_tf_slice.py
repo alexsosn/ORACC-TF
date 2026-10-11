@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from tf.fabric import Fabric
 
-from oracc_tf import ninmed, paths, words
+from oracc_tf import gdl, ninmed, paths, words
 
 
 SOURCES = {
@@ -52,7 +52,12 @@ def test_real_ninmed_lexical_source_preservation_and_tf_query(tmp_path: Path) ->
     assert api.F.cf.v(example) == "DÙ.DÙ.BI"
     assert api.F.gw.v(example) == "ritual (instructions)"
     assert api.F.pos.v(example) == "N"
-    assert api.E.word_lex.f(example)
+    targets = api.E.word_lex.f(example)
+    assert targets
+    assert ("DÙ.DÙ.BI", "ritual (instructions)", "N") in {
+        (api.F.cf.v(lex), api.F.gw.v(lex), api.F.pos.v(lex))
+        for lex in targets
+    }
     assert api.F.form.v(nodes[("asbp/ninmed:P425685", "P425685.l0fdd6")]) == "EN₂"
     assert "NINMED" in (tmp_path / "tf" / "otext.tf").read_text(encoding="utf-8")
     for path in sources:
@@ -62,6 +67,13 @@ def test_real_ninmed_lexical_source_preservation_and_tf_query(tmp_path: Path) ->
             node = nodes[(key, word["id"])]
             assert json.loads(api.F.word_json.v(node)) == word
             assert api.F.document_key.v(node) == key
+    expected_semantic_signs = sum(
+        len(tuple(gdl.signs(word["f"].get("gdl", []), word_id=word["id"])))
+        for source in sources
+        for word in words.source_words(json.loads(source.read_text(encoding="utf-8")))
+    )
+    assert report.signs == expected_semantic_signs
+    assert len(api.F.otype.s("sign")) == report.signs + report.synthetic_slots
     assert not (tmp_path / "tf" / "uniqueLemma.tf").exists()
 
 

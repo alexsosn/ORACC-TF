@@ -29,6 +29,10 @@ class UnparseableSourceError(SourceError):
     """The source bytes are not a usable corpusjson object."""
 
 
+class InvalidCDLSource(UnparseableSourceError):
+    """A corpusjson source has an invalid CDL nesting/list/child shape."""
+
+
 class DuplicateSourceIdentityError(SourceError):
     """Two readable members claim the same qualified embedded source identity."""
 
@@ -112,14 +116,33 @@ class Survey:
 
 
 def count_words(doc: dict) -> int:
-    """Number of CDL lemma (``l``) nodes in a document."""
+    """Count lemma nodes and validate source CDL structure before acceptance.
+
+    A syntactically valid source file with a falsy non-list ``cdl`` (e.g.
+    ``""`` or ``false``) is not a readable empty edition. The source survey
+    needs to record it as a source hazard, just as the converter's word
+    walker would reject it, rather than accepting it or crashing.
+    """
     total = 0
-    stack = [doc]
-    while stack:
-        node = stack.pop()
+    pending: list[tuple[object, str]] = [(doc, "document")]
+    while pending:
+        node, where = pending.pop()
+        if not isinstance(node, dict):
+            raise InvalidCDLSource(
+                f"{where}: child is {type(node).__name__}, expected object"
+            )
         if node.get("node") == "l":
             total += 1
-        stack.extend(node.get("cdl") or [])
+        children = node.get("cdl")
+        if children is None:
+            continue
+        if not isinstance(children, list):
+            raise InvalidCDLSource(
+                f"{where}: 'cdl' is {type(children).__name__}, expected list"
+            )
+        # Pop in source order while bounding memory to pending siblings.
+        for index in range(len(children) - 1, -1, -1):
+            pending.append((children[index], f"{where}/cdl[{index}]"))
     return total
 
 
@@ -213,12 +236,20 @@ def observe_source(path: Path | str, *, data: Path | None = None) -> ReadableSou
     if not isinstance(source_id, str) or not source_id.strip():
         return _hazard(path=path, data=data, payload=payload, kind="missing-source-id")
 
+    try:
+        word_count = count_words(value)
+    except InvalidCDLSource:
+        return _hazard(
+            path=path, data=data, payload=payload, kind="invalid-cdl",
+            source_id=source_id,
+        )
+
     edition = Edition(
         subproject=subproject_of(path, data=data),
         text_id=source_id,
         path=path,
         doc=value,
-        word_count=count_words(value),
+        word_count=word_count,
     )
     return ReadableSource(
         edition=edition,

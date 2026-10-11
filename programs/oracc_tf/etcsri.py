@@ -224,6 +224,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
         current_line: int | None = None
         chunks: list[int] = []
         word_ids: set[str] = set()
+        chunk_ids: set[str] = set()
         sign_paths: set[str] = set()
 
         def assign_slot(attrs: dict[str, str | int], word_idx: int | None = None) -> int:
@@ -256,6 +257,9 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                     raise ETCSRISourceError(f"{doc_key}: unsupported chunk type {ctype!r}")
                 source_id = _str_value(entry, "id", where=doc_key, required=True)
                 assert source_id is not None
+                if source_id in chunk_ids:
+                    raise ETCSRISourceError(f"{doc_key}: duplicate chunk id {source_id}")
+                chunk_ids.add(source_id)
                 meta = {k: v for k, v in entry.items() if k != "cdl"}
                 chunk_idx = node(ctype, {
                     "document_key": doc_key, "source_id": source_id,
@@ -281,6 +285,10 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                     "document_key": doc_key, "source_id": line_ref,
                     "line": line_ref, "line_json": _json(entry),
                 })
+                # The line-start event has a source-chunk parent even when
+                # no later word slots make that parentage inferable.
+                if chunks:
+                    edges["line_chunk"][current_line].add(chunks[-1])
                 counts["line"] += 1
                 return
             if kind != "l":

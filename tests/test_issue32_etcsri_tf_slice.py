@@ -74,6 +74,12 @@ def test_two_real_etcsri_editions_round_trip_native_morphology_and_para(tmp_path
                 assert getattr(api.F, feature).v(word) == f.get(feature), (
                     edition.key, original["id"], feature
                 )
+            source_morph = {
+                name: f[name] for name in ("base", "morph", "morph2") if name in f
+            }
+            assert api.F.morphology_json.v(word) == (
+                canonical(source_morph) if source_morph else None
+            )
             for source_key, feature in (("para", "para_json"), ("props", "props_json")):
                 expected = canonical(original[source_key]) if source_key in original else None
                 assert getattr(api.F, feature).v(word) == expected, (
@@ -131,5 +137,21 @@ def test_etcsri_word_features_are_not_added_to_royal_datasets(tmp_path: Path) ->
         editions=(royal_test,),
         metadata_index=metadata.MetadataIndex.empty(),
     )
-    for name in ("base", "morph", "morph2", "para_json", "props_json"):
+    for name in ("base", "morph", "morph2", "morphology_json", "para_json", "props_json"):
         assert not (tmp_path / f"{name}.tf").exists()
+
+
+def test_explicit_null_morphology_is_not_conflated_with_absence(tmp_path: Path) -> None:
+    edition = edition_for("Q000935")
+    first = next(words.source_words(edition.doc))
+    first["f"]["morph"] = None
+    first["f"].pop("base", None)
+    report, api = tf_for(tmp_path, edition)
+    by_source = {
+        api.F.source_id.v(node): node for node in api.F.otype.s("word")
+    }
+    node = by_source[first["id"]]
+    assert api.F.morph.v(node) is None
+    payload = json.loads(api.F.morphology_json.v(node))
+    assert "morph" in payload and payload["morph"] is None
+    assert "base" not in payload

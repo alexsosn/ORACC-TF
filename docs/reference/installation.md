@@ -74,9 +74,14 @@ when one exists.
 
 The query, translation/lexeme, original cuneiform/transliteration, and browser
 routes `/`, `/passage`, `/query`, `/export` passed on the candidate.
-The source-aware browser acceptance and public feature-help link are tracked
-separately under [#75](https://github.com/alexsosn/ORACC-TF/issues/75).
-A passing CI run does **not** mean that a v1.0.0 public asset already exists.
+The subsequent browser acceptance work under
+[#75](https://github.com/alexsosn/ORACC-TF/issues/75) also verified source-selected
+navigation, expanded lexical features, **browser translation** display using
+official aligned TEI text, and the pinned public source feature-help URL.
+This validates the **staged candidate**, not the eventual public asset:
+[#23](https://github.com/alexsosn/ORACC-TF/issues/23) still requires publication
+and independent public-download verification. A passing CI run does **not**
+mean that a v1.0.0 public asset already exists.
 
 ## Default feature loading
 

@@ -200,7 +200,8 @@ class _Graph:
         "translation_note",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, *, dataset_title: str = "ORACC-TF RIAO + RINAP") -> None:
+        self.dataset_title = dataset_title
         self.next_non_slot = 1
         self.non_slot_otype: dict[int, str] = {}
         self.non_slot_oslots: dict[int, set[int]] = {}
@@ -329,7 +330,7 @@ class _Graph:
 
         meta_data: dict[str, dict[str, object]] = {
             "": {
-                "name": "ORACC-TF RIAO + RINAP",
+                "name": self.dataset_title,
                 "converter": "oracc-tf",
                 "version": TF_VERSION,
             },
@@ -543,9 +544,17 @@ def build_tf(
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
     translations_by_document: dict[str, Iterable[object]] | None = None,
+    dataset_title: str = "ORACC-TF RIAO + RINAP",
 ) -> CorpusBuildReport:
-    """Build one joined TF dataset with explicit empty positional anchors."""
-    graph = _Graph()
+    """Build one TF dataset with explicit empty positional anchors.
+
+    An explicitly supplied title permits source-grounded experimental datasets
+    without falsely labeling their TF metadata as RIAO/RINAP. The original
+    joined corpus title remains the default for backwards compatibility.
+    """
+    if not isinstance(dataset_title, str) or not dataset_title.strip():
+        raise CorpusBuildError("dataset_title must be a nonempty string")
+    graph = _Graph(dataset_title=dataset_title)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -754,6 +763,30 @@ def build_tf(
                 lemmaknown=word.lemmaknown,
                 gdl_json=_source_gdl(word),
             )
+            if edition.subproject == "etcsri":
+                # ETCSRI source-attested f.morph and f.morph2 carry distinct
+                # morphemic form/gloss encodings. Do not parse or align the
+                # pairs without an independently verified source grammar.
+                native = {}
+                for feature in ("base", "morph", "morph2"):
+                    value = word.features.get(feature)
+                    if value is not None and not isinstance(value, str):
+                        raise CorpusBuildError(
+                            f"{edition.key}:{word.source_id}: {feature} must be a string"
+                        )
+                    native[feature] = value
+                for name in ("para", "props"):
+                    if name not in word.source:
+                        continue
+                    value = word.source[name]
+                    if not isinstance(value, list) or any(
+                        not isinstance(record, dict) for record in value
+                    ):
+                        raise CorpusBuildError(
+                            f"{edition.key}:{word.source_id}: {name} must be an array of records"
+                        )
+                    native[f"{name}_json"] = _json(value)
+                graph.feature(word_node, **native)
 
             line_id = section_words.get(word.source_id)
             if line_id is not None and line_id in line_nodes:

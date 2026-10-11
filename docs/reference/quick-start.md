@@ -22,13 +22,13 @@ document. See the [source-to-TF audit](data-audit.md) and
 
 Use the **versioned `assyrian-royal-inscriptions` release ZIP** and
 its matching checksum from the
-[ORACC-TF GitHub Releases page](https://github.com/alexsosn/ORACC-TF/releases).
+[published v1.0.0 GitHub Release](https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0).
 Verify the checksum before extracting, and record the `release_id`,
 `builder_commit`, and `source_state` from `manifest.json`. A green CI
 build or staged candidate archive is not itself evidence of a public release;
 follow the actual release asset URL and its matching checksum.
 
-For a published **v1.0.0** release, the following Bash commands download the
+For the **published v1.0.0** release, the following Bash commands download the
 two *matching* public assets, verify the checksum **before** extraction, and
 enter the standalone corpus root (Linux; see other platforms below):
 
@@ -49,9 +49,11 @@ belonging to a different archive or a CI measurement ZIP. The chained
 commands stop when either download or checksum verification fails, and refuse
 to overlay an already existing extraction directory.
 
-**Only use these commands after that release actually appears on GitHub.** If
-v1.0.0 is not yet published, `curl -fL` reports the failed download;
-a short-lived workflow artifact is not an interchangeable substitute.
+The v1.0.0 assets are public. If either download fails, stop and inspect
+the [actual release](https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0);
+do not skip checksum verification or substitute a short-lived workflow
+artifact. The archived v1.0.0 manual was assembled before publication;
+this live documentation may have subsequent clarifications.
 On macOS use `shasum -a 256 -c "$ARCHIVE.sha256"` instead of `sha256sum`.
 On Windows, download both named assets from the Releases page and use
 `Get-FileHash -Algorithm SHA256` in PowerShell to compare the ZIP's digest

@@ -231,6 +231,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
         word_ids: set[str] = set()
         chunk_ids: set[str] = set()
         sign_paths: set[str] = set()
+        linkbase_seen = False
 
         def assign_slot(attrs: dict[str, str | int], word_idx: int | None = None) -> int:
             slot = len(slots) + 1
@@ -252,10 +253,23 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                 nodes[index].slots.add(assign_slot({"synthetic": 1}))
 
         def visit(entry: object) -> None:
-            nonlocal current_line, semantic_signs, synthetic_slots
+            nonlocal current_line, semantic_signs, synthetic_slots, linkbase_seen
             if not isinstance(entry, dict):
                 raise ETCSRISourceError(f"{doc_key}: non-object CDL child")
             kind = entry.get("node")
+            # ETCSRI includes separate top-level scholarly linksets in CDL.
+            # Preserve source bytes as canonical JSON; they are not text/sign slots.
+            if kind is None and "linkbase" in entry:
+                if set(entry) != {"linkbase"} or chunks:
+                    raise ETCSRISourceError(f"{doc_key}: unsupported linkbase location/shape")
+                if linkbase_seen:
+                    raise ETCSRISourceError(f"{doc_key}: duplicate linkbase record")
+                linksets = entry["linkbase"]
+                if not isinstance(linksets, list) or any(not isinstance(x, dict) for x in linksets):
+                    raise ETCSRISourceError(f"{doc_key}: malformed linkbase list")
+                nodes[doc_idx].attrs["linkbase_json"] = _json(linksets)
+                linkbase_seen = True
+                return
             if kind == "c":
                 ctype = entry.get("type")
                 if ctype not in _CHUNK_TYPES:

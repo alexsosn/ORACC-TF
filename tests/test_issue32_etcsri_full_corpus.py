@@ -77,6 +77,12 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
         assert json.loads(api.F.source_meta_json.v(doc_node)) == {
             key: value for key, value in doc.items() if key != "cdl"
         }
+        linkbases = [entry["linkbase"] for entry in doc["cdl"] if "linkbase" in entry]
+        assert len(linkbases) <= 1, f"ambiguous source linkbase: {document_key}"
+        assert (
+            json.loads(api.F.linkbase_json.v(doc_node))
+            if api.F.linkbase_json.v(doc_node) is not None else None
+        ) == (linkbases[0] if linkbases else None)
         pending = list(reversed(doc["cdl"]))
         while pending:
             entry = pending.pop()
@@ -107,6 +113,7 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
                 assert len(sign_view) == len(tf_signs), f"word sign count mismatch: {key}"
                 for original, sign in zip(sign_view, tf_signs, strict=True):
                     assert api.F.src_path.v(sign) == original.src_path, key
+                    assert json.loads(api.F.sign_json.v(sign)) == original.value, key
                     assert api.F.utf8.v(sign) == original.value.get("utf8"), key
             if "cdl" in entry:
                 pending.extend(reversed(entry["cdl"]))

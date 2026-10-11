@@ -9,6 +9,7 @@ Historical expectations are pinned to R-007's 2026-10-11 working-tree census.
 from __future__ import annotations
 
 from collections import Counter
+import json
 from pathlib import Path
 
 import pytest
@@ -44,11 +45,11 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
 
     word_features = Counter()
     for node in api.F.otype.s("word"):
-        if api.F.morph.v(node) is not None:
+        if api.F.morph.v(node):
             word_features["morph"] += 1
-        if api.F.morph2.v(node) is not None:
+        if api.F.morph2.v(node):
             word_features["morph2"] += 1
-        if api.F.para_json.v(node) is not None:
+        if api.F.para_json.v(node) and json.loads(api.F.para_json.v(node)):
             word_features["para"] += 1
     assert word_features == {
         "morph": 28180,
@@ -62,4 +63,4 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
     ]
     assert len(semantic_slots) == report.semantic_signs
     assert len(api.F.otype.s("sign")) == report.semantic_signs + report.synthetic_slots
-    assert sum(api.F.utf8.v(n) is not None for n in semantic_slots) == 67624
+    assert sum(bool(api.F.utf8.v(n)) for n in semantic_slots) == 67624

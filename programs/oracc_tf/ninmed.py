@@ -64,4 +64,5 @@ def build_tf(
         metadata_index=metadata.MetadataIndex.empty(),
         dataset_title="ORACC-TF NINMED ORACC source vertical slice",
         preserve_source_word=True,
+        preserve_source_document=True,
     )

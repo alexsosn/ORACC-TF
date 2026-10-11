@@ -2,7 +2,7 @@
 id: P-007
 title: ETCSRI real-source Text-Fabric vertical slice
 type: plan
-status: implementation
+status: active
 priority: P1
 issue: 32
 updated: 2026-10-11

@@ -305,3 +305,74 @@ def test_duplicate_real_line_identity_is_rejected_before_tf_save(tmp_path: Path)
     changed.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(etcsri.ETCSRISourceError, match="duplicate line"):
         etcsri.build_tf(tmp_path / "tf", source_paths=[changed])
+
+
+@pytest.mark.corpus
+def test_etcsri_empty_sibling_sentence_anchor_does_not_leak_into_prior_line(
+    tmp_path: Path,
+) -> None:
+    """Use real Q000935; one added zero-word sentence must not extend line 4."""
+    doc = _source(Q935)
+    discourse = doc["cdl"][0]["cdl"][0]
+    assert discourse["type"] == "discourse"
+    discourse["cdl"].append(
+        {"node": "c", "type": "sentence", "id": "Q000935.U3", "cdl": []}
+    )
+    changed = tmp_path / "Q000935.json"
+    changed.write_text(json.dumps(doc), encoding="utf-8")
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[changed])
+    assert report.synthetic_slots >= 1
+    api = _api(tmp_path / "tf")
+    empty = next(
+        n for n in api.F.otype.s("sentence")
+        if api.F.source_id.v(n) == "Q000935.U3"
+    )
+    slot, = api.L.d(empty, otype="sign")
+    assert api.F.synthetic.v(slot) == 1
+    old_line = next(
+        n for n in api.F.otype.s("line")
+        if api.F.line.v(n) == "Q000935.4"
+    )
+    assert slot not in api.L.d(old_line, otype="sign")
+    assert any(
+        api.F.source_id.v(n) == "Q000935.U1"
+        for n in api.L.u(slot, otype="discourse")
+    )
+
+
+@pytest.mark.corpus
+def test_etcsri_empty_line_anchor_remains_with_original_sentence(
+    tmp_path: Path,
+) -> None:
+    """Source-derived line-start with no words before next sibling sentence."""
+    doc = _source(Q935)
+    discourse = doc["cdl"][0]["cdl"][0]
+    first_sentence = discourse["cdl"][0]
+    assert first_sentence["id"] == "Q000935.U2"
+    first_sentence["cdl"].append(
+        {"node": "d", "type": "line-start", "ref": "Q000935.5"}
+    )
+    discourse["cdl"].append({
+        "node": "c", "type": "sentence", "id": "Q000935.U4",
+        "cdl": [{"node": "d", "type": "line-start", "ref": "Q000935.6"}],
+    })
+    changed = tmp_path / "Q000935.json"
+    changed.write_text(json.dumps(doc), encoding="utf-8")
+    etcsri.build_tf(tmp_path / "tf", source_paths=[changed])
+    api = _api(tmp_path / "tf")
+    old_line = next(
+        n for n in api.F.otype.s("line")
+        if api.F.line.v(n) == "Q000935.5"
+    )
+    old_slot, = api.L.d(old_line, otype="sign")
+    assert api.F.synthetic.v(old_slot) == 1
+    parent = next(
+        n for n in api.F.otype.s("sentence")
+        if api.F.source_id.v(n) == "Q000935.U2"
+    )
+    new_parent = next(
+        n for n in api.F.otype.s("sentence")
+        if api.F.source_id.v(n) == "Q000935.U4"
+    )
+    assert old_slot in api.L.d(parent, otype="sign")
+    assert old_slot not in api.L.d(new_parent, otype="sign")

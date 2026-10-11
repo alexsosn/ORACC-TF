@@ -256,3 +256,33 @@ def test_etcsri_rejects_ambiguous_or_malformed_linkbase(tmp_path: Path) -> None:
     source.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(etcsri.ETCSRISourceError, match="linkbase"):
         etcsri.build_tf(tmp_path / "tf2", source_paths=[source])
+
+
+@pytest.mark.corpus
+def test_etcsri_real_document_provenance_survives_as_source_metadata(
+    tmp_path: Path,
+) -> None:
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[Q935, Q376])
+    assert report.documents == 2
+    api = _api(tmp_path / "tf")
+    documents = {
+        api.F.document_key.v(n): n for n in api.F.otype.s("document")
+    }
+    for source in (Q935, Q376):
+        doc = _source(source)
+        node = documents[f"etcsri:{doc['textid']}"]
+        expected = {key: value for key, value in doc.items() if key != "cdl"}
+        assert json.loads(api.F.source_meta_json.v(node)) == expected
+        assert api.F.source_url.v(node) == doc["source"]
+        assert api.F.source_license_url.v(node) == doc["license-url"]
+        assert api.F.source_timestamp.v(node) == doc["UTC-timestamp"]
+        assert api.F.source_license.v(node) == doc["license"]
+
+
+def test_etcsri_malformed_provenance_does_not_silently_coerce(tmp_path: Path) -> None:
+    doc = _source(Q935)
+    doc["UTC-timestamp"] = {"date": "not the actual source string"}
+    path = tmp_path / "Q000935.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="UTC-timestamp"):
+        etcsri.build_tf(tmp_path / "tf", source_paths=[path])

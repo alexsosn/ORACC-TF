@@ -33,6 +33,10 @@ class InvalidCDLSource(UnparseableSourceError):
     """A corpusjson source has an invalid CDL nesting/list/child shape."""
 
 
+class InvalidWordIdentitySource(UnparseableSourceError):
+    """A word has an absent/blank/non-string or repeated edition-local id."""
+
+
 class DuplicateSourceIdentityError(SourceError):
     """Two readable members claim the same qualified embedded source identity."""
 
@@ -121,9 +125,12 @@ def count_words(doc: dict) -> int:
     A syntactically valid source file with a falsy non-list ``cdl`` (e.g.
     ``""`` or ``false``) is not a readable empty edition. The source survey
     needs to record it as a source hazard, just as the converter's word
-    walker would reject it, rather than accepting it or crashing.
+    walker would reject it, rather than accepting it or crashing. The same
+    admission rule applies to word identities: missing, blank and repeated
+    word ids cannot be safely converted or joined to lexeme nodes.
     """
     total = 0
+    word_ids: set[str] = set()
     pending: list[tuple[object, str]] = [(doc, "document")]
     while pending:
         node, where = pending.pop()
@@ -132,6 +139,16 @@ def count_words(doc: dict) -> int:
                 f"{where}: child is {type(node).__name__}, expected object"
             )
         if node.get("node") == "l":
+            word_id = node.get("id")
+            if not isinstance(word_id, str) or not word_id.strip():
+                raise InvalidWordIdentitySource(
+                    f"{where}: word has missing or blank nonempty string 'id'"
+                )
+            if word_id in word_ids:
+                raise InvalidWordIdentitySource(
+                    f"{where}: duplicate word id {word_id!r}"
+                )
+            word_ids.add(word_id)
             total += 1
         children = node.get("cdl")
         if children is None:
@@ -245,6 +262,11 @@ def observe_source(path: Path | str, *, data: Path | None = None) -> ReadableSou
 
     try:
         word_count = count_words(value)
+    except InvalidWordIdentitySource:
+        return _hazard(
+            path=path, data=data, payload=payload, kind="invalid-word-identity",
+            source_id=source_id,
+        )
     except InvalidCDLSource:
         return _hazard(
             path=path, data=data, payload=payload, kind="invalid-cdl",

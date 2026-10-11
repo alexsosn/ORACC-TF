@@ -35,20 +35,19 @@ enter the standalone corpus root (Linux; see other platforms below):
 ```bash
 ARCHIVE=assyrian-royal-inscriptions-1.0.0.zip
 BASE=https://github.com/alexsosn/ORACC-TF/releases/download/v1.0.0
-curl -fL "$BASE/$ARCHIVE" -o "$ARCHIVE"
-curl -fL "$BASE/$ARCHIVE.sha256" -o "$ARCHIVE.sha256"
-if sha256sum --check "$ARCHIVE.sha256"; then
-  mkdir -p assyrian-royal-inscriptions
-  python -m zipfile -e "$ARCHIVE" assyrian-royal-inscriptions
-  cd assyrian-royal-inscriptions
-else
-  echo "Checksum verification failed: refusing extraction" >&2
-fi
+curl -fL "$BASE/$ARCHIVE" -o "$ARCHIVE" &&
+curl -fL "$BASE/$ARCHIVE.sha256" -o "$ARCHIVE.sha256" &&
+sha256sum --check "$ARCHIVE.sha256" &&
+mkdir assyrian-royal-inscriptions &&
+python -m zipfile -e "$ARCHIVE" assyrian-royal-inscriptions &&
+cd assyrian-royal-inscriptions
 ```
 
 The exact checksum asset is
 `assyrian-royal-inscriptions-1.0.0.zip.sha256`; do not use a sidecar
-belonging to a different archive or a CI measurement ZIP.
+belonging to a different archive or a CI measurement ZIP. The chained
+commands stop when either download or checksum verification fails, and refuse
+to overlay an already existing extraction directory.
 
 **Only use these commands after that release actually appears on GitHub.** If
 v1.0.0 is not yet published, `curl -fL` reports the failed download;

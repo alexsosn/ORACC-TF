@@ -239,6 +239,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
         chunks: list[int] = []
         word_ids: set[str] = set()
         chunk_ids: set[str] = set()
+        line_ids: set[str] = set()
         sign_paths: set[str] = set()
         linkbase_seen = False
 
@@ -309,6 +310,9 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                     anchor_if_empty(current_line)
                 line_ref = _str_value(entry, "ref", where=doc_key, required=True)
                 assert line_ref is not None
+                if line_ref in line_ids:
+                    raise ETCSRISourceError(f"{doc_key}: duplicate line reference {line_ref}")
+                line_ids.add(line_ref)
                 current_line = node("line", {
                     "document_key": doc_key, "source_id": line_ref,
                     "line": line_ref, "line_json": _json(entry),

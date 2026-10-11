@@ -1,10 +1,10 @@
 ---
 id: P-008
-title: Source-faithful NINMED Text-Fabric vertical slice
+title: NINMED native source-to-TF vertical slice
 type: plan
 status: active
 priority: P1
-depends_on: [ISSUE-33]
+depends_on: [R-001]
 updated: 2026-10-12
 ---
 

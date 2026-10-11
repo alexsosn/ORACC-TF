@@ -103,3 +103,25 @@ def test_existing_assyrian_default_emits_no_ninmed_source_word_feature(
     assert "ORACC-TF RIAO + RINAP" in (root / "otext.tf").read_text(
         encoding="utf-8"
     )
+
+
+@pytest.mark.corpus
+def test_ninmed_document_source_license_timestamp_and_sha_are_queryable(
+    tmp_path: Path,
+) -> None:
+    from hashlib import sha256
+
+    sources = [primary("P285136"), primary("P425685")]
+    ninmed.build_tf(tmp_path / "tf", source_paths=sources)
+    api = _api(tmp_path / "tf")
+    by_key = {
+        api.F.document_key.v(n): n for n in api.F.otype.s("document")
+    }
+    for source in sources:
+        doc = json.loads(source.read_text(encoding="utf-8"))
+        node = by_key[f"asbp/ninmed:{doc['textid']}"]
+        meta = {key: value for key, value in doc.items() if key != "cdl"}
+        assert json.loads(api.F.document_meta_json.v(node)) == meta
+        assert api.F.source_sha256.v(node) == sha256(source.read_bytes()).hexdigest()
+        assert meta["license-url"].startswith("https://creativecommons.org/")
+        assert meta["UTC-timestamp"].startswith("2024-07-05")

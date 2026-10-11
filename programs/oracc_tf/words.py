@@ -182,15 +182,14 @@ def source_words(doc: Mapping[str, object]) -> Iterator[Mapping[str, object]]:
     if not isinstance(doc, Mapping):
         raise InvalidWordSource("document root must be an object")
 
-    # A recursive generator consumes one Python call frame per nested 'cdl'
-    # group. Use an explicit depth-first stack so valid structural nesting
-    # cannot itself exhaust the interpreter's recursion limit.
-    pending: list[tuple[object, str]] = [(doc, "document")]
-    while pending:
-        node, where = pending.pop()
+    # Keep one iterator per active nesting level, rather than recursive
+    # generator frames or a full stack of all siblings. This avoids both
+    # Python's recursion limit and eager memory growth on wide CDL groups.
+    node: object = doc
+    where = "document"
+    frames: list[tuple[Iterator[tuple[int, object]], str]] = []
+    while True:
         if not isinstance(node, Mapping):
-            # Defer child validation until it is visited: this preserves the
-            # old generator's laziness when a later sibling is malformed.
             raise InvalidWordSource(
                 f"{where}: child is {type(node).__name__}, expected object"
             )
@@ -198,14 +197,26 @@ def source_words(doc: Mapping[str, object]) -> Iterator[Mapping[str, object]]:
             yield node
 
         children_obj = node.get("cdl")
-        if children_obj is None:
-            continue
-        if not isinstance(children_obj, list):
-            raise InvalidWordSource(
-                f"{where}: 'cdl' is {type(children_obj).__name__}, expected list"
-            )
-        for index in range(len(children_obj) - 1, -1, -1):
-            pending.append((children_obj[index], f"{where}/cdl[{index}]"))
+        if children_obj is not None:
+            if not isinstance(children_obj, list):
+                raise InvalidWordSource(
+                    f"{where}: 'cdl' is {type(children_obj).__name__}, expected list"
+                )
+            # enumerate() is lazy, so later siblings are neither fetched nor
+            # validated before earlier source words have been yielded.
+            frames.append((enumerate(children_obj), where))
+
+        while frames:
+            children, parent = frames[-1]
+            try:
+                index, node = next(children)
+            except StopIteration:
+                frames.pop()
+                continue
+            where = f"{parent}/cdl[{index}]"
+            break
+        else:
+            return
 
 
 def iter_words(

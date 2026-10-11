@@ -119,6 +119,42 @@ before counting translated passages; that example is not a complete list
 of editorial placeholders. Read the
 [translation model and coverage gaps](translations.md).
 
+## Audit explicit untranslated units
+
+For a **bounded, reproducible source-note audit** on the **installed** TF
+release, count actual aligned `translation_unit` nodes and the exact
+editorial notice observed in the pinned TEI source
+`riao/ria2:Q009244`. Whitespace is normalized before equality comparison
+because TEI can wrap text across lines:
+
+```python
+coverage = {
+    "aligned_units": 0,
+    "explicit_not_yet_translated": 0,
+    "empty_text_units": 0,
+    "other_unclassified_units": 0,
+}
+for node in api.F.otype.s("translation_unit"):
+    coverage["aligned_units"] += 1
+    text = " ".join((api.F.translation_text.v(node) or "").split())
+    if not text:
+        coverage["empty_text_units"] += 1
+    elif text == "(Not yet translated.)":
+        coverage["explicit_not_yet_translated"] += 1
+    else:
+        coverage["other_unclassified_units"] += 1
+print(coverage)
+```
+
+The `explicit_not_yet_translated` category counts **only an exact known
+source notice**, not every form of absent or incomplete translation.
+`other_unclassified_units` are **not verified translations**: other
+editorial placeholders, partial translations, or commentary can occur.
+Counts refer to **aligned TEI units**, not unique source lines, and are
+**not a percentage of translated lines**. This query does not change text,
+remove real alignment edges, or require the ORACC-TF converter. Follow
+[Translations](translations.md) for the source/coverage semantics.
+
 ## Source-aware damage/unreadable inspection
 
 There is **no normalized `F.break` damage boolean** in the current TF

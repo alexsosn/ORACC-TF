@@ -68,6 +68,18 @@ def test_pinned_riao_tei_archive_builds_source_aligned_translation_graph(tmp_pat
     assert api.F.translation_rows.v(long_unit) == 72
     assert api.F.translation_text.v(long_unit) == "(Not yet translated.)"
     assert api.F.translation_eref.v(long_unit) == "Q009244.72"
+
+    # Replay the shipped consumer query against the full pinned M9 TF graph.
+    guide = (Path(__file__).resolve().parents[1] / "docs/reference/query-guide.md").read_text(encoding="utf-8")
+    section = guide.split("## Audit explicit untranslated units", 1)[1].split("\n## ", 1)[0]
+    fence = chr(96) * 3
+    snippet = section.split(f"{fence}python\n", 1)[1].split(f"\n{fence}", 1)[0]
+    scope = {"api": api}
+    exec(compile(snippet, "docs/reference/query-guide.md", "exec"), scope)
+    coverage = scope["coverage"]
+    assert coverage["aligned_units"] == 6_792
+    assert coverage["explicit_not_yet_translated"] >= 1
+    assert coverage["other_unclassified_units"] + coverage["explicit_not_yet_translated"] + coverage["empty_text_units"] == 6_792
     assert any(
         api.F.translation_sref.v(node) == api.F.translation_eref.v(node)
         for node in api.F.otype.s("translation_unit")

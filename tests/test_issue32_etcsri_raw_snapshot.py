@@ -166,7 +166,7 @@ def test_raw_cache_rejects_malformed_etcsri_cdl(tmp_path: Path):
     with zipfile.ZipFile(inner, "w") as project:
         project.writestr(
             "etcsri/corpusjson/P000001.json",
-            '{"type":"cdl","textid":"P000001","cdl":{"node":"l"}}',
+            '{"type":"cdl","project":"etcsri","textid":"P000001","cdl":{"node":"l"}}',
         )
     archive = tmp_path / "invalid.zip"
     with zipfile.ZipFile(archive, "w") as outer:

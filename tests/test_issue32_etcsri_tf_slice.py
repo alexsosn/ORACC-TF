@@ -94,7 +94,17 @@ def test_two_real_etcsri_editions_round_trip_native_morphology_and_para(tmp_path
     assert "phrase" in {api.F.chunk_type.v(node) for node in api.F.otype.s("chunk")}
     assert api.F.morph.v(by_doc_word[("etcsri:Q000935", "Q000935.l04855")]) == "N1=Urnammak"
     assert api.F.morph2.v(by_doc_word[("etcsri:Q000935", "Q000935.l04855")]) == "N1=NAME"
-    assert api.F.base.v(by_doc_word[("etcsri:Q000935", "Q000935.l04855")]) == "ur-{d}namma"
+    named_word = by_doc_word[("etcsri:Q000935", "Q000935.l04855")]
+    assert api.F.base.v(named_word) == "ur-{d}namma"
+    # The determinative wrapper must contribute exactly its actual enclosed
+    # source sign (AN), not an extra invented wrapper slot.
+    assert tuple(api.F.utf8.v(sign) for sign in api.L.d(named_word, otype="sign")) == (
+        "𒌨", "𒀭", "𒇉",
+    )
+    assert len(api.F.otype.s("document")) == 2
+    assert {api.F.license.v(node) for node in api.F.otype.s("document")} == {
+        "This data is released under the CC0 license"
+    }
     assert "ORACC-TF ETCSRI" in (tmp_path / "otext.tf").read_text(encoding="utf-8")
 
 

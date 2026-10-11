@@ -204,9 +204,12 @@ def _observe_document(
             if not isinstance(word, dict):
                 raise CensusError("word f must be an object")
             for field in RAW_WORD_FEATURES:
-                if field in word:
+                # ETCSRI para is word-level source markup, not an f attribute;
+                # Q000376 and Q000935 are pinned real-source witnesses.
+                container = node if field == "para" else word
+                if field in container:
                     features[field]["present"] += 1
-                    value = word[field]
+                    value = container[field]
                     if value is not None and (not isinstance(value, str) or value.strip()):
                         features[field]["populated"] += 1
             gdl = word.get("gdl")

@@ -31,17 +31,18 @@ jobs:
           mkdir "$RUNNER_TEMP/release-check"
           cd "$RUNNER_TEMP/release-check"
           ARCHIVE=assyrian-royal-inscriptions-1.0.0.zip
+          SIDE=assyrian-royal-inscriptions-1.0.0.zip.sha256
           BASE=https://github.com/alexsosn/ORACC-TF/releases/download/v1.0.0
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
             "$BASE/$ARCHIVE" -o "$ARCHIVE"
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
-            "$BASE/$ARCHIVE.sha256" -o "$ARCHIVE.sha256"
+            "$BASE/$SIDE" -o "$SIDE"
           test "$(stat -c %s "$ARCHIVE")" -eq 41285702
           # Cross-check independently against GitHub's published asset digest,
           # not only the companion .sha256 file from the same publisher.
           echo "788f580604e30054fab34c4c3ea60ec3eb4f399412f1da90f778469d03507468  $ARCHIVE" \
             | sha256sum -c -
-          sha256sum -c "$ARCHIVE.sha256"
+          sha256sum -c "$SIDE"
           mkdir corpus
           python -m zipfile -e "$ARCHIVE" corpus
           test -s corpus/manifest.json

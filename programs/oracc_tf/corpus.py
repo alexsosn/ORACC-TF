@@ -546,12 +546,15 @@ def build_tf(
     translations_by_document: dict[str, Iterable[object]] | None = None,
     dataset_title: str = "ORACC-TF RIAO + RINAP",
     preserve_source_word: bool = False,
+    preserve_source_document: bool = False,
 ) -> CorpusBuildReport:
     """Build one joined TF dataset with explicit empty positional anchors."""
     if not isinstance(dataset_title, str) or not dataset_title.strip():
         raise CorpusBuildError("dataset_title must be a nonempty string")
     if not isinstance(preserve_source_word, bool):
         raise CorpusBuildError("preserve_source_word must be bool")
+    if not isinstance(preserve_source_document, bool):
+        raise CorpusBuildError("preserve_source_document must be bool")
     graph = _Graph(dataset_title=dataset_title)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -670,6 +673,17 @@ def build_tf(
             license_url=joined.license_url,
             license_type=joined.license_type,
         )
+        if preserve_source_document:
+            # Opt-in exact source header, never a claim that Nino or ORACC
+            # licence metadata alone settles edited-works reuse rights.
+            from hashlib import sha256
+            graph.feature(
+                document_node,
+                document_meta_json=_json({
+                    key: value for key, value in edition.doc.items() if key != "cdl"
+                }),
+                source_sha256=sha256(edition.path.read_bytes()).hexdigest(),
+            )
         for name in _CATALOGUE_FEATURES:
             graph.feature(
                 document_node,

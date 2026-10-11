@@ -46,6 +46,10 @@ else
 fi
 ```
 
+The exact checksum asset is
+`assyrian-royal-inscriptions-1.0.0.zip.sha256`; do not use a sidecar
+belonging to a different archive or a CI measurement ZIP.
+
 **Only use these commands after that release actually appears on GitHub.** If
 v1.0.0 is not yet published, `curl -fL` reports the failed download;
 a short-lived workflow artifact is not an interchangeable substitute.

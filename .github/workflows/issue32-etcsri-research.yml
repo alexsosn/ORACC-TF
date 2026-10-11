@@ -19,13 +19,48 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/research_etcsri_snapshot.py
+            tests/test_issue32_etcsri_research_snapshot.py
+            tests/test_issue32_etcsri_raw_snapshot.py
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: python -m pip install pytest
       - name: Exercise derived/raw cache research contracts
         run: python -m pytest -q tests/test_issue32_etcsri_research_snapshot.py tests/test_issue32_etcsri_raw_snapshot.py
 
+  working-tree-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/scan_annotation.py
+            data/etcsri/corpusjson
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Audit checked-in ETCSRI directly
+        run: |
+          set -euo pipefail
+          python scripts/scan_annotation.py --data data/etcsri \
+            --output "$RUNNER_TEMP/etcsri-working-tree-census.json"
+          cat "$RUNNER_TEMP/etcsri-working-tree-census.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue32-etcsri-working-tree-census
+          path: ${{ runner.temp }}/etcsri-working-tree-census.json
+          if-no-files-found: error
+          retention-days: 30
+
   derived-cache-census:
+    # External derived evidence is optional; local pinned ORACC sources come first.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:

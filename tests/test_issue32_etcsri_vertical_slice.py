@@ -286,3 +286,22 @@ def test_etcsri_malformed_provenance_does_not_silently_coerce(tmp_path: Path) ->
     path.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(etcsri.ETCSRISourceError, match="UTC-timestamp"):
         etcsri.build_tf(tmp_path / "tf", source_paths=[path])
+
+
+def test_duplicate_real_line_identity_is_rejected_before_tf_save(tmp_path: Path) -> None:
+    """Q000935 has four distinct source line refs; corrupt one into a collision."""
+    doc = _source(Q935)
+    stack = [doc]
+    line_markers = []
+    while stack:
+        entry = stack.pop()
+        if entry.get("node") == "d" and entry.get("type") == "line-start":
+            line_markers.append(entry)
+        stack.extend(reversed(entry.get("cdl", [])))
+    assert len(line_markers) == 4
+    assert len({m["ref"] for m in line_markers}) == 4
+    line_markers[1]["ref"] = line_markers[0]["ref"]
+    changed = tmp_path / "Q000935.json"
+    changed.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="duplicate line"):
+        etcsri.build_tf(tmp_path / "tf", source_paths=[changed])

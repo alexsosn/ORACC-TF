@@ -141,8 +141,8 @@ def _safe_zip_members(archive: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
     for member in members:
         name = member.filename
         path = PurePosixPath(name)
-        if (not name or name.startswith("/") or "\\\\" in name
-                or ".." in path.parts or "." in path.parts):
+        if (not name or name.startswith("/") or chr(92) in name
+                or ".." in name.split("/") or "." in name.split("/")):
             raise CensusError(f"unsafe ZIP member path: {name!r}")
         if name in seen:
             raise CensusError(f"duplicate ZIP member: {name!r}")

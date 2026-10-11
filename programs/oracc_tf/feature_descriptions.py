@@ -31,6 +31,7 @@ DESCRIPTIONS: dict[str, str] = {
     "gdl_form": "ORACC GDL form value attached to this sign, when present.",
     "gdl_sexified": "ORACC GDL sexified value attached to this sign, when present.",
     "gdl_json": "Canonical JSON serialization of the source ORACC word-level GDL payload.",
+    "word_json": "Opt-in canonical JSON of the entire native ORACC source word object; not Nino/eBL lemma analysis.",
     # Document/catalogue metadata
     "populated": "Integer flag: 1 when the ORACC edition contains parsed words, otherwise 0.",
     "catalogue_present": "Integer flag: 1 when catalogue metadata was joined for the document, otherwise 0.",

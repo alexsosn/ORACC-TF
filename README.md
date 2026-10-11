@@ -7,16 +7,19 @@ tooling needed to build those datasets reproducibly.
 
 ## Status
 
-The first standalone release target of ORACC-TF is
-`assyrian-royal-inscriptions`, a semantic corpus built from RIAO and RINAP
-material. The current user-facing release gate is tracked in
-[#89](https://github.com/alexsosn/ORACC-TF/issues/89).
+The first standalone corpus, `assyrian-royal-inscriptions` (RIAO/RINAP), is
+**published as [v1.0.0](https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0)**.
+The remaining **independent public-download/clean-install acceptance**, not
+release publication itself, is tracked under
+[#23](https://github.com/alexsosn/ORACC-TF/issues/23),
+[#83](https://github.com/alexsosn/ORACC-TF/issues/83), and the
+[user-facing 1.0 gate #89](https://github.com/alexsosn/ORACC-TF/issues/89).
 
 This repository is the **builder/source repository**, not the intended
 installation surface for researchers. It contains the large ORACC source tree
-and development infrastructure. Current 1.0 work is producing a lightweight
-standalone distribution with the Text-Fabric data, corpus app, and researcher
-documentation, so using the corpus will not require cloning this repository.
+and development infrastructure. Researchers can download the published
+standalone ZIP containing Text-Fabric data, its app, and documentation
+without cloning this repository.
 
 For a stable end-user package, use the [published GitHub Releases](https://github.com/alexsosn/ORACC-TF/releases)
 and verify the matching checksum. Workflow candidates are not public releases.
@@ -39,10 +42,11 @@ explicit synthetic empty slots rather than fabricated visible text.
 The generated feature inventory is documented in
 [`docs/reference/features.md`](docs/reference/features.md). The pinned RIAO/RINAP
 source audit, official TEI translation import, real Text-Fabric browser acceptance,
-and standalone researcher manual are complete on the tested release candidate.
-**Public release publication and clean acquisition from the public asset are
-still pending** under [issue #23](https://github.com/alexsosn/ORACC-TF/issues/23)
-and [issue #83](https://github.com/alexsosn/ORACC-TF/issues/83).
+and standalone researcher manual were validated on the production
+release-format ZIP. **The v1.0.0 ZIP and checksum are now public**;
+an additional logically independent, fresh-machine user acceptance of the
+published bytes remains tracked by [#23](https://github.com/alexsosn/ORACC-TF/issues/23)
+and [#83](https://github.com/alexsosn/ORACC-TF/issues/83).
 
 ## Researcher documentation
 
@@ -61,8 +65,10 @@ User-facing documentation lives under
 The standalone researcher manual is assembled into the tested distribution.
 Start with the [quick start](docs/reference/quick-start.md) and
 [installation and resource measurements](docs/reference/installation.md).
-The complete manual and source-faithful app were validated against the staged
-release-format ZIP; the public-download verification is a separate final gate.
+The complete manual and source-faithful app passed staged release-format ZIP
+checks, and the publishing workflow downloaded and verified both public assets.
+Independent fresh-machine extraction, load and browser acceptance of those
+exact public bytes is the remaining final gate.
 
 Maintainer research, design plans, reports, and the agentic-development
 registry are indexed separately in [`docs/README.md`](docs/README.md).
@@ -145,41 +151,39 @@ translation alignment through the pinned Text-Fabric runtime.
 The `manifest.repository` field currently contains the registered **logical**
 dataset repository identity `ORACC-TF-assyrian-royal-inscriptions`. That is
 **not** a working download URL or proof that a separate dataset repository
-exists. The manually published 1.0 ZIP and checksum, when present, are
-obtained from the actual
-[ORACC-TF GitHub Releases page](https://github.com/alexsosn/ORACC-TF/releases).
+exists. The **published** v1.0.0 ZIP and checksum are available from the actual
+[GitHub Release](https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0).
 Use that published URL, the `release_id`, and the `source_state` /
 `builder_commit` recorded inside the ZIP for reproducibility.
 
-## Opt-in publication from the validated GitHub Actions build
+## Published v1.0.0 and acceptance
 
-After the final source/documentation commit is on `main`, a maintainer can
-open **Actions → issue83-install-research → Run workflow** and explicitly
-enable `publish_1_0` on the **main** branch. This is the only supported
-automated publication trigger; ordinary pull requests and routine manual
-diagnostics do not publish.
+The [v1.0.0 GitHub Release](https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0)
+**already exists**, with `assyrian-royal-inscriptions-1.0.0.zip` and its
+matching `.zip.sha256` sidecar. The
+[manually authorized publication run](https://github.com/alexsosn/ORACC-TF/actions/runs/38128162676)
+built and validated the pinned RIAO/RINAP+TEI corpus, tested clean
+Text-Fabric/browser consumption without the builder, then downloaded the newly
+published ZIP and sidecar over public URLs and checked their SHA-256.
 
-The workflow rebuilds the pinned real RIAO/RINAP plus TEI corpus with
-`release_id=1.0.0`, validates the complete Text-Fabric-only consumer path,
-creates a versioned ZIP and matching SHA-256 file, and—only if every build
-and browser check passed—publishes `v1.0.0` using the resulting tested bytes.
-The publication job has separately scoped GitHub write permission,
-refuses an already existing tag/release, and verifies that both files are
-publicly downloadable with matching checksums.
+**Do not rerun the publication switch** to try to update the existing release:
+the workflow deliberately refuses an already existing `v1.0.0` tag or
+release. Published v1.0.0 asset bytes are **immutable**; subsequent changes to
+`main` researcher documentation do not retroactively update the manual inside
+that ZIP. A correction to the published dataset requires a separately planned
+version/release, not an overwrite.
 
-Before enabling the publication switch, confirm source rights/attribution,
-the version-pinned GitHub feature-help links, and that the final corpus is
-ready for public reuse. Afterwards, a **logically independent** reviewer must
-download the exact published files from a fresh machine and confirm Python,
-browser, queries and the documented footprint before closing
-[#23](https://github.com/alexsosn/ORACC-TF/issues/23) and
-[#83](https://github.com/alexsosn/ORACC-TF/issues/83). The action's final
-public checksum verification is not a substitute for that independent review.
+The existing [quick start](docs/reference/quick-start.md) and
+[installation/measurement guide](docs/reference/installation.md) identify
+the actual public assets and their checksum. A **logically independent**
+fresh-machine reviewer still needs to download those exact public bytes,
+verify the sidecar, load representative RIAO/RINAP and aligned TEI in Python,
+and exercise the browser before [#23](https://github.com/alexsosn/ORACC-TF/issues/23)
+and [#83](https://github.com/alexsosn/ORACC-TF/issues/83) can be closed.
 
-**Packaging is not publication.** Issue [#23](https://github.com/alexsosn/ORACC-TF/issues/23)
-requires the versioned asset and checksum to be retrieved from their
-*actual public URLs* and independently checked in a clean Text-Fabric-only
-environment before release acceptance.
+Source rights, credits, and attribution must remain specific to the upstream
+RIAO/RINAP editions and TEI material; publishing the archive did not convert
+those rights into the repository's MIT software licence.
 
 ## Licence
 

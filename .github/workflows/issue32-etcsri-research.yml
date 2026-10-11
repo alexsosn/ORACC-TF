@@ -1,0 +1,120 @@
+name: issue32-etcsri-research
+
+on:
+  pull_request:
+    paths:
+      - "scripts/research_etcsri_snapshot.py"
+      - "tests/test_issue32_etcsri_research_snapshot.py"
+      - "tests/test_issue32_etcsri_raw_snapshot.py"
+      - ".github/workflows/issue32-etcsri-research.yml"
+      - "docs/research/**etcsri**"
+      - "docs/plans/**etcsri**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/research_etcsri_snapshot.py
+            tests/test_issue32_etcsri_research_snapshot.py
+            tests/test_issue32_etcsri_raw_snapshot.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pytest
+      - name: Exercise derived/raw cache research contracts
+        run: python -m pytest -q tests/test_issue32_etcsri_research_snapshot.py tests/test_issue32_etcsri_raw_snapshot.py
+
+  working-tree-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/scan_annotation.py
+            data/etcsri/corpusjson
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Audit checked-in ETCSRI directly
+        run: |
+          set -euo pipefail
+          python scripts/scan_annotation.py --data data/etcsri \
+            --output "$RUNNER_TEMP/etcsri-working-tree-census.json"
+          cat "$RUNNER_TEMP/etcsri-working-tree-census.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue32-etcsri-working-tree-census
+          path: ${{ runner.temp }}/etcsri-working-tree-census.json
+          if-no-files-found: error
+          retention-days: 30
+
+  derived-cache-census:
+    # External derived evidence is optional; local pinned ORACC sources come first.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download immutable ETCSRI derived cache
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output "$RUNNER_TEMP/etcsri.zip" \
+            "https://zenodo.org/records/20625379/files/etcsri.zip"
+      - name: Generate derived-cache census
+        run: |
+          set -euo pipefail
+          python scripts/research_etcsri_snapshot.py \
+            --derived-zip "$RUNNER_TEMP/etcsri.zip" \
+            --output "$RUNNER_TEMP/etcsri-derived-census.json"
+          cat "$RUNNER_TEMP/etcsri-derived-census.json"
+      - name: Upload research evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue32-etcsri-derived-census
+          path: ${{ runner.temp }}/etcsri-derived-census.json
+          if-no-files-found: error
+          retention-days: 30
+
+  raw-cache-census:
+    # The large raw cache must be fetched explicitly, not for every small PR.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download frozen raw ORACC JSON cache
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output "$RUNNER_TEMP/oracc_jsonzip_all.zip" \
+            "https://zenodo.org/records/20625379/files/oracc_jsonzip_all.zip"
+      - name: Generate ETCSRI raw-source evidence
+        run: |
+          set -euo pipefail
+          python scripts/research_etcsri_snapshot.py \
+            --raw-cache "$RUNNER_TEMP/oracc_jsonzip_all.zip" \
+            --output "$RUNNER_TEMP/etcsri-raw-census.json"
+          cat "$RUNNER_TEMP/etcsri-raw-census.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue32-etcsri-raw-census
+          path: ${{ runner.temp }}/etcsri-raw-census.json
+          if-no-files-found: error
+          retention-days: 30

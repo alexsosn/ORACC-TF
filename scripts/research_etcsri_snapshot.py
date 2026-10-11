@@ -184,6 +184,8 @@ def _observe_document(
         raise CensusError("corpusjson member lacks a textid")
     if document.get("type") not in (None, "cdl"):
         raise CensusError("corpusjson member has unsupported source type")
+    if document.get("project") != "etcsri":
+        raise CensusError("corpusjson project does not identify ETCSRI")
     words = 0
     pending = [document]
     while pending:

@@ -154,36 +154,51 @@ def classify_tree(
     if not word_id:
         raise ValueError("word_id is required for auditable src_path values")
 
-    def walk(
-        obj: Mapping[str, object], src_path: str, suppressed: bool
-    ) -> Iterator[ClassifiedGDL]:
-        if not isinstance(obj, dict):
+    # Each frame retains only its next-sibling iterator, source path and the
+    # suppression inherited from a sign-bearing ancestor. Explicit traversal
+    # avoids a Python call-stack frame for every nested GDL grouping. Keeping
+    # the iterators (rather than flattening the tree) preserves source preorder
+    # and the original generator's validation timing.
+    frames: list[tuple[Iterator, str, bool, bool]] = [
+        (iter(enumerate(entries)), word_id, False, True)
+    ]
+    while frames:
+        siblings, parent_path, suppressed, is_root = frames[-1]
+        try:
+            if is_root:
+                index, obj = next(siblings)
+                src_path = f"{parent_path}/gdl[{index}]"
+            else:
+                key, index, obj = next(siblings)
+                src_path = f"{parent_path}/{key}[{index}]"
+        except StopIteration:
+            frames.pop()
+            continue
+
+        # _children() checks the nested child shape as it advances; direct
+        # gdl[] entries have their own historically distinct error wording.
+        if is_root and not isinstance(obj, dict):
             raise UnknownGDLShape(
                 f"{src_path}: GDL item is {type(obj).__name__}, expected object"
             )
 
-        if suppressed:
-            disposition = _suppressed_disposition(obj, src_path)
-        else:
-            disposition = _normal_disposition(obj, src_path)
-
+        disposition = (
+            _suppressed_disposition(obj, src_path)
+            if suppressed else _normal_disposition(obj, src_path)
+        )
         yield ClassifiedGDL(
             disposition=disposition, value=obj, src_path=src_path
         )
 
-        # Descendants of a sign-bearing parent are internal descriptions of
-        # that sign, not additional textual positions.
-        suppress_children = suppressed or disposition == Disposition.SLOT
-        for key, index, child in _children(obj, src_path):
-            child_path = f"{src_path}/{key}[{index}]"
-            yield from walk(child, child_path, suppress_children)
-
-    for index, obj in enumerate(entries):
-        if not isinstance(obj, dict):
-            raise UnknownGDLShape(
-                f"{word_id}/gdl[{index}]: GDL item is {type(obj).__name__}, expected object"
-            )
-        yield from walk(obj, f"{word_id}/gdl[{index}]", False)
+        # Descendants of a sign slot describe the same textual position.
+        # On resumption from the yield, iter(_children(...)) itself performs
+        # no validation; validation occurs when the iterator is advanced.
+        frames.append((
+            _children(obj, src_path),
+            src_path,
+            suppressed or disposition == Disposition.SLOT,
+            False,
+        ))
 
 
 def signs(

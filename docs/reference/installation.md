@@ -39,6 +39,30 @@ the extracted `app` directory. The generated app discovers the sibling
 `tf/<version>` data tree; no ORACC-TF Python package or raw ORACC source tree
 is needed by the consumer.
 
+## Published v1.0.0 asset and its verification
+
+The [public v1.0.0 release](https://github.com/alexsosn/ORACC-TF/releases/tag/v1.0.0)
+was published on **11 October 2026**, targeting Git commit
+`60db4b724a687c0f425e78eae924fce89454e106`.
+
+| published asset | GitHub-reported value |
+|---|---|
+| `assyrian-royal-inscriptions-1.0.0.zip` size | **41,285,702 bytes** |
+| `assyrian-royal-inscriptions-1.0.0.zip` SHA-256 | `788f580604e30054fab34c4c3ea60ec3eb4f399412f1da90f778469d03507468` |
+| checksum sidecar | `assyrian-royal-inscriptions-1.0.0.zip.sha256` |
+
+The [main-branch publication workflow run
+38128162676](https://github.com/alexsosn/ORACC-TF/actions/runs/38128162676)
+passed its full source-to-TF, release-format ZIP load, browser, translation and
+resource checks. On a **separate publishing runner**, it retrieved both
+public release assets by HTTP and verified `sha256sum -c` (reported `OK`).
+This is stronger than merely staging an artifact, but the separate
+**logically independent fresh-machine public-archive extraction plus
+Text-Fabric/browser usability review** tracked in
+[#23](https://github.com/alexsosn/ORACC-TF/issues/23) and
+[#83](https://github.com/alexsosn/ORACC-TF/issues/83) remains pending.
+Do not confuse the public archive's checksum with that of a measurement ZIP.
+
 ## Measured standalone candidate (10 October 2026)
 
 A source-aware clean-consumer measurement is [GitHub Actions run
@@ -69,8 +93,8 @@ canonical `manifest.json`, `app/`, `tf/`, `docs/` layout at archive root.
 They are **different archives**, with different bytes and checksums; a
 measurement ZIP's hash must never be used to verify a published release.
 The workflow also extracts and smoke-loads the exact versioned release-format
-candidate independently. Use the sidecar belonging to the *published asset*
-when one exists.
+candidate independently. Use the sidecar belonging to the **published asset**
+from the public release linked above.
 
 The query, translation/lexeme, original cuneiform/transliteration, and browser
 routes `/`, `/passage`, `/query`, `/export` passed on the candidate.
@@ -78,10 +102,11 @@ The subsequent browser acceptance work under
 [#75](https://github.com/alexsosn/ORACC-TF/issues/75) also verified source-selected
 navigation, expanded lexical features, **browser translation** display using
 official aligned TEI text, and the pinned public source feature-help URL.
-This validates the **staged candidate**, not the eventual public asset:
-[#23](https://github.com/alexsosn/ORACC-TF/issues/23) still requires publication
-and independent public-download verification. A passing CI run does **not**
-mean that a v1.0.0 public asset already exists.
+This earlier source-aware benchmark validates the **staged candidate**, not
+the later published asset on its own. The v1.0.0 archive is now publicly
+downloadable; the release workflow verified its public checksum, while
+independent fresh-machine post-download Python/browser acceptance is still
+required by [#23](https://github.com/alexsosn/ORACC-TF/issues/23).
 
 ## Default feature loading
 
@@ -115,5 +140,5 @@ features or expand the exclusion list based only on run-to-run noise.
 
 `manifest.json` records the dataset, TF schema version, release id, builder
 commit, source state, and content digests used by the standalone distribution.
-For a published release, verify the archive checksum supplied with that release
-before extraction.
+For the published v1.0.0 release, verify the archive checksum supplied with
+that release before extraction; never use the measurement-only ZIP digest.

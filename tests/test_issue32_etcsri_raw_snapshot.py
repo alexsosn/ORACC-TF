@@ -18,6 +18,7 @@ def _raw_cache(path: Path) -> None:
             json.dumps(
                 {
                     "type": "cdl",
+                    "project": "etcsri",
                     "textid": "P000001",
                     "cdl": [
                         {
@@ -178,4 +179,25 @@ def test_raw_cache_rejects_malformed_etcsri_cdl(tmp_path: Path):
     )
     assert result.returncode != 0
     assert "cdl" in result.stderr.lower()
+    assert not output.exists()
+
+
+def test_raw_cache_rejects_foreign_embedded_project(tmp_path: Path):
+    inner = BytesIO()
+    with zipfile.ZipFile(inner, "w") as project:
+        project.writestr(
+            "etcsri/corpusjson/P000002.json",
+            '{"type":"cdl","project":"foreign","textid":"P000002","cdl":[]}',
+        )
+    archive = tmp_path / "foreign.zip"
+    with zipfile.ZipFile(archive, "w") as outer:
+        outer.writestr("jsonzip/etcsri.zip", inner.getvalue())
+    output = tmp_path / "report.json"
+    result = subprocess.run(
+        [sys.executable, "scripts/research_etcsri_snapshot.py",
+         "--raw-cache", str(archive), "--output", str(output)],
+        check=False, capture_output=True, text=True,
+    )
+    assert result.returncode != 0
+    assert "project" in result.stderr.lower()
     assert not output.exists()

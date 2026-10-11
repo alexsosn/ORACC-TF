@@ -182,25 +182,30 @@ def source_words(doc: Mapping[str, object]) -> Iterator[Mapping[str, object]]:
     if not isinstance(doc, Mapping):
         raise InvalidWordSource("document root must be an object")
 
-    def walk(node: Mapping[str, object], where: str) -> Iterator[Mapping[str, object]]:
+    # A recursive generator consumes one Python call frame per nested 'cdl'
+    # group. Use an explicit depth-first stack so valid structural nesting
+    # cannot itself exhaust the interpreter's recursion limit.
+    pending: list[tuple[object, str]] = [(doc, "document")]
+    while pending:
+        node, where = pending.pop()
+        if not isinstance(node, Mapping):
+            # Defer child validation until it is visited: this preserves the
+            # old generator's laziness when a later sibling is malformed.
+            raise InvalidWordSource(
+                f"{where}: child is {type(node).__name__}, expected object"
+            )
         if node.get("node") == "l":
             yield node
 
         children_obj = node.get("cdl")
         if children_obj is None:
-            return
+            continue
         if not isinstance(children_obj, list):
             raise InvalidWordSource(
                 f"{where}: 'cdl' is {type(children_obj).__name__}, expected list"
             )
-        for index, child in enumerate(children_obj):
-            if not isinstance(child, Mapping):
-                raise InvalidWordSource(
-                    f"{where}/cdl[{index}]: child is {type(child).__name__}, expected object"
-                )
-            yield from walk(child, f"{where}/cdl[{index}]")
-
-    yield from walk(doc, "document")
+        for index in range(len(children_obj) - 1, -1, -1):
+            pending.append((children_obj[index], f"{where}/cdl[{index}]"))
 
 
 def iter_words(

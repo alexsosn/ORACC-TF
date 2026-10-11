@@ -48,9 +48,11 @@ def test_invalid_nested_cdl_children_are_classified_not_attribute_errors(
 ) -> None:
     path, raw = _write(tmp_path, "QBAD.json", {
         "textid": "QBAD",
-        "node": "d",
+        "type": "cdl",
         "cdl": [
-            {"node": "d", "cdl": [{"node": "l", "id": "before"}, bad_child]},
+            {"node": "c", "type": "text", "cdl": [
+                {"node": "l", "id": "before"}, bad_child,
+            ]},
         ],
     })
     obs = loader.observe_source(path, data=tmp_path)
@@ -62,9 +64,14 @@ def test_invalid_nested_cdl_children_are_classified_not_attribute_errors(
 def test_invalid_cdl_is_skipped_with_observable_hazard_and_good_source_kept(
     tmp_path: Path,
 ) -> None:
+    # A is a *valid* source hierarchy: only chunk groups have descendants.
+    # A nested marker would now correctly be an invalid-cdl source hazard.
     _write(tmp_path, "A.json", {
-        "textid": "QA", "node": "d",
-        "cdl": [{"node": "l", "id": "a"}, {"node": "d", "cdl": [{"node": "l", "id": "b"}]}],
+        "textid": "QA", "type": "cdl",
+        "cdl": [{"node": "c", "type": "text", "cdl": [
+            {"node": "l", "id": "a"},
+            {"node": "c", "type": "phrase", "cdl": [{"node": "l", "id": "b"}]},
+        ]}],
     })
     _write(tmp_path, "B.json", {"textid": "QB", "node": "d", "cdl": []})
     _write(tmp_path, "C.json", {"textid": "QC", "node": "d", "cdl": ""})
@@ -90,10 +97,12 @@ def test_invalid_cdl_is_skipped_with_observable_hazard_and_good_source_kept(
 def test_null_or_absent_cdl_remains_compatible() -> None:
     assert loader.count_words({"node": "d"}) == 0
     assert loader.count_words({"node": "d", "cdl": None}) == 0
+    # Null/absent are valid on leaves; populated descendants belong to a
+    # container/chunk, not a documentary 'd' marker.
     assert loader.count_words({
-        "node": "d",
+        "type": "cdl",
         "cdl": [
             {"node": "l", "id": "one"},
-            {"node": "d", "cdl": [{"node": "l", "id": "two"}]},
+            {"node": "c", "type": "phrase", "cdl": [{"node": "l", "id": "two"}]},
         ],
     }) == 2

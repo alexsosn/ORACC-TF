@@ -221,10 +221,19 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
         if doc_key in seen_docs:
             raise ETCSRISourceError(f"duplicate document key: {doc_key}")
         seen_docs.add(doc_key)
+        # Preserve the source header separately from its CDL tree, including
+        # the original project, source URL, licence URL and UTC source timestamp.
+        # This is data provenance, not an assertion that a blanket reuse grant
+        # resolves all edition-specific rights.
+        source_meta = {key: value for key, value in doc.items() if key != "cdl"}
         doc_idx = node("document", {
             "document_key": doc_key, "text_id": text_id,
             "source_id": text_id, "source_sha256": sha256(payload).hexdigest(),
             "source_license": _str_value(doc, "license", where=text_id) or "",
+            "source_url": _str_value(doc, "source", where=text_id) or "",
+            "source_license_url": _str_value(doc, "license-url", where=text_id) or "",
+            "source_timestamp": _str_value(doc, "UTC-timestamp", where=text_id) or "",
+            "source_meta_json": _json(source_meta),
         })
         current_line: int | None = None
         chunks: list[int] = []

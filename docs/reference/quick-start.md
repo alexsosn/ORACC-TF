@@ -37,10 +37,13 @@ ARCHIVE=assyrian-royal-inscriptions-1.0.0.zip
 BASE=https://github.com/alexsosn/ORACC-TF/releases/download/v1.0.0
 curl -fL "$BASE/$ARCHIVE" -o "$ARCHIVE"
 curl -fL "$BASE/$ARCHIVE.sha256" -o "$ARCHIVE.sha256"
-sha256sum --check "$ARCHIVE.sha256"
-mkdir -p assyrian-royal-inscriptions
-python -m zipfile -e "$ARCHIVE" assyrian-royal-inscriptions
-cd assyrian-royal-inscriptions
+if sha256sum --check "$ARCHIVE.sha256"; then
+  mkdir -p assyrian-royal-inscriptions
+  python -m zipfile -e "$ARCHIVE" assyrian-royal-inscriptions
+  cd assyrian-royal-inscriptions
+else
+  echo "Checksum verification failed: refusing extraction" >&2
+fi
 ```
 
 **Only use these commands after that release actually appears on GitHub.** If

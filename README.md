@@ -37,9 +37,12 @@ and transliteration features. Zero-span textual entities are represented by
 explicit synthetic empty slots rather than fabricated visible text.
 
 The generated feature inventory is documented in
-[`docs/reference/features.md`](docs/reference/features.md). Translation import,
-the standalone app, installation path, and the complete researcher manual are
-still part of the 1.0 work.
+[`docs/reference/features.md`](docs/reference/features.md). The pinned RIAO/RINAP
+source audit, official TEI translation import, real Text-Fabric browser acceptance,
+and standalone researcher manual are complete on the tested release candidate.
+**Public release publication and clean acquisition from the public asset are
+still pending** under [issue #23](https://github.com/alexsosn/ORACC-TF/issues/23)
+and [issue #83](https://github.com/alexsosn/ORACC-TF/issues/83).
 
 ## Researcher documentation
 
@@ -55,11 +58,11 @@ User-facing documentation lives under
 - [Reproducibility](docs/reference/reproducibility.md)
 - [Feature reference](docs/reference/features.md)
 
-The 1.0 manual is still being completed under
-[#78](https://github.com/alexsosn/ORACC-TF/issues/78) and
-[#82](https://github.com/alexsosn/ORACC-TF/issues/82). Pages marked as
-`skeleton` describe the intended documentation surface but are not yet release
-documentation.
+The standalone researcher manual is assembled into the tested distribution.
+Start with the [quick start](docs/reference/quick-start.md) and
+[installation and resource measurements](docs/reference/installation.md).
+The complete manual and source-faithful app were validated against the staged
+release-format ZIP; the public-download verification is a separate final gate.
 
 Maintainer research, design plans, reports, and the agentic-development
 registry are indexed separately in [`docs/README.md`](docs/README.md).

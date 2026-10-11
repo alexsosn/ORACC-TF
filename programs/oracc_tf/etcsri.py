@@ -257,10 +257,26 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
 
         def anchor_if_empty(index: int) -> None:
             nonlocal synthetic_slots
-            if not nodes[index].slots:
-                synthetic_slots += 1
-                # Never ascribe visible script to a technical TF positional slot.
-                nodes[index].slots.add(assign_slot({"synthetic": 1}))
+            if nodes[index].slots:
+                return
+            synthetic_slots += 1
+            # Anchors for empty source spans must belong to their *source*
+            # hierarchy. The mutable traversal stack/current_line might
+            # already refer to the next sentence/line when this one closes.
+            slot = len(slots) + 1
+            slots.append({"document_key": doc_key, "synthetic": 1})
+            nodes[doc_idx].slots.add(slot)
+            nodes[index].slots.add(slot)
+            if nodes[index].otype == "line":
+                parents = edges["line_chunk"].get(index, set())
+            elif nodes[index].otype in _CHUNK_TYPES:
+                parents = {nodes[index].parent} if nodes[index].parent is not None else set()
+            else:
+                raise ETCSRISourceError("unexpected empty-anchor owner")
+            for parent in parents:
+                while parent is not None:
+                    nodes[parent].slots.add(slot)
+                    parent = nodes[parent].parent
 
         def visit(entry: object) -> None:
             nonlocal current_line, semantic_signs, synthetic_slots, linkbase_seen

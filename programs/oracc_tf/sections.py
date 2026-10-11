@@ -367,7 +367,38 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
             return new_line(synthetic=1, at=at, source_order=source_order)
         return current_line
 
-    def walk(node: Mapping[str, object], *, where: str) -> None:
+    # Store enough source context to finish a chunk *after* its descendants.
+    # Chunk nodes are emitted in postorder even though their source ordinal
+    # is assigned on entry, as in the original recursive section walker.
+    def finish_chunk(context: tuple) -> None:
+        node, where, chunk_type, source_id, source_order, before = context
+        chunk_words = list(words_seen[before:])
+        source_end = event_seq
+        chunk = _Builder(
+            otype="chunk",
+            source_id=source_id,
+            label=_optional_str(node, "label", where=where, empty="") or "",
+            chunk_type=chunk_type,
+            chunk_subtype=_optional_str(node, "subtype", where=where),
+            implicit=_optional_str(node, "implicit", where=where),
+            word_ids=chunk_words,
+            source_start=source_order,
+            source_end=source_end,
+        )
+        chunks.append(chunk)
+        if chunk_type == "phrase":
+            phrases.append(_Builder(
+                otype="phrase",
+                source_id=source_id,
+                label=chunk.label,
+                word_ids=list(chunk_words),
+                source_start=source_order,
+                source_end=source_end,
+            ))
+
+    def visit(
+        node: Mapping[str, object], *, where: str
+    ) -> tuple[list[Mapping[str, object]] | None, tuple | None]:
         nonlocal current_face, current_column, current_line
         nonlocal source_line_count, chunk_seq, event_seq
 
@@ -386,32 +417,9 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
             if not source_id:
                 source_id = f"{text_id}.chunk.{chunk_seq}"
             before = len(words_seen)
-            for index, child in enumerate(_children(node, where=where)):
-                walk(child, where=f"{where}/cdl[{index}]")
-            chunk_words = list(words_seen[before:])
-            source_end = event_seq
-            chunk = _Builder(
-                otype="chunk",
-                source_id=source_id,
-                label=_optional_str(node, "label", where=where, empty="") or "",
-                chunk_type=chunk_type,
-                chunk_subtype=_optional_str(node, "subtype", where=where),
-                implicit=_optional_str(node, "implicit", where=where),
-                word_ids=chunk_words,
-                source_start=source_order,
-                source_end=source_end,
+            return _children(node, where=where), (
+                node, where, chunk_type, source_id, source_order, before
             )
-            chunks.append(chunk)
-            if chunk_type == "phrase":
-                phrases.append(_Builder(
-                    otype="phrase",
-                    source_id=source_id,
-                    label=chunk.label,
-                    word_ids=list(chunk_words),
-                    source_start=source_order,
-                    source_end=source_end,
-                ))
-            return
 
         if kind == "d":
             marker = _optional_str(node, "type", where=where)
@@ -456,7 +464,7 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
                     label=label, ref=ref, at=where, source_order=source_order
                 )
             # nonw/nonx are textual markers, not section transitions.
-            return
+            return None, None
 
         if kind == "l":
             word_id = _optional_str(node, "id", where=where)
@@ -472,16 +480,38 @@ def walk_document(doc: Mapping[str, object]) -> SectionWalk:
             words_seen.append(word_id)
             word_to_line[word_id] = line.source_id
             word_order[word_id] = source_order
-            return
+            return None, None
 
         if kind is None:
-            for index, child in enumerate(_children(node, where=where)):
-                walk(child, where=f"{where}/cdl[{index}]")
-            return
+            return _children(node, where=where), None
 
         raise InvalidSectionSource(f"{where}: unknown CDL node kind {kind!r}")
 
-    walk(doc, where=text_id)
+    # Each frame retains a lazy iterator over the next sibling, its source
+    # path and an optional chunk closure. No recursive generator stack and no
+    # eager reversed push of a wide sibling list.
+    node = doc
+    where = text_id
+    frames: list[tuple[Iterator, str, tuple | None]] = []
+    while True:
+        children, closing_chunk = visit(node, where=where)
+        if children is not None:
+            frames.append((iter(enumerate(children)), where, closing_chunk))
+
+        while frames:
+            siblings, parent, finish = frames[-1]
+            try:
+                index, node = next(siblings)
+            except StopIteration:
+                frames.pop()
+                if finish is not None:
+                    finish_chunk(finish)
+                continue
+            where = f"{parent}/cdl[{index}]"
+            break
+        else:
+            break
+
     close_line(event_seq)
     close_column(event_seq)
     close_face(event_seq)

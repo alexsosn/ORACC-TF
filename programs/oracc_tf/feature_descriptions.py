@@ -31,6 +31,12 @@ DESCRIPTIONS: dict[str, str] = {
     "gdl_form": "ORACC GDL form value attached to this sign, when present.",
     "gdl_sexified": "ORACC GDL sexified value attached to this sign, when present.",
     "gdl_json": "Canonical JSON serialization of the source ORACC word-level GDL payload.",
+    # ETCSRI native morphological/structural annotation (first TF vertical slice).
+    "base": "ETCSRI source f.base, preserved verbatim as a word feature; do not infer a parsed stem.",
+    "morph": "ETCSRI source f.morph segmentation string, preserved verbatim without inferred morphological parsing.",
+    "morph2": "ETCSRI source f.morph2 gloss sequence, preserved separately from morph without inferred alignment.",
+    "para_json": "Canonical lossless JSON of source word-level para boundary/syntax records in their original order.",
+    "props_json": "Canonical lossless JSON of source word-level props/environment annotations in their original order.",
     # Document/catalogue metadata
     "populated": "Integer flag: 1 when the ORACC edition contains parsed words, otherwise 0.",
     "catalogue_present": "Integer flag: 1 when catalogue metadata was joined for the document, otherwise 0.",

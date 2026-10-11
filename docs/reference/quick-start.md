@@ -28,10 +28,33 @@ Verify the checksum before extracting, and record the `release_id`,
 build or staged candidate archive is not itself evidence of a public release;
 follow the actual release asset URL and its matching checksum.
 
-Extract the ZIP and change into the **corpus root**, the directory containing
-`manifest.json`, `app/`, `tf/`, and `docs/`. You do not need to clone the
-ORACC-TF builder repository, download its multi-GB source tree, or install the
-`oracc-tf` converter to *use* the released dataset.
+For a published **v1.0.0** release, the following Bash commands download the
+two *matching* public assets, verify the checksum **before** extraction, and
+enter the standalone corpus root (Linux; see other platforms below):
+
+```bash
+ARCHIVE=assyrian-royal-inscriptions-1.0.0.zip
+BASE=https://github.com/alexsosn/ORACC-TF/releases/download/v1.0.0
+curl -fL "$BASE/$ARCHIVE" -o "$ARCHIVE"
+curl -fL "$BASE/$ARCHIVE.sha256" -o "$ARCHIVE.sha256"
+sha256sum --check "$ARCHIVE.sha256"
+mkdir -p assyrian-royal-inscriptions
+python -m zipfile -e "$ARCHIVE" assyrian-royal-inscriptions
+cd assyrian-royal-inscriptions
+```
+
+**Only use these commands after that release actually appears on GitHub.** If
+v1.0.0 is not yet published, `curl -fL` reports the failed download;
+a short-lived workflow artifact is not an interchangeable substitute.
+On macOS use `shasum -a 256 -c "$ARCHIVE.sha256"` instead of `sha256sum`.
+On Windows, download both named assets from the Releases page and use
+`Get-FileHash -Algorithm SHA256` in PowerShell to compare the ZIP's digest
+with the digest in its `.sha256` sidecar before extracting.
+
+The ZIP contains `manifest.json`, `app/`, `tf/`, and `docs/` directly at
+its root—there is no redundant dataset directory *inside* the archive.
+You do not need to clone the ORACC-TF builder repository, download its
+multi-GB source tree, or install the `oracc-tf` converter to *use* the corpus.
 
 Install the pinned consumer runtime:
 

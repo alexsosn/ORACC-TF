@@ -92,3 +92,22 @@ def test_pinned_riao_tei_archive_builds_source_aligned_translation_graph(tmp_pat
     assert api.F.translation_sref.v(sample) == "Q001801.1"
     assert api.F.translation_eref.v(sample) == "Q001801.15"
     assert any("subtype=dollar:" in gap for gap in report.translation_gap_details)
+
+
+def test_reader_guidance_distinguishes_aligned_source_units_from_translations() -> None:
+    """Fast contract grounded in the real Q009244 source fixture above."""
+    root = Path(__file__).resolve().parents[1] / "docs" / "reference"
+    translation_page = (root / "translations.md").read_text(encoding="utf-8")
+    known_issues = (root / "known-issues.md").read_text(encoding="utf-8")
+    query_guide = (root / "query-guide.md").read_text(encoding="utf-8")
+
+    assert "6,792" in translation_page
+    assert "2,509" in translation_page
+    assert "aligned units are not a count of substantively translated" in translation_page
+    assert "riao/ria2:Q009244" in translation_page
+    assert "(Not yet translated.)" in translation_page
+    assert "72" in translation_page
+    assert "alignment gaps do not measure untranslated lines" in known_issues
+    assert "(Not yet translated.)" in known_issues
+    assert "Not yet translated." in query_guide
+    assert "translation_text" in query_guide

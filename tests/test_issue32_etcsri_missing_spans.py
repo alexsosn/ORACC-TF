@@ -149,3 +149,46 @@ def test_every_real_etcsri_nonx_shape_has_lossless_source_features() -> None:
         ("column", "blank", "1"): 1,
         ("case", "blank", "1"): 1,
     })
+
+
+@pytest.mark.corpus
+def test_real_q000834_ruling_is_a_nontext_event_not_a_missing_text_span(tmp_path: Path) -> None:
+    """Real source ruling mark is a separate recorded phenomenon, not lost text."""
+    from hashlib import sha1
+    from tf.fabric import Fabric
+    from oracc_tf import paths
+
+    source = paths.DATA / "etcsri" / "corpusjson" / "Q000834.json"
+    raw = source.read_bytes()
+    assert sha1(b"blob " + str(len(raw)).encode("ascii") + bytes([0]) + raw).hexdigest() == (
+        "574f6ed3eace4a8d2d04d3da2c2fdc20e7af4f43"
+    )
+    doc = json.loads(raw)
+    text = doc["cdl"][0]
+    discourse = text["cdl"][0]
+    sentence = next(x for x in discourse["cdl"] if x.get("id") == "Q000834.U56")
+    ruling, = [x for x in sentence["cdl"] if x.get("type") == "nonx"]
+    assert ruling == {
+        "node": "d", "type": "nonx", "ref": "Q000834.102", "strict": "1",
+        "extent": "n", "scope": "line", "state": "ruling",
+    }
+    doc["cdl"] = [text]
+    text["cdl"] = [discourse]
+    discourse["cdl"] = [sentence]
+    path = tmp_path / "Q000834.json"
+    path.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+    etcsri.build_tf(tmp_path / "tf", source_paths=[path])
+    tf = Fabric(locations=str(tmp_path / "tf"), silent="deep")
+    assert tf.loadAll(silent="deep")
+    api = tf.api
+    assert api is not None
+    marks = api.F.otype.s("nontext_span")
+    assert len(marks) == 1
+    mark = marks[0]
+    assert api.F.marker_type.v(mark) == "nonx"
+    assert api.F.gap_state.v(mark) == "ruling"
+    assert api.F.gap_extent.v(mark) == "n"
+    assert json.loads(api.F.marker_json.v(mark)) == ruling
+    slot, = api.L.d(mark, otype="sign")
+    assert api.F.synthetic.v(slot) == 1
+    assert api.F.utf8.v(slot) is None

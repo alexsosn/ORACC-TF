@@ -200,7 +200,8 @@ class _Graph:
         "translation_note",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, *, dataset_title: str = "ORACC-TF RIAO + RINAP") -> None:
+        self.dataset_title = dataset_title
         self.next_non_slot = 1
         self.non_slot_otype: dict[int, str] = {}
         self.non_slot_oslots: dict[int, set[int]] = {}
@@ -329,7 +330,7 @@ class _Graph:
 
         meta_data: dict[str, dict[str, object]] = {
             "": {
-                "name": "ORACC-TF RIAO + RINAP",
+                "name": self.dataset_title,
                 "converter": "oracc-tf",
                 "version": TF_VERSION,
             },
@@ -543,9 +544,18 @@ def build_tf(
     editions: Iterable[loader.Edition],
     metadata_index: metadata.MetadataIndex,
     translations_by_document: dict[str, Iterable[object]] | None = None,
+    dataset_title: str = "ORACC-TF RIAO + RINAP",
+    preserve_source_word: bool = False,
+    preserve_source_document: bool = False,
 ) -> CorpusBuildReport:
     """Build one joined TF dataset with explicit empty positional anchors."""
-    graph = _Graph()
+    if not isinstance(dataset_title, str) or not dataset_title.strip():
+        raise CorpusBuildError("dataset_title must be a nonempty string")
+    if not isinstance(preserve_source_word, bool):
+        raise CorpusBuildError("preserve_source_word must be bool")
+    if not isinstance(preserve_source_document, bool):
+        raise CorpusBuildError("preserve_source_document must be bool")
+    graph = _Graph(dataset_title=dataset_title)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -663,6 +673,17 @@ def build_tf(
             license_url=joined.license_url,
             license_type=joined.license_type,
         )
+        if preserve_source_document:
+            # Opt-in exact source header, never a claim that Nino or ORACC
+            # licence metadata alone settles edited-works reuse rights.
+            from hashlib import sha256
+            graph.feature(
+                document_node,
+                document_meta_json=_json({
+                    key: value for key, value in edition.doc.items() if key != "cdl"
+                }),
+                source_sha256=sha256(edition.path.read_bytes()).hexdigest(),
+            )
         for name in _CATALOGUE_FEATURES:
             graph.feature(
                 document_node,
@@ -754,6 +775,9 @@ def build_tf(
                 lemmaknown=word.lemmaknown,
                 gdl_json=_source_gdl(word),
             )
+            if preserve_source_word:
+                # Opt-in lossless ORACC record; never changes released 1.0 defaults.
+                graph.feature(word_node, word_json=_json(word.source))
 
             line_id = section_words.get(word.source_id)
             if line_id is not None and line_id in line_nodes:

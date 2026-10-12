@@ -107,3 +107,45 @@ def test_repeated_real_q000377_nonx_reference_is_not_silently_admitted(tmp_path:
     path.write_text(json.dumps(source, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(etcsri.ETCSRISourceError, match="duplicate nonx"):
         etcsri.build_tf(tmp_path / "tf", source_paths=[path])
+
+
+@pytest.mark.corpus
+def test_every_real_etcsri_nonx_shape_has_lossless_source_features() -> None:
+    """The actual source has 694 nonx, not just Q000377's missing lines."""
+    from collections import Counter
+    from oracc_tf import paths
+
+    observed: Counter = Counter()
+    total = 0
+    for source in sorted((paths.DATA / "etcsri" / "corpusjson").glob("*.json")):
+        doc = json.loads(source.read_text(encoding="utf-8"))
+        pending = [doc]
+        while pending:
+            entry = pending.pop()
+            pending.extend(entry.get("cdl") or [])
+            if entry.get("node") != "d" or entry.get("type") != "nonx":
+                continue
+            total += 1
+            attrs = etcsri._nonx_attrs(entry, where=doc["textid"])
+            assert attrs["marker_json"] == json.dumps(
+                entry, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
+            assert attrs["source_id"] == entry["ref"]
+            assert attrs["gap_extent"] == entry["extent"]
+            assert attrs["gap_state"] == entry["state"]
+            assert attrs["gap_strict"] == entry["strict"]
+            assert attrs.get("gap_scope") == entry.get("scope")
+            observed[(entry.get("scope"), entry["state"], entry["strict"])] += 1
+    assert total == 694
+    assert observed == Counter({
+        ("line", "missing", "1"): 649,
+        ("column", "missing", "1"): 14,
+        ("line", "ruling", "1"): 12,
+        ("line", "blank", "1"): 8,
+        ("line", "traces", "1"): 3,
+        ("line", "illegible", "1"): 3,
+        (None, "missing", "0"): 2,
+        ("line", "erased", "1"): 1,
+        ("column", "blank", "1"): 1,
+        ("case", "blank", "1"): 1,
+    })

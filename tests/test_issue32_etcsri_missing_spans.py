@@ -56,7 +56,7 @@ def test_real_q000377_nonx_is_explicit_technical_gap_without_fabricated_lines(tm
     assert tf.loadAll(silent="deep")
     api = tf.api
     assert api is not None
-    gaps = api.F.otype.s("missing_span")
+    gaps = api.F.otype.s("nontext_span")
     assert len(gaps) == 1
     node = gaps[0]
     assert api.F.source_id.v(node) == "Q000377.387"

@@ -6,6 +6,7 @@ checked-in 10 MB ORACC edition; metadata and marker are not hand-authored.
 from __future__ import annotations
 
 import json
+from hashlib import sha1
 from pathlib import Path
 
 import pytest
@@ -17,7 +18,10 @@ SOURCE = paths.DATA / "etcsri" / "corpusjson" / "Q000377.json"
 
 
 def _source_witness(tmp_path: Path) -> tuple[Path, dict, dict]:
-    source = json.loads(SOURCE.read_text(encoding="utf-8"))
+    raw = SOURCE.read_bytes()
+    blob_sha = sha1(b"blob " + str(len(raw)).encode("ascii") + bytes([0]) + raw).hexdigest()
+    assert blob_sha == "62bbca48a50205353ac5ed8225a3ce3e163c5f31", "real ETCSRI source changed"
+    source = json.loads(raw)
     assert source["project"] == "etcsri"
     assert source["textid"] == "Q000377"
     root = source["cdl"][0]
@@ -60,6 +64,7 @@ def test_real_q000377_nonx_is_explicit_technical_gap_without_fabricated_lines(tm
     assert api.F.gap_scope.v(node) == "line"
     assert api.F.gap_state.v(node) == "missing"
     assert api.F.gap_extent.v(node) == "3"
+    assert api.F.gap_strict.v(node) == "1"
     assert json.loads(api.F.marker_json.v(node)) == gap
     slots = api.L.d(node, otype="sign")
     assert len(slots) == 1
@@ -90,4 +95,15 @@ def test_real_q000377_nonx_invalid_semantics_fail_closed(tmp_path: Path, change:
     gap.update(change)
     path.write_text(json.dumps(source, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(etcsri.ETCSRISourceError, match="nonx|missing|extent|scope|state"):
+        etcsri.build_tf(tmp_path / "tf", source_paths=[path])
+
+
+@pytest.mark.corpus
+def test_repeated_real_q000377_nonx_reference_is_not_silently_admitted(tmp_path: Path) -> None:
+    path, source, gap = _source_witness(tmp_path)
+    sentence = source["cdl"][0]["cdl"][0]["cdl"][0]
+    assert sentence["id"] == "Q000377.U490"
+    sentence["cdl"].insert(sentence["cdl"].index(gap), dict(gap))
+    path.write_text(json.dumps(source, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(etcsri.ETCSRISourceError, match="duplicate nonx"):
         etcsri.build_tf(tmp_path / "tf", source_paths=[path])

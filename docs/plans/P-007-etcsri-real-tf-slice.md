@@ -5,7 +5,7 @@ type: plan
 status: active
 priority: P1
 issue: 32
-updated: 2026-10-11
+updated: 2026-10-12
 fact_policy: snapshot-evidence
 evidence_date: 2026-10-11
 evidence_basis: R-007 ETCSRI checked-in source census and pinned Q000935/Q000376 source Git blobs; RED-first PR #173 evidence
@@ -89,3 +89,35 @@ Unknown source chunk/marker/GDL types, non-unique word/sign identities,
 inconsistent source spans, non-roundtripping `para/props`, ambiguous
 morpheme pairing, or licence conflicts must be surfaced explicitly; never
 silently rewrite source to satisfy the TF graph.
+
+## Follow-up full-corpus milestone (issue #32, PR #176)
+
+The original two-edition slice is merged in PR #173. Do not make an
+additional generic converter path. Continue the isolated ETCSRI converter
+with **real-source-shape** fixes, RED first.
+
+The checked-in source [R-007 working-tree scan, run 38166385264] measured
+1,456 corpusjson editions and the complete `node=d` marker inventory:
+**16,886 `line-start`, 694 `nonx`, and 2 `nonw` records**.
+The first whole-corpus RED run, 38181383535, failed at
+`Q000377` because `nonx` had not been modeled. The actual Git blob
+`62bbca48a50205353ac5ed8225a3ce3e163c5f31` contains nine `nonx`
+markers. In sentence `Q000377.U490` one records
+`ref=Q000377.387, scope=line, state=missing, extent=3, strict=1`.
+
+For **`nonx`**, preserve the complete marker object and an independently
+queryable missing-span node, anchored by a technical `synthetic=1` sign
+slot in the actual sentence. It must not belong to the preceding/following
+physical line or count as a source sign/word; never invent three missing
+line nodes from an `extent` annotation. Independently check real TF
+`oslots` and source JSON on that pinned sentence.
+
+For the **two `nonw`** source events, inspect their *actual* JSON shape
+before choosing a representation. Do not classify as `nonx`, drop, or
+fabricate words without evidence. Continue using the whole-corpus test
+as a hard source-coverage gate: 29,573 words, full source-to-TF payload
+roundtrip and exact original provenance, with every deviation reported.
+
+The whole-corpus PR does not authorize publication, dataset registration,
+or a source licence conclusion. Its independent adversarial review must
+check exact-head CI and actual emitted TF content before merge.

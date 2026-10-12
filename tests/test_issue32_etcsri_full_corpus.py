@@ -68,6 +68,7 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
     }
     assert len(tf_words) == 29573, "duplicate TF word identity collapsed"
     observed_source_keys: set[tuple[str, str]] = set()
+    source_markers = {"nonx": [], "nonw": []}
     for path in members:
         raw = path.read_bytes()
         doc = json.loads(raw)
@@ -86,6 +87,8 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
         pending = list(reversed(doc["cdl"]))
         while pending:
             entry = pending.pop()
+            if entry.get("node") == "d" and entry.get("type") in source_markers:
+                source_markers[entry["type"]].append((document_key, json.dumps(entry, ensure_ascii=False, sort_keys=True)))
             if entry.get("node") == "l":
                 key = (document_key, entry["id"])
                 assert key not in observed_source_keys, f"duplicate source word {key}"
@@ -118,6 +121,19 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
             if "cdl" in entry:
                 pending.extend(reversed(entry["cdl"]))
     assert set(tf_words) == observed_source_keys
+
+    # The source-census dtypes must remain textual-event distinctions, not
+    # invented GDL signs/word positions or unaccounted dropped metadata.
+    assert len(source_markers["nonx"]) == 694
+    assert len(source_markers["nonw"]) == 2
+    for marker_type, otype in (("nonx", "missing_span"), ("nonw", "nonword_marker")):
+        from_tf = sorted(
+            (api.F.document_key.v(n), json.dumps(json.loads(api.F.marker_json.v(n)), ensure_ascii=False, sort_keys=True))
+            for n in api.F.otype.s(otype)
+        )
+        assert from_tf == sorted(source_markers[marker_type]), (
+            marker_type, "source markers lost or corrupted"
+        )
 
     semantic_slots = [
         sign for sign in api.F.otype.s("sign")

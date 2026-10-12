@@ -28,15 +28,38 @@ jobs:
             tests/conftest.py
             tests/test_issue32_etcsri_vertical_slice.py
             tests/test_issue32_etcsri_missing_spans.py
-            data/etcsri/corpusjson/Q000935.json
-            data/etcsri/corpusjson/Q000376.json
-            data/etcsri/corpusjson/Q000377.json
+            data/etcsri/corpusjson
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install actual Text-Fabric runtime and test dependencies
         run: python -m pip install -e ".[dev]" "text-fabric==13.1.0"
+      - name: Survey rare nonw CDL records from actual ETCSRI sources
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          examples = []
+          for path in sorted(Path("data/etcsri/corpusjson").glob("*.json")):
+              root = json.loads(path.read_text(encoding="utf-8"))
+              todo = [(root, "root")]
+              while todo:
+                  node, parent = todo.pop()
+                  if node.get("node") == "d" and node.get("type") == "nonw":
+                      examples.append({
+                          "member": path.name,
+                          "parent": parent,
+                          "marker": node,
+                      })
+                  for child in node.get("cdl") or []:
+                      if isinstance(child, dict):
+                          todo.append((child, node.get("id") or node.get("ref") or "document"))
+          print("ETCSRI nonw source witnesses:", json.dumps(examples, ensure_ascii=False, sort_keys=True))
+          if len(examples) != 2:
+              raise AssertionError(f"Expected the two R-007 nonw markers; observed {len(examples)}")
+          PY
       - name: Convert both real ETCSRI witnesses and verify source data in Text-Fabric
         run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_vertical_slice.py
       - name: Validate actual Q000377 missing-line markers as technical TF gaps

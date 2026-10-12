@@ -103,7 +103,7 @@ def _is_base_mod_leaf(obj: Mapping[str, object], src_path: str) -> bool:
     if set(obj) not in ({"b"}, {"m"}):
         return False
     field, value = next(iter(obj.items()))
-    if not re.search(r"/mods\\[\\d+\\]$", src_path) or not isinstance(value, str) or not value:
+    if not re.search(r"/mods\[\d+\]$", src_path) or not isinstance(value, str) or not value:
         raise UnknownGDLShape(
             f"{src_path}: unknown GDL shape for modifier {field!r}: {dict(obj)!r}"
         )

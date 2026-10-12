@@ -37,7 +37,9 @@ def test_q000377_modifier_objects_do_not_invent_extra_signs() -> None:
         item = by_path[path]
         assert item.disposition == gdl.Disposition.MODIFIER
         assert item.value == shape
-    assert len(list(gdl.signs(tree, word_id=word["id"]))) == 2
+    # Only E₂ is a slot under the existing source-GDL census contract;
+    # the AŠ@t base/modifier construction has no independent Unicode slot.
+    assert len(list(gdl.signs(tree, word_id=word["id"]))) == 1
     assert gdl.resolve_src_path(
         tree, f"{word['id']}/gdl[0]/seq[2]/mods[0]", word_id=word["id"]
     ) == {"b": "AŠ"}

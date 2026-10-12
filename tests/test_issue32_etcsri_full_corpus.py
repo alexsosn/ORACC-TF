@@ -126,7 +126,7 @@ def test_all_checked_in_etcsri_source_editions_build_and_roundtrip(tmp_path: Pat
     # invented GDL signs/word positions or unaccounted dropped metadata.
     assert len(source_markers["nonx"]) == 694
     assert len(source_markers["nonw"]) == 2
-    for marker_type, otype in (("nonx", "missing_span"), ("nonw", "nonword_marker")):
+    for marker_type, otype in (("nonx", "nontext_span"), ("nonw", "nonword_marker")):
         from_tf = sorted(
             (api.F.document_key.v(n), json.dumps(json.loads(api.F.marker_json.v(n)), ensure_ascii=False, sort_keys=True))
             for n in api.F.otype.s(otype)

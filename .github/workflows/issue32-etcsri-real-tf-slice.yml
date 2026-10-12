@@ -8,6 +8,7 @@ on:
       - "programs/oracc_tf/loader.py"
       - "tests/test_issue32_etcsri_vertical_slice.py"
       - "tests/test_issue32_etcsri_missing_spans.py"
+      - "tests/test_issue32_etcsri_nonword.py"
       - "docs/plans/P-007-etcsri-real-tf-slice.md"
       - ".github/workflows/issue32-etcsri-real-tf-slice.yml"
   workflow_dispatch:
@@ -28,6 +29,7 @@ jobs:
             tests/conftest.py
             tests/test_issue32_etcsri_vertical_slice.py
             tests/test_issue32_etcsri_missing_spans.py
+            tests/test_issue32_etcsri_nonword.py
             data/etcsri/corpusjson
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
@@ -64,5 +66,9 @@ jobs:
         run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_vertical_slice.py
       - name: Validate actual Q000377 missing-line markers as technical TF gaps
         run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_missing_spans.py
+      - name: Verify two real nonw markers in their source sentences
+        run: |
+          python -m pytest -vv -m corpus tests/test_issue32_etcsri_nonword.py
+          python -m pytest -vv -m "not corpus" tests/test_issue32_etcsri_nonword.py
       - name: Run negative unknown-shape and absent-morphology regressions
         run: python -m pytest -vv -m "not corpus" tests/test_issue32_etcsri_vertical_slice.py

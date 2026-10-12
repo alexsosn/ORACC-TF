@@ -93,7 +93,26 @@ def _children(
             yield key, index, child
 
 
+def _is_base_mod_leaf(obj: Mapping[str, object], src_path: str) -> bool:
+    """Recognize source GDL base/modification leaves only inside a mods array.
+
+    Real ETCSRI Q000377.l02b7a has {"b":"AŠ"} and {"m":"t"}.
+    They are metadata for one source sign and must never become sign slots.
+    Keep the acceptance narrow so unrelated unknown objects still fail.
+    """
+    if set(obj) not in ({"b"}, {"m"}):
+        return False
+    field, value = next(iter(obj.items()))
+    if not re.search(r"/mods\\[\\d+\\]$", src_path) or not isinstance(value, str) or not value:
+        raise UnknownGDLShape(
+            f"{src_path}: unknown GDL shape for modifier {field!r}: {dict(obj)!r}"
+        )
+    return True
+
+
 def _normal_disposition(obj: Mapping[str, object], src_path: str) -> Disposition:
+    if _is_base_mod_leaf(obj, src_path):
+        return Disposition.MODIFIER
     # A sign-bearing parent wins over its children. This is the crucial M1
     # rule for n/q/c composite signs.
     if obj.get("utf8"):
@@ -134,6 +153,8 @@ def _suppressed_disposition(
     modifier. Unknown leaves therefore fail here just as they do at the normal
     tree level.
     """
+    if _is_base_mod_leaf(obj, src_path):
+        return Disposition.MODIFIER
     if any(key in obj for key in ("v", "s", "x")):
         return Disposition.MODIFIER
     if any(key in obj for key in CHILD_KEYS):

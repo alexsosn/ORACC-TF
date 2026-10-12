@@ -1,0 +1,31 @@
+name: issue33-ninmed-real-tf-slice
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/issue33-ninmed-real-tf-slice.yml"
+      - "programs/oracc_tf/ninmed.py"
+      - "programs/oracc_tf/corpus.py"
+      - "programs/oracc_tf/feature_descriptions.py"
+      - "tests/test_issue33_ninmed_tf_slice.py"
+      - "data/asbp/ninmed/corpusjson/P285136.json"
+      - "data/asbp/ninmed/corpusjson/P425685.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-ninmed-tf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install source converter and pinned Text-Fabric
+        run: python -m pip install -e ".[dev]" "text-fabric==13.1.0"
+      - name: Exercise both checked-in ORACC NINMED sources
+        run: python -m pytest -q tests/test_issue33_ninmed_tf_slice.py

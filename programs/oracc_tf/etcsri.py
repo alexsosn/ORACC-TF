@@ -46,7 +46,7 @@ class _Node:
 
 _TYPE_ORDER = (
     "document", "text", "discourse", "sentence", "phrase",
-    "line", "missing_span", "word", "determinative",
+    "line", "missing_span", "nonword_marker", "word", "determinative",
 )
 _CHUNK_TYPES = frozenset({"text", "discourse", "sentence", "phrase"})
 
@@ -241,6 +241,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
         chunk_ids: set[str] = set()
         line_ids: set[str] = set()
         missing_refs: set[str] = set()
+        nonword_marker_count = 0
         sign_paths: set[str] = set()
         linkbase_seen = False
 
@@ -270,7 +271,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
             nodes[index].slots.add(slot)
             if nodes[index].otype == "line":
                 parents = edges["line_chunk"].get(index, set())
-            elif nodes[index].otype in _CHUNK_TYPES or nodes[index].otype == "missing_span":
+            elif nodes[index].otype in _CHUNK_TYPES or nodes[index].otype in {"missing_span", "nonword_marker"}:
                 parents = {nodes[index].parent} if nodes[index].parent is not None else set()
             else:
                 raise ETCSRISourceError("unexpected empty-anchor owner")
@@ -280,7 +281,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                     parent = nodes[parent].parent
 
         def visit(entry: object) -> None:
-            nonlocal current_line, semantic_signs, synthetic_slots, linkbase_seen
+            nonlocal current_line, semantic_signs, synthetic_slots, linkbase_seen, nonword_marker_count
             if not isinstance(entry, dict):
                 raise ETCSRISourceError(f"{doc_key}: non-object CDL child")
             kind = entry.get("node")
@@ -321,6 +322,40 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                 chunks.pop()
                 return
             if kind == "d":
+                if entry.get("type") == "nonw":
+                    # Real Q001794 and Q001870 records are CDL events, not
+                    # source words, signs or missing-line extent markers.
+                    if set(entry) - {"node", "type", "ref", "lang"} or "ref" not in entry:
+                        raise ETCSRISourceError(
+                            f"{doc_key}: unsupported nonw marker fields"
+                        )
+                    ref = entry["ref"]
+                    if not isinstance(ref, str):
+                        raise ETCSRISourceError(
+                            f"{doc_key}: nonw ref must be a string (empty is attested)"
+                        )
+                    lang = entry.get("lang")
+                    if lang is not None and (not isinstance(lang, str) or not lang):
+                        raise ETCSRISourceError(f"{doc_key}: invalid nonw lang")
+                    nonword_marker_count += 1
+                    attrs: dict[str, str | int] = {
+                        "document_key": doc_key,
+                        "marker_type": "nonw",
+                        "marker_json": _json(entry),
+                        "source_ref_json": _json(ref),
+                        "marker_ordinal": nonword_marker_count,
+                    }
+                    if ref:
+                        attrs["source_id"] = ref
+                    if lang is not None:
+                        attrs["marker_lang"] = lang
+                    idx = node(
+                        "nonword_marker", attrs,
+                        parent=chunks[-1] if chunks else doc_idx,
+                    )
+                    anchor_if_empty(idx)
+                    counts["nonword_marker"] += 1
+                    return
                 if entry.get("type") == "nonx":
                     # Real ETCSRI Q000377 uses these for missing LINE spans.
                     # Do not invent the (unknown) missing line words or

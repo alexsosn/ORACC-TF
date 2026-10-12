@@ -10,6 +10,7 @@ on:
       - "tests/test_issue32_etcsri_missing_spans.py"
       - "tests/test_issue32_etcsri_nonword.py"
       - "tests/test_issue32_etcsri_gdl_modifiers.py"
+      - "tests/test_issue32_etcsri_gdl_census.py"
       - "docs/plans/P-007-etcsri-real-tf-slice.md"
       - ".github/workflows/issue32-etcsri-real-tf-slice.yml"
   workflow_dispatch:
@@ -32,6 +33,7 @@ jobs:
             tests/test_issue32_etcsri_missing_spans.py
             tests/test_issue32_etcsri_nonword.py
             tests/test_issue32_etcsri_gdl_modifiers.py
+            tests/test_issue32_etcsri_gdl_census.py
             data/etcsri/corpusjson
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
@@ -83,6 +85,8 @@ jobs:
           if len(examples) != 2:
               raise AssertionError(f"Expected the two R-007 nonw markers; observed {len(examples)}")
           PY
+      - name: Preflight every ETCSRI word for source GDL compatibility
+        run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_gdl_census.py
       - name: Convert both real ETCSRI witnesses and verify source data in Text-Fabric
         run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_vertical_slice.py
       - name: Validate actual Q000377 missing-line markers as technical TF gaps

@@ -5,7 +5,7 @@ type: plan
 status: active
 priority: P1
 issue: 32
-updated: 2026-10-11
+updated: 2026-10-12
 fact_policy: snapshot-evidence
 evidence_date: 2026-10-11
 evidence_basis: R-007 ETCSRI checked-in source census and pinned Q000935/Q000376 source Git blobs; RED-first PR #173 evidence
@@ -89,3 +89,89 @@ Unknown source chunk/marker/GDL types, non-unique word/sign identities,
 inconsistent source spans, non-roundtripping `para/props`, ambiguous
 morpheme pairing, or licence conflicts must be surfaced explicitly; never
 silently rewrite source to satisfy the TF graph.
+
+## Follow-up full-corpus milestone (issue #32, PR #176)
+
+The original two-edition slice is merged in PR #173. Do not make an
+additional generic converter path. Continue the isolated ETCSRI converter
+with **real-source-shape** fixes, RED first.
+
+The checked-in source [R-007 working-tree scan, run 38166385264] measured
+1,456 corpusjson editions and the complete `node=d` marker inventory:
+**16,886 `line-start`, 694 `nonx`, and 2 `nonw` records**.
+The first whole-corpus RED run, 38181383535, failed at
+`Q000377` because `nonx` had not been modeled. The actual Git blob
+`62bbca48a50205353ac5ed8225a3ce3e163c5f31` contains nine `nonx`
+markers. In sentence `Q000377.U490` one records
+`ref=Q000377.387, scope=line, state=missing, extent=3, strict=1`.
+
+For **`nonx`**, preserve the complete marker object and an independently
+queryable nontext-span node, anchored by a technical `synthetic=1` sign
+slot in the actual sentence. It must not belong to the preceding/following
+physical line or count as a source sign/word; never invent three missing
+line nodes from an `extent` annotation. Independently check real TF
+`oslots` and source JSON on that pinned sentence.
+
+For the **two `nonw`** source events, inspect their *actual* JSON shape
+before choosing a representation. Do not classify as `nonx`, drop, or
+fabricate words without evidence. Continue using the whole-corpus test
+as a hard source-coverage gate: 29,573 words, full source-to-TF payload
+roundtrip and exact original provenance, with every deviation reported.
+
+The whole-corpus PR does not authorize publication, dataset registration,
+or a source licence conclusion. Its independent adversarial review must
+check exact-head CI and actual emitted TF content before merge.
+
+## Real nonw witnesses (12 October follow-up)
+
+The dedicated source-scan run `38231547891` revealed exactly two
+`node=d,type=nonw` markers, subsequently independently inspected in their
+actual checked-in JSON:
+
+- `Q001794.json` (Git blob `286a599b1331f437ca1fa0bbb22e16053206056e`),
+  sentence `Q001794.U4`: `{"node":"d","type":"nonw","ref":""}`,
+  after source word `Q001794.l05654` on line 19 and before line 20.
+- `Q001870.json` (Git blob `f8ad81e0619d52123b9be24848aeb9af3d7f709d`),
+  sentence `Q001870.U2`: `{"node":"d","type":"nonw","ref":"Q001870.3.1.a","lang":"sux"}`,
+  after word `Q001870.l06700` on line 3 and before line 4.
+
+Neither has an `f` lexical object or GDL sign tree. Preserve them as
+`nonword_marker` nodes with exact `marker_json`, queryable
+`marker_type=nonw`, and a technical, non-visible anchor under their
+source-chunk ancestry. A blank `ref` is **source data**, not an inferred
+word/line identity. Reject malformed `ref`/`lang` shapes, do not assign a
+lexeme or increase physical source word/sign/line counts, and test both
+blob-pinned witnesses in real TF before proceeding to full-corpus checks.
+
+## Full-source event and sign-shape correction (12 October)
+
+The *actual* workflow 38235200315 surveyed all 694 source `nonx`
+events and found ten combinations, not solely missing line counts:
+649 line/missing/strict=1; 14 column/missing; 12 line/ruling;
+8 line/blank; 3 line/traces; 3 line/illegible;
+2 missing with no `scope` and strict=0;
+1 line/erased; 1 column/blank; 1 case/blank.
+Original `extent` is either a positive decimal string or one of
+`n`, `rest`, `end`. No conversion may expand these uncertain spans
+to invented lines or signs. Canonical source marker JSON and queryable
+string values are retained; the scope feature is absent when omitted by
+the source.
+
+The first whole-corpus post-nonw failure (workflow 38235484148)
+was a real GDL object at `Q000377.l02b7a`:
+`{"b":"AŠ"}` followed by `{"m":"t"}` in the `mods` list
+inside the compound `|E₂×AŠ@t|`. These are the source's base and
+modifier *metadata* leaves, not independent sign slots. The shared
+GDL classifier accepts these narrowly within `mods` and still rejects
+unknown standalone or ill-typed shapes. Real-source negative tests
+protect the sign-slot interpretation; the whole-corpus conversion
+gate must still independently check all 1,456 texts and 68,403
+source sign observations.
+
+The `nonx` TF node type is intentionally `nontext_span`, not
+`missing_span`: source `Q000834.json` (Git blob
+`574f6ed3eace4a8d2d04d3da2c2fdc20e7af4f43`) attests
+`Q000834.102` with `state=ruling`, `extent=n`, `scope=line`.
+A ruling is not a claim that lexical text was once present. The
+source-specific `gap_state` and full `marker_json` remain recoverable;
+the technical slot is non-visible and does not count as an actual sign.

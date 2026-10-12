@@ -46,7 +46,7 @@ class _Node:
 
 _TYPE_ORDER = (
     "document", "text", "discourse", "sentence", "phrase",
-    "line", "word", "determinative",
+    "line", "nontext_span", "nonword_marker", "word", "determinative",
 )
 _CHUNK_TYPES = frozenset({"text", "discourse", "sentence", "phrase"})
 
@@ -71,6 +71,43 @@ def _add_text_features(attrs: dict[str, str | int], source: dict, fields: Iterab
         value = _str_value(source, name, where=where)
         if value is not None:
             attrs[name] = value
+
+
+def _nonx_attrs(entry: dict, *, where: str) -> dict[str, str]:
+    """Source-native ETCSRI nonx attributes; no invented missing text.
+
+    Source census 38166385264 and real shape survey 38235200315 attest
+    694 events: numeric/n/rest/end extent, optional scope, two strict
+    flags and six distinct states. Preserve their original lexical strings.
+    """
+    allowed = {"node", "type", "ref", "scope", "state", "extent", "strict"}
+    required = {"node", "type", "ref", "state", "extent", "strict"}
+    if not required <= set(entry) or set(entry) - allowed:
+        raise ETCSRISourceError(f"{where}: malformed nonx marker fields")
+    if entry.get("node") != "d" or entry.get("type") != "nonx":
+        raise ETCSRISourceError(f"{where}: expected nonx CDL marker")
+    ref = _str_value(entry, "ref", where=where, required=True)
+    scope = _str_value(entry, "scope", where=where)
+    state = _str_value(entry, "state", where=where, required=True)
+    extent = _str_value(entry, "extent", where=where, required=True)
+    strict = _str_value(entry, "strict", where=where, required=True)
+    if scope not in (None, "line", "column", "case"):
+        raise ETCSRISourceError(f"{where}: unsupported nonx scope {scope!r}")
+    if state not in ("missing", "blank", "ruling", "traces", "illegible", "erased"):
+        raise ETCSRISourceError(f"{where}: unsupported nonx state {state!r}")
+    if strict not in ("0", "1"):
+        raise ETCSRISourceError(f"{where}: unsupported nonx strict flag {strict!r}")
+    if not (extent in ("rest", "n", "end") or
+            (extent.isascii() and extent.isdecimal() and int(extent) > 0)):
+        raise ETCSRISourceError(f"{where}: invalid nonx extent {extent!r}")
+    assert ref is not None and state is not None and extent is not None and strict is not None
+    attrs = {
+        "source_id": ref, "marker_type": "nonx", "marker_json": _json(entry),
+        "gap_state": state, "gap_extent": extent, "gap_strict": strict,
+    }
+    if scope is not None:
+        attrs["gap_scope"] = scope
+    return attrs
 
 
 def _load_source(path: Path) -> tuple[dict, bytes]:
@@ -240,6 +277,8 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
         word_ids: set[str] = set()
         chunk_ids: set[str] = set()
         line_ids: set[str] = set()
+        missing_refs: set[str] = set()
+        nonword_marker_count = 0
         sign_paths: set[str] = set()
         linkbase_seen = False
 
@@ -269,7 +308,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
             nodes[index].slots.add(slot)
             if nodes[index].otype == "line":
                 parents = edges["line_chunk"].get(index, set())
-            elif nodes[index].otype in _CHUNK_TYPES:
+            elif nodes[index].otype in _CHUNK_TYPES or nodes[index].otype in {"nontext_span", "nonword_marker"}:
                 parents = {nodes[index].parent} if nodes[index].parent is not None else set()
             else:
                 raise ETCSRISourceError("unexpected empty-anchor owner")
@@ -279,7 +318,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                     parent = nodes[parent].parent
 
         def visit(entry: object) -> None:
-            nonlocal current_line, semantic_signs, synthetic_slots, linkbase_seen
+            nonlocal current_line, semantic_signs, synthetic_slots, linkbase_seen, nonword_marker_count
             if not isinstance(entry, dict):
                 raise ETCSRISourceError(f"{doc_key}: non-object CDL child")
             kind = entry.get("node")
@@ -320,6 +359,57 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                 chunks.pop()
                 return
             if kind == "d":
+                if entry.get("type") == "nonw":
+                    # Real Q001794 and Q001870 records are CDL events, not
+                    # source words, signs or missing-line extent markers.
+                    if set(entry) - {"node", "type", "ref", "lang"} or "ref" not in entry:
+                        raise ETCSRISourceError(
+                            f"{doc_key}: unsupported nonw marker fields"
+                        )
+                    ref = entry["ref"]
+                    if not isinstance(ref, str):
+                        raise ETCSRISourceError(
+                            f"{doc_key}: nonw ref must be a string (empty is attested)"
+                        )
+                    lang = entry.get("lang")
+                    if lang is not None and (not isinstance(lang, str) or not lang):
+                        raise ETCSRISourceError(f"{doc_key}: invalid nonw lang")
+                    nonword_marker_count += 1
+                    attrs: dict[str, str | int] = {
+                        "document_key": doc_key,
+                        "marker_type": "nonw",
+                        "marker_json": _json(entry),
+                        "source_ref_json": _json(ref),
+                        "marker_ordinal": nonword_marker_count,
+                    }
+                    if ref:
+                        attrs["source_id"] = ref
+                    if lang is not None:
+                        attrs["marker_lang"] = lang
+                    idx = node(
+                        "nonword_marker", attrs,
+                        parent=chunks[-1] if chunks else doc_idx,
+                    )
+                    anchor_if_empty(idx)
+                    counts["nonword_marker"] += 1
+                    return
+                if entry.get("type") == "nonx":
+                    native = _nonx_attrs(entry, where=doc_key)
+                    marker_ref = native["source_id"]
+                    if marker_ref in missing_refs:
+                        raise ETCSRISourceError(
+                            f"{doc_key}: duplicate nonx source reference {marker_ref!r}"
+                        )
+                    missing_refs.add(marker_ref)
+                    gap_idx = node(
+                        "nontext_span", {"document_key": doc_key, **native},
+                        parent=chunks[-1] if chunks else doc_idx,
+                    )
+                    # One nontextual anchor under its source chunk, never
+                    # fabricated rows/signs for the source extent notation.
+                    anchor_if_empty(gap_idx)
+                    counts["nontext_span"] += 1
+                    return
                 if entry.get("type") != "line-start":
                     raise ETCSRISourceError(f"{doc_key}: unknown CDL marker {entry.get('type')!r}")
                 if current_line is not None:

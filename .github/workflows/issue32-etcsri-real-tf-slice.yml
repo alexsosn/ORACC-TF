@@ -7,6 +7,10 @@ on:
       - "programs/oracc_tf/gdl.py"
       - "programs/oracc_tf/loader.py"
       - "tests/test_issue32_etcsri_vertical_slice.py"
+      - "tests/test_issue32_etcsri_missing_spans.py"
+      - "tests/test_issue32_etcsri_nonword.py"
+      - "tests/test_issue32_etcsri_gdl_modifiers.py"
+      - "tests/test_issue32_etcsri_gdl_census.py"
       - "docs/plans/P-007-etcsri-real-tf-slice.md"
       - ".github/workflows/issue32-etcsri-real-tf-slice.yml"
   workflow_dispatch:
@@ -26,15 +30,72 @@ jobs:
             programs/oracc_tf
             tests/conftest.py
             tests/test_issue32_etcsri_vertical_slice.py
-            data/etcsri/corpusjson/Q000935.json
-            data/etcsri/corpusjson/Q000376.json
+            tests/test_issue32_etcsri_missing_spans.py
+            tests/test_issue32_etcsri_nonword.py
+            tests/test_issue32_etcsri_gdl_modifiers.py
+            tests/test_issue32_etcsri_gdl_census.py
+            data/etcsri/corpusjson
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install actual Text-Fabric runtime and test dependencies
         run: python -m pip install -e ".[dev]" "text-fabric==13.1.0"
+      - name: Survey rare nonw CDL records from actual ETCSRI sources
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          examples = []
+          from collections import Counter
+          nonx_patterns = Counter()
+          nonx_examples = {}
+          for path in sorted(Path("data/etcsri/corpusjson").glob("*.json")):
+              root = json.loads(path.read_text(encoding="utf-8"))
+              todo = [(root, "root")]
+              while todo:
+                  node, parent = todo.pop()
+                  if node.get("node") == "d" and node.get("type") == "nonx":
+                      pattern = (
+                          node.get("scope"), node.get("state"), node.get("strict"),
+                          tuple(sorted(node)),
+                      )
+                      nonx_patterns[pattern] += 1
+                      nonx_examples.setdefault(pattern, {"member": path.name, "marker": node})
+                  if node.get("node") == "d" and node.get("type") == "nonw":
+                      examples.append({
+                          "member": path.name,
+                          "parent": parent,
+                          "marker": node,
+                      })
+                  for child in node.get("cdl") or []:
+                      if isinstance(child, dict):
+                          todo.append((child, node.get("id") or node.get("ref") or "document"))
+          print("ETCSRI nonx source shapes:", json.dumps([
+              {
+                  "scope": key[0], "state": key[1], "strict": key[2],
+                  "keys": key[3], "count": count, **nonx_examples[key],
+              }
+              for key, count in sorted(nonx_patterns.items(), key=lambda kv: -kv[1])
+          ], ensure_ascii=False, sort_keys=True))
+          if sum(nonx_patterns.values()) != 694:
+              raise AssertionError(f"Expected R-007's 694 nonx; found {sum(nonx_patterns.values())}")
+          print("ETCSRI nonw source witnesses:", json.dumps(examples, ensure_ascii=False, sort_keys=True))
+          if len(examples) != 2:
+              raise AssertionError(f"Expected the two R-007 nonw markers; observed {len(examples)}")
+          PY
+      - name: Preflight every ETCSRI word for source GDL compatibility
+        run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_gdl_census.py
       - name: Convert both real ETCSRI witnesses and verify source data in Text-Fabric
         run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_vertical_slice.py
+      - name: Validate actual Q000377 missing-line markers as technical TF gaps
+        run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_missing_spans.py
+      - name: Verify two real nonw markers in their source sentences
+        run: |
+          python -m pytest -vv -m corpus tests/test_issue32_etcsri_nonword.py
+          python -m pytest -vv -m "not corpus" tests/test_issue32_etcsri_nonword.py
+      - name: Validate real Q000377 b/m source GDL modifier without extra slots
+        run: python -m pytest -vv tests/test_issue32_etcsri_gdl_modifiers.py
       - name: Run negative unknown-shape and absent-morphology regressions
         run: python -m pytest -vv -m "not corpus" tests/test_issue32_etcsri_vertical_slice.py

@@ -73,6 +73,43 @@ def _add_text_features(attrs: dict[str, str | int], source: dict, fields: Iterab
             attrs[name] = value
 
 
+def _nonx_attrs(entry: dict, *, where: str) -> dict[str, str]:
+    """Source-native ETCSRI nonx attributes; no invented missing text.
+
+    Source census 38166385264 and real shape survey 38235200315 attest
+    694 events: numeric/n/rest/end extent, optional scope, two strict
+    flags and six distinct states. Preserve their original lexical strings.
+    """
+    allowed = {"node", "type", "ref", "scope", "state", "extent", "strict"}
+    required = {"node", "type", "ref", "state", "extent", "strict"}
+    if not required <= set(entry) or set(entry) - allowed:
+        raise ETCSRISourceError(f"{where}: malformed nonx marker fields")
+    if entry.get("node") != "d" or entry.get("type") != "nonx":
+        raise ETCSRISourceError(f"{where}: expected nonx CDL marker")
+    ref = _str_value(entry, "ref", where=where, required=True)
+    scope = _str_value(entry, "scope", where=where)
+    state = _str_value(entry, "state", where=where, required=True)
+    extent = _str_value(entry, "extent", where=where, required=True)
+    strict = _str_value(entry, "strict", where=where, required=True)
+    if scope not in (None, "line", "column", "case"):
+        raise ETCSRISourceError(f"{where}: unsupported nonx scope {scope!r}")
+    if state not in ("missing", "blank", "ruling", "traces", "illegible", "erased"):
+        raise ETCSRISourceError(f"{where}: unsupported nonx state {state!r}")
+    if strict not in ("0", "1"):
+        raise ETCSRISourceError(f"{where}: unsupported nonx strict flag {strict!r}")
+    if not (extent in ("rest", "n", "end") or
+            (extent.isascii() and extent.isdecimal() and int(extent) > 0)):
+        raise ETCSRISourceError(f"{where}: invalid nonx extent {extent!r}")
+    assert ref is not None and state is not None and extent is not None and strict is not None
+    attrs = {
+        "source_id": ref, "marker_type": "nonx", "marker_json": _json(entry),
+        "gap_state": state, "gap_extent": extent, "gap_strict": strict,
+    }
+    if scope is not None:
+        attrs["gap_scope"] = scope
+    return attrs
+
+
 def _load_source(path: Path) -> tuple[dict, bytes]:
     try:
         payload = path.read_bytes()
@@ -357,40 +394,19 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                     counts["nonword_marker"] += 1
                     return
                 if entry.get("type") == "nonx":
-                    # Real ETCSRI Q000377 uses these for missing LINE spans.
-                    # Do not invent the (unknown) missing line words or
-                    # substitute a semantic sign for this source event.
-                    marker_ref = _str_value(entry, "ref", where=doc_key, required=True)
-                    assert marker_ref is not None
-                    scope = _str_value(entry, "scope", where=doc_key, required=True)
-                    state = _str_value(entry, "state", where=doc_key, required=True)
-                    extent = _str_value(entry, "extent", where=doc_key, required=True)
-                    strict = _str_value(entry, "strict", where=doc_key)
-                    if scope != "line" or state != "missing":
-                        raise ETCSRISourceError(
-                            f"{doc_key}:{marker_ref}: unknown nonx scope/state {scope!r}/{state!r}"
-                        )
-                    if not extent or not extent.isascii() or not extent.isdecimal() or int(extent) < 1:
-                        raise ETCSRISourceError(
-                            f"{doc_key}:{marker_ref}: invalid nonx extent {extent!r}"
-                        )
-                    if strict not in (None, "1"):
-                        raise ETCSRISourceError(
-                            f"{doc_key}:{marker_ref}: invalid nonx strict flag"
-                        )
+                    native = _nonx_attrs(entry, where=doc_key)
+                    marker_ref = native["source_id"]
                     if marker_ref in missing_refs:
                         raise ETCSRISourceError(
                             f"{doc_key}: duplicate nonx source reference {marker_ref!r}"
                         )
                     missing_refs.add(marker_ref)
-                    gap_idx = node("missing_span", {
-                        "document_key": doc_key, "source_id": marker_ref,
-                        "marker_type": "nonx", "marker_json": _json(entry),
-                        "gap_scope": scope, "gap_state": state,
-                        "gap_extent": extent, **({"gap_strict": strict} if strict is not None else {}),
-                    }, parent=chunks[-1] if chunks else doc_idx)
-                    # Technical anchor follows recorded *chunk* ancestry;
-                    # never attach it to a previous real line.
+                    gap_idx = node(
+                        "missing_span", {"document_key": doc_key, **native},
+                        parent=chunks[-1] if chunks else doc_idx,
+                    )
+                    # One nontextual anchor under its source chunk, never
+                    # fabricated rows/signs for the source extent notation.
                     anchor_if_empty(gap_idx)
                     counts["missing_span"] += 1
                     return

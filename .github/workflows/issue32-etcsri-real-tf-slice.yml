@@ -44,11 +44,21 @@ jobs:
           from pathlib import Path
 
           examples = []
+          from collections import Counter
+          nonx_patterns = Counter()
+          nonx_examples = {}
           for path in sorted(Path("data/etcsri/corpusjson").glob("*.json")):
               root = json.loads(path.read_text(encoding="utf-8"))
               todo = [(root, "root")]
               while todo:
                   node, parent = todo.pop()
+                  if node.get("node") == "d" and node.get("type") == "nonx":
+                      pattern = (
+                          node.get("scope"), node.get("state"), node.get("strict"),
+                          tuple(sorted(node)),
+                      )
+                      nonx_patterns[pattern] += 1
+                      nonx_examples.setdefault(pattern, {"member": path.name, "marker": node})
                   if node.get("node") == "d" and node.get("type") == "nonw":
                       examples.append({
                           "member": path.name,
@@ -58,6 +68,15 @@ jobs:
                   for child in node.get("cdl") or []:
                       if isinstance(child, dict):
                           todo.append((child, node.get("id") or node.get("ref") or "document"))
+          print("ETCSRI nonx source shapes:", json.dumps([
+              {
+                  "scope": key[0], "state": key[1], "strict": key[2],
+                  "keys": key[3], "count": count, **nonx_examples[key],
+              }
+              for key, count in sorted(nonx_patterns.items(), key=lambda kv: -kv[1])
+          ], ensure_ascii=False, sort_keys=True))
+          if sum(nonx_patterns.values()) != 694:
+              raise AssertionError(f"Expected R-007's 694 nonx; found {sum(nonx_patterns.values())}")
           print("ETCSRI nonw source witnesses:", json.dumps(examples, ensure_ascii=False, sort_keys=True))
           if len(examples) != 2:
               raise AssertionError(f"Expected the two R-007 nonw markers; observed {len(examples)}")

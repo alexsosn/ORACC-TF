@@ -76,7 +76,7 @@ def test_real_nonword_marker_is_not_word_line_or_semantic_sign(tmp_path: Path, w
     slot, = api.L.d(n, otype="sign")
     assert api.F.synthetic.v(slot) == 1
     assert api.F.utf8.v(slot) is None
-    assert all(slot not in api.L.d(x, otype="line") for x in api.F.otype.s("line"))
+    assert all(slot not in api.L.d(x, otype="sign") for x in api.F.otype.s("line"))
     parent, = api.E.chunk_parent.f(n)
     assert api.F.source_id.v(parent) == witness[2]
 

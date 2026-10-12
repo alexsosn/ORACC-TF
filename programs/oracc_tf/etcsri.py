@@ -270,7 +270,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
             nodes[index].slots.add(slot)
             if nodes[index].otype == "line":
                 parents = edges["line_chunk"].get(index, set())
-            elif nodes[index].otype in _CHUNK_TYPES:
+            elif nodes[index].otype in _CHUNK_TYPES or nodes[index].otype == "missing_span":
                 parents = {nodes[index].parent} if nodes[index].parent is not None else set()
             else:
                 raise ETCSRISourceError("unexpected empty-anchor owner")

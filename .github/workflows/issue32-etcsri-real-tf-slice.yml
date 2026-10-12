@@ -9,6 +9,7 @@ on:
       - "tests/test_issue32_etcsri_vertical_slice.py"
       - "tests/test_issue32_etcsri_missing_spans.py"
       - "tests/test_issue32_etcsri_nonword.py"
+      - "tests/test_issue32_etcsri_gdl_modifiers.py"
       - "docs/plans/P-007-etcsri-real-tf-slice.md"
       - ".github/workflows/issue32-etcsri-real-tf-slice.yml"
   workflow_dispatch:
@@ -30,6 +31,7 @@ jobs:
             tests/test_issue32_etcsri_vertical_slice.py
             tests/test_issue32_etcsri_missing_spans.py
             tests/test_issue32_etcsri_nonword.py
+            tests/test_issue32_etcsri_gdl_modifiers.py
             data/etcsri/corpusjson
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
@@ -89,5 +91,7 @@ jobs:
         run: |
           python -m pytest -vv -m corpus tests/test_issue32_etcsri_nonword.py
           python -m pytest -vv -m "not corpus" tests/test_issue32_etcsri_nonword.py
+      - name: Validate real Q000377 b/m source GDL modifier without extra slots
+        run: python -m pytest -vv tests/test_issue32_etcsri_gdl_modifiers.py
       - name: Run negative unknown-shape and absent-morphology regressions
         run: python -m pytest -vv -m "not corpus" tests/test_issue32_etcsri_vertical_slice.py

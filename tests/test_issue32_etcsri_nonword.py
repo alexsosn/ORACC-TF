@@ -54,8 +54,16 @@ def source_witness(tmp_path: Path, witness: tuple) -> tuple[Path, dict, dict]:
 @pytest.mark.parametrize("witness", WITNESSES, ids=["blank-ref-Q001794", "sux-ref-Q001870"])
 def test_real_nonword_marker_is_not_word_line_or_semantic_sign(tmp_path: Path, witness: tuple) -> None:
     path, source, marker = source_witness(tmp_path, witness)
-    expected_words = sum(1 for entry in source["cdl"][0]["cdl"][0]["cdl"][0]["cdl"] if entry.get("node") == "l")
-    expected_lines = sum(1 for entry in source["cdl"][0]["cdl"][0]["cdl"][0]["cdl"] if entry.get("node") == "d" and entry.get("type") == "line-start")
+    # Real source sentence contains nested phrase chunks. Census every CDL
+    # descendant, not just immediate sentence children.
+    pending = [source["cdl"][0]["cdl"][0]["cdl"][0]]
+    expected_words = 0
+    expected_lines = 0
+    while pending:
+        entry = pending.pop()
+        expected_words += entry.get("node") == "l"
+        expected_lines += entry.get("node") == "d" and entry.get("type") == "line-start"
+        pending.extend(entry.get("cdl") or [])
     report = etcsri.build_tf(tmp_path / "tf", source_paths=[path])
     assert report.words == expected_words
     assert report.lines == expected_lines

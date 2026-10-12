@@ -1,0 +1,40 @@
+name: issue32-etcsri-real-tf-slice
+
+on:
+  pull_request:
+    paths:
+      - "programs/oracc_tf/etcsri.py"
+      - "programs/oracc_tf/gdl.py"
+      - "programs/oracc_tf/loader.py"
+      - "tests/test_issue32_etcsri_vertical_slice.py"
+      - "docs/plans/P-007-etcsri-real-tf-slice.md"
+      - ".github/workflows/issue32-etcsri-real-tf-slice.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-to-tf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            programs/oracc_tf
+            tests/conftest.py
+            tests/test_issue32_etcsri_vertical_slice.py
+            data/etcsri/corpusjson/Q000935.json
+            data/etcsri/corpusjson/Q000376.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual Text-Fabric runtime and test dependencies
+        run: python -m pip install -e ".[dev]" "text-fabric==13.1.0"
+      - name: Convert both real ETCSRI witnesses and verify source data in Text-Fabric
+        run: python -m pytest -vv -m corpus tests/test_issue32_etcsri_vertical_slice.py
+      - name: Run negative unknown-shape and absent-morphology regressions
+        run: python -m pytest -vv -m "not corpus" tests/test_issue32_etcsri_vertical_slice.py

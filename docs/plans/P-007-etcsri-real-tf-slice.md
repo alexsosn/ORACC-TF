@@ -142,3 +142,28 @@ source-chunk ancestry. A blank `ref` is **source data**, not an inferred
 word/line identity. Reject malformed `ref`/`lang` shapes, do not assign a
 lexeme or increase physical source word/sign/line counts, and test both
 blob-pinned witnesses in real TF before proceeding to full-corpus checks.
+
+## Full-source event and sign-shape correction (12 October)
+
+The *actual* workflow 38235200315 surveyed all 694 source `nonx`
+events and found ten combinations, not solely missing line counts:
+649 line/missing/strict=1; 14 column/missing; 12 line/ruling;
+8 line/blank; 3 line/traces; 3 line/illegible;
+2 missing with no `scope` and strict=0;
+1 line/erased; 1 column/blank; 1 case/blank.
+Original `extent` is either a positive decimal string or one of
+`n`, `rest`, `end`. No conversion may expand these uncertain spans
+to invented lines or signs. Canonical source marker JSON and queryable
+string values are retained; the scope feature is absent when omitted by
+the source.
+
+The first whole-corpus post-nonw failure (workflow 38235484148)
+was a real GDL object at `Q000377.l02b7a`:
+`{"b":"AŠ"}` followed by `{"m":"t"}` in the `mods` list
+inside the compound `|E₂×AŠ@t|`. These are the source's base and
+modifier *metadata* leaves, not independent sign slots. The shared
+GDL classifier accepts these narrowly within `mods` and still rejects
+unknown standalone or ill-typed shapes. Real-source negative tests
+protect the sign-slot interpretation; the whole-corpus conversion
+gate must still independently check all 1,456 texts and 68,403
+source sign observations.

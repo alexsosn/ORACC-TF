@@ -106,7 +106,7 @@ markers. In sentence `Q000377.U490` one records
 `ref=Q000377.387, scope=line, state=missing, extent=3, strict=1`.
 
 For **`nonx`**, preserve the complete marker object and an independently
-queryable missing-span node, anchored by a technical `synthetic=1` sign
+queryable nontext-span node, anchored by a technical `synthetic=1` sign
 slot in the actual sentence. It must not belong to the preceding/following
 physical line or count as a source sign/word; never invent three missing
 line nodes from an `extent` annotation. Independently check real TF
@@ -167,3 +167,11 @@ unknown standalone or ill-typed shapes. Real-source negative tests
 protect the sign-slot interpretation; the whole-corpus conversion
 gate must still independently check all 1,456 texts and 68,403
 source sign observations.
+
+The `nonx` TF node type is intentionally `nontext_span`, not
+`missing_span`: source `Q000834.json` (Git blob
+`574f6ed3eace4a8d2d04d3da2c2fdc20e7af4f43`) attests
+`Q000834.102` with `state=ruling`, `extent=n`, `scope=line`.
+A ruling is not a claim that lexical text was once present. The
+source-specific `gap_state` and full `marker_json` remain recoverable;
+the technical slot is non-visible and does not count as an actual sign.

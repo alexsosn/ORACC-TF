@@ -80,7 +80,8 @@ def test_real_nonword_marker_is_not_word_line_or_semantic_sign(tmp_path: Path, w
     if "lang" in marker:
         assert api.F.marker_lang.v(n) == marker["lang"]
     else:
-        assert api.F.marker_lang.v(n) is None
+        # A single-document TF may omit an entirely unpopulated feature file.
+        assert not hasattr(api.F, "marker_lang") or api.F.marker_lang.v(n) is None
     slot, = api.L.d(n, otype="sign")
     assert api.F.synthetic.v(slot) == 1
     assert api.F.utf8.v(slot) is None

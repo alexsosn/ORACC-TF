@@ -121,3 +121,24 @@ roundtrip and exact original provenance, with every deviation reported.
 The whole-corpus PR does not authorize publication, dataset registration,
 or a source licence conclusion. Its independent adversarial review must
 check exact-head CI and actual emitted TF content before merge.
+
+## Real nonw witnesses (12 October follow-up)
+
+The dedicated source-scan run `38231547891` revealed exactly two
+`node=d,type=nonw` markers, subsequently independently inspected in their
+actual checked-in JSON:
+
+- `Q001794.json` (Git blob `286a599b1331f437ca1fa0bbb22e16053206056e`),
+  sentence `Q001794.U4`: `{"node":"d","type":"nonw","ref":""}`,
+  after source word `Q001794.l05654` on line 19 and before line 20.
+- `Q001870.json` (Git blob `f8ad81e0619d52123b9be24848aeb9af3d7f709d`),
+  sentence `Q001870.U2`: `{"node":"d","type":"nonw","ref":"Q001870.3.1.a","lang":"sux"}`,
+  after word `Q001870.l06700` on line 3 and before line 4.
+
+Neither has an `f` lexical object or GDL sign tree. Preserve them as
+`nonword_marker` nodes with exact `marker_json`, queryable
+`marker_type=nonw`, and a technical, non-visible anchor under their
+source-chunk ancestry. A blank `ref` is **source data**, not an inferred
+word/line identity. Reject malformed `ref`/`lang` shapes, do not assign a
+lexeme or increase physical source word/sign/line counts, and test both
+blob-pinned witnesses in real TF before proceeding to full-corpus checks.

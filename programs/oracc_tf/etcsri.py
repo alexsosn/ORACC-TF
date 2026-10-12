@@ -46,7 +46,7 @@ class _Node:
 
 _TYPE_ORDER = (
     "document", "text", "discourse", "sentence", "phrase",
-    "line", "missing_span", "nonword_marker", "word", "determinative",
+    "line", "nontext_span", "nonword_marker", "word", "determinative",
 )
 _CHUNK_TYPES = frozenset({"text", "discourse", "sentence", "phrase"})
 
@@ -308,7 +308,7 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
             nodes[index].slots.add(slot)
             if nodes[index].otype == "line":
                 parents = edges["line_chunk"].get(index, set())
-            elif nodes[index].otype in _CHUNK_TYPES or nodes[index].otype in {"missing_span", "nonword_marker"}:
+            elif nodes[index].otype in _CHUNK_TYPES or nodes[index].otype in {"nontext_span", "nonword_marker"}:
                 parents = {nodes[index].parent} if nodes[index].parent is not None else set()
             else:
                 raise ETCSRISourceError("unexpected empty-anchor owner")
@@ -402,13 +402,13 @@ def build_tf(out_dir: Path | str, *, source_paths: Iterable[Path | str]) -> ETCS
                         )
                     missing_refs.add(marker_ref)
                     gap_idx = node(
-                        "missing_span", {"document_key": doc_key, **native},
+                        "nontext_span", {"document_key": doc_key, **native},
                         parent=chunks[-1] if chunks else doc_idx,
                     )
                     # One nontextual anchor under its source chunk, never
                     # fabricated rows/signs for the source extent notation.
                     anchor_if_empty(gap_idx)
-                    counts["missing_span"] += 1
+                    counts["nontext_span"] += 1
                     return
                 if entry.get("type") != "line-start":
                     raise ETCSRISourceError(f"{doc_key}: unknown CDL marker {entry.get('type')!r}")

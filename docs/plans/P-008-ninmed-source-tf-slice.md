@@ -99,6 +99,19 @@ Research → RED → implement → validate plan:
    do not invent memory targets before measuring actual data. Keep the
    heavy test in a **dedicated on-PR acceptance job**, not all routine
    lightweight tests.
+**Source-event fidelity contract:** The original generic section walker treats
+`node=d` nonword/nontext events as positional metadata, but does not
+materialise standalone TF nodes for every event. The initial all-source
+NINMED experiment must therefore retain **every** primary `node=d`
+record (line-start, object/surface/column, nonx/nonw) in an opt-in
+`source_markers_json` document feature, in source traversal order, with
+each original object and its exact integer-index path through nested
+`cdl` arrays. Tests resolve these paths against the source and compare
+full payloads. This provides **lossless recovery**, not a claim of
+individually queryable TF marker nodes: a later user-facing milestone
+may model typed per-event nodes after source fidelity is secure.
+Do not copy whole raw CDL bodies or invent textual positions.
+
 4. Independent adversarial review inspects primary source, generated TF,
    lexical edges and nontext/line scope. The Nino comparison is an
    independent divergence report only, not canonical positional truth.

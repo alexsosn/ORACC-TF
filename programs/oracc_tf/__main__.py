@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import sys
 
-from . import etcsri
+from . import etcsri, ninmed
 
 
 def _build_etcsri(args: argparse.Namespace) -> int:
@@ -61,6 +61,65 @@ def _build_etcsri(args: argparse.Namespace) -> int:
     return 0
 
 
+def _build_ninmed(args: argparse.Namespace) -> int:
+    """Build from explicitly supplied primary ORACC asbp/ninmed source data."""
+    source_root = Path(args.source_dir).expanduser().resolve()
+    output_root = Path(args.output).expanduser().resolve()
+    if not source_root.is_dir():
+        raise ValueError(f"ORACC NINMED source directory does not exist: {source_root}")
+    data_dir = source_root / "corpusjson" if (source_root / "corpusjson").is_dir() else source_root
+    if output_root == source_root or output_root.is_relative_to(source_root):
+        raise ValueError("TF output must be outside the supplied source directory")
+    if output_root.exists():
+        if not output_root.is_dir() or any(output_root.iterdir()):
+            raise ValueError(f"TF output must be a new/empty directory: {output_root}")
+
+    available = {p.stem: p for p in sorted(data_dir.glob("*.json")) if p.is_file()}
+    if not available:
+        raise ValueError(f"No ORACC NINMED corpusjson files found in {data_dir}")
+    if args.text_id:
+        selected = sorted(set(args.text_id))
+        missing = sorted(set(selected) - set(available))
+        if missing:
+            raise ValueError(f"Requested NINMED text IDs not found: {', '.join(missing)}")
+    else:
+        selected = sorted(available)
+    sources = []
+    skipped = []
+    for text_id in selected:
+        path = available[text_id]
+        if path.stat().st_size == 0:
+            if args.skip_known_empty and not args.text_id and text_id == "P395407":
+                skipped.append(text_id)
+                continue
+            raise ValueError(
+                f"NINMED zero-byte source {text_id} ({path.name}); "
+                "use --skip-known-empty to explicitly exclude known P395407 in a full build"
+            )
+        if args.text_id:
+            try:
+                source_doc = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, UnicodeError) as exc:
+                raise ValueError(f"Cannot read requested NINMED text {text_id}: {path}") from exc
+            embedded = source_doc.get("textid") if isinstance(source_doc, dict) else None
+            if embedded != text_id:
+                raise ValueError(
+                    f"Requested NINMED text {text_id} from {path.name}, "
+                    f"but embedded source textid is {embedded!r}"
+                )
+        sources.append(path)
+    if not sources:
+        raise ValueError("No readable NINMED source editions selected")
+    report = ninmed.build_tf(output_root, source_paths=sources)
+    print(
+        f"Built NINMED Text-Fabric: {report.documents} documents, "
+        f"{report.words} words, {report.signs} source signs at {output_root}"
+    )
+    if skipped:
+        print(f"Explicitly excluded known zero-byte NINMED source: {', '.join(skipped)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m oracc_tf",
@@ -83,10 +142,32 @@ def main(argv: list[str] | None = None) -> int:
         "--text-id", action="append",
         help="Select one text ID (e.g. Q000935); repeat to select multiple. Default: all files.",
     )
+    ninmed_command = commands.add_parser(
+        "build-ninmed",
+        help="Convert user-supplied ORACC ASBP/NINMED corpusjson to Text-Fabric.",
+    )
+    ninmed_command.add_argument(
+        "--source-dir", required=True,
+        help="Directory with NINMED corpusjson/*.json or corpusjson/ parent.",
+    )
+    ninmed_command.add_argument(
+        "--output", required=True,
+        help="New/empty destination for generated *.tf files.",
+    )
+    ninmed_command.add_argument(
+        "--text-id", action="append",
+        help="Select one native source ID (e.g. P285136); repeat as needed.",
+    )
+    ninmed_command.add_argument(
+        "--skip-known-empty", action="store_true",
+        help="For full-corpus input only: explicitly exclude known zero-byte P395407.json.",
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "build-etcsri":
             return _build_etcsri(args)
+        if args.command == "build-ninmed":
+            return _build_ninmed(args)
     except (ValueError, OSError, etcsri.ETCSRISourceError) as exc:
         print(f"ORACC-TF: {exc}", file=sys.stderr)
         return 2

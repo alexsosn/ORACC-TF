@@ -45,6 +45,19 @@ def _independent_source_signs(entries: list[dict]):
             yield item
 
 
+def _independent_d_markers(doc: dict) -> list[dict]:
+    output = []
+    pending = [(doc, [])]
+    while pending:
+        node, at = pending.pop()
+        if node.get("node") == "d":
+            output.append({"path": at, "marker": node})
+        children = node.get("cdl") or []
+        for i in range(len(children) - 1, -1, -1):
+            pending.append((children[i], at + [i]))
+    return output
+
+
 def _members() -> list[Path]:
     files = sorted(SRC.glob("*.json"))
     assert len(files) == 160, "ORACC NINMED primary source membership drift"
@@ -104,6 +117,11 @@ def test_every_readable_oracc_ninmed_body_roundtrips_into_native_tf(tmp_path: Pa
         assert json.loads(api.F.document_meta_json.v(node)) == {
             k: v for k, v in doc.items() if k != "cdl"
         }
+        original_markers = _independent_d_markers(doc)
+        retained_markers = json.loads(api.F.source_markers_json.v(node))
+        assert retained_markers == original_markers, (
+            key, "lost or corrupted native CDL structural/line/nonword events"
+        )
         for word in _source_words(doc):
             source_id = word["id"]
             identity = key, source_id

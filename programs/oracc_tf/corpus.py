@@ -381,6 +381,29 @@ def _source_gdl(word: words.WordRecord) -> str | None:
     return _json(word.features["gdl"])
 
 
+def _native_source_markers_json(doc: dict) -> str:
+    """Retain nonlexical CDL events and their exact source-array paths.
+
+    This opt-in archival feature avoids inventing TF word/sign/line nodes.
+    Paths are indexes in nested source `cdl` arrays, not inferred IDs.
+    """
+    markers: list[dict[str, object]] = []
+    stack: list[tuple[dict, list[int]]] = [(doc, [])]
+    while stack:
+        entry, path = stack.pop()
+        if entry.get("node") == "d":
+            markers.append({"path": path, "marker": entry})
+        children = entry.get("cdl") or []
+        if not isinstance(children, list):
+            raise CorpusBuildError(f"source CDL children are not an array at {path}")
+        for index in range(len(children) - 1, -1, -1):
+            child = children[index]
+            if not isinstance(child, dict):
+                raise CorpusBuildError(f"source CDL child is not an object at {path + [index]}")
+            stack.append((child, path + [index]))
+    return _json(markers)
+
+
 def _catalogue_feature_value(value: object) -> str | None:
     if value is None:
         return None
@@ -547,6 +570,7 @@ def build_tf(
     dataset_title: str = "ORACC-TF RIAO + RINAP",
     preserve_source_word: bool = False,
     preserve_source_document: bool = False,
+    preserve_source_markers: bool = False,
 ) -> CorpusBuildReport:
     """Build one joined TF dataset with explicit empty positional anchors."""
     if not isinstance(dataset_title, str) or not dataset_title.strip():
@@ -555,6 +579,8 @@ def build_tf(
         raise CorpusBuildError("preserve_source_word must be bool")
     if not isinstance(preserve_source_document, bool):
         raise CorpusBuildError("preserve_source_document must be bool")
+    if not isinstance(preserve_source_markers, bool):
+        raise CorpusBuildError("preserve_source_markers must be bool")
     graph = _Graph(dataset_title=dataset_title)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -683,6 +709,11 @@ def build_tf(
                     key: value for key, value in edition.doc.items() if key != "cdl"
                 }),
                 source_sha256=sha256(edition.path.read_bytes()).hexdigest(),
+            )
+        if preserve_source_markers:
+            graph.feature(
+                document_node,
+                source_markers_json=_native_source_markers_json(edition.doc),
             )
         for name in _CATALOGUE_FEATURES:
             graph.feature(

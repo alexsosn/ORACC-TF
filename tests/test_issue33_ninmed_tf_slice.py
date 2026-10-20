@@ -137,3 +137,42 @@ def test_ninmed_document_source_license_timestamp_and_sha_are_queryable(
         assert api.F.source_sha256.v(node) == sha256(source.read_bytes()).hexdigest()
         assert meta["license-url"].startswith("https://creativecommons.org/")
         assert meta["UTC-timestamp"].startswith("2024-07-05")
+
+
+def _independent_d_markers(doc: dict) -> list[dict]:
+    """Source-preservation oracle, independent of the TF section converter."""
+    output: list[dict] = []
+    pending = [(doc, [])]
+    while pending:
+        node, at = pending.pop()
+        if node.get("node") == "d":
+            output.append({"path": at, "marker": node})
+        children = node.get("cdl") or []
+        for idx in range(len(children) - 1, -1, -1):
+            pending.append((children[idx], at + [idx]))
+    return output
+
+
+@pytest.mark.corpus
+def test_ninmed_native_nonword_and_line_markers_roundtrip_with_source_paths(
+    tmp_path: Path,
+) -> None:
+    """A word-only all-corpus census can still lose nonx/nonw source events."""
+    sources = [primary("P285136"), primary("P425685")]
+    ninmed.build_tf(tmp_path / "tf", source_paths=sources)
+    api = _api(tmp_path / "tf")
+    by_doc = {
+        api.F.document_key.v(n): n for n in api.F.otype.s("document")
+    }
+    for source, expected_nonx in zip(sources, (8, 3), strict=True):
+        doc = json.loads(source.read_text(encoding="utf-8"))
+        key = f"asbp/ninmed:{doc['textid']}"
+        expected = _independent_d_markers(doc)
+        assert sum(x["marker"].get("type") == "nonx" for x in expected) == expected_nonx
+        actual = json.loads(api.F.source_markers_json.v(by_doc[key]))
+        assert actual == expected, f"{key}: a source CDL marker was lost or moved"
+        for record in actual:
+            node = doc
+            for index in record["path"]:
+                node = node["cdl"][index]
+            assert node == record["marker"]

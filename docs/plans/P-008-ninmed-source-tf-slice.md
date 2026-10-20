@@ -72,3 +72,50 @@ register a public dataset.
 5. Only after this slice succeeds consider all 159 parseable bodies plus
    the explicit unreadable hazard; full dataset/release remains #33,
    not this milestone.
+
+## Whole ORACC NINMED edition gate (issue #33 follow-up)
+
+Research baseline: the pinned ORACC/Nino A/B report from merged PR #98
+recorded **159 readable ORACC corpusjson bodies**, **65,089 ORACC
+lexical word occurrences**, and one zero-byte member
+`P395407.json` (Git empty-blob SHA
+`e69de29bb2d1d6434b8b29ae775ad8c2e48c5391`). The latter
+must be explicitly reported, never silently treated as a source edition.
+PR #177 has already supplied a real-source, opt-in ORACC-only TF builder
+on P285136 and P425685; the next gate must exercise that same code on
+**all 159 readable bodies**, without Nino positional or lemma imports.
+
+Research → RED → implement → validate plan:
+
+1. RED: require exactly the known source membership/hazard partition and
+   159 TF document identities, 65,089 TF words, and independently source-
+   classified GDL sign counts. Retain per-file byte SHA, original source
+   header, and **all** source word JSON, checked by document key/source ID.
+2. Run the actual converter first. On failure, identify the precise
+   edition and primary-source CDL/GDL shape. Write a pinned real-witness
+   regression before any production change; no excluding hard cases or
+   weakening corpus completeness assertions to make tests pass.
+3. Measure peak process memory and elapsed time during the full build;
+   do not invent memory targets before measuring actual data. Keep the
+   heavy test in a **dedicated on-PR acceptance job**, not all routine
+   lightweight tests.
+**Source-event fidelity contract:** The original generic section walker treats
+`node=d` nonword/nontext events as positional metadata, but does not
+materialise standalone TF nodes for every event. The initial all-source
+NINMED experiment must therefore retain **every** primary `node=d`
+record (line-start, object/surface/column, nonx/nonw) in an opt-in
+`source_markers_json` document feature, in source traversal order, with
+each original object and its exact integer-index path through nested
+`cdl` arrays. Tests resolve these paths against the source and compare
+full payloads. This provides **lossless recovery**, not a claim of
+individually queryable TF marker nodes: a later user-facing milestone
+may model typed per-event nodes after source fidelity is secure.
+Do not copy whole raw CDL bodies or invent textual positions.
+
+4. Independent adversarial review inspects primary source, generated TF,
+   lexical edges and nontext/line scope. The Nino comparison is an
+   independent divergence report only, not canonical positional truth.
+   The known 33/34 full-sequence differences remain unresolved.
+5. Publishing/Agora registration and any legal reuse conclusion remain
+   separate release gates after all source fidelity and installation
+   acceptance checks pass.

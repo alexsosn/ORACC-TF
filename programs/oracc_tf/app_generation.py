@@ -113,7 +113,9 @@ def _validate_docs_ref(docs_ref: str) -> str:
     return docs_ref
 
 
-def _validate_tf_loadable(tf_root: Path) -> tuple[tuple[str, ...], frozenset[str]]:
+def _validate_tf_loadable(
+    tf_root: Path, *, native_kind: str | None = None,
+) -> tuple[tuple[str, ...], frozenset[str]]:
     """Load the source without mutating it and return its display-relevant schema."""
     with tempfile.TemporaryDirectory(prefix="oracc-tf-app-validate-") as temp_dir:
         isolated = Path(temp_dir) / "tf"
@@ -134,11 +136,22 @@ def _validate_tf_loadable(tf_root: Path) -> tuple[tuple[str, ...], frozenset[str
             raise AppGenerationError(f"Text-Fabric could not load TF source: {tf_root}") from exc
         if not good or tf.api is None:
             raise AppGenerationError(f"Text-Fabric could not load valid TF warp: {tf_root}")
+        if native_kind is not None:
+            prefix = "etcsri:" if native_kind == "etcsri" else "asbp/ninmed:"
+            documents = tuple(tf.api.F.otype.s("document"))
+            if not documents:
+                raise AppGenerationError(f"missing native {native_kind} document identity")
+            for node in documents:
+                document_key = tf.api.F.document_key.v(node)
+                if not isinstance(document_key, str) or not document_key.startswith(prefix):
+                    raise AppGenerationError(
+                        f"{native_kind} native identity mismatch: {document_key!r}"
+                    )
         return tuple(tf.api.F.otype.all), frozenset(tf.api.Fall())
 
 
 def _validate_tf_root(
-    tf_root: Path, tf_version: str
+    tf_root: Path, tf_version: str, *, native_kind: str | None = None,
 ) -> tuple[tuple[str, ...], frozenset[str]]:
     try:
         repository_tf_root(Path("."), tf_version)
@@ -151,7 +164,7 @@ def _validate_tf_root(
         path = tf_root / name
         if path.is_symlink() or not path.is_file():
             raise AppGenerationError(f"TF root is missing required warp feature: {name}")
-    return _validate_tf_loadable(tf_root)
+    return _validate_tf_loadable(tf_root, native_kind=native_kind)
 
 
 def _validate_override(override: Mapping[str, object] | None) -> str | None:

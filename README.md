@@ -182,6 +182,40 @@ under [issue #33](https://github.com/alexsosn/ORACC-TF/issues/33).
 A clean-wheel E2E smoke installs the code without cloning the large
 source tree and queries real P285136/P425685 TF data.
 
+## Native ETCSRI/NINMED local browser preview
+
+The installed converter can build either corpus from user-supplied ORACC
+`corpusjson` files. A **local, unpublished** Text-Fabric browser app can then
+be prepared from that independently loadable `tf/` output:
+
+```bash
+# First use build-etcsri or build-ninmed (documented above).
+python -m oracc_tf prepare-local-app \
+  --kind etcsri \
+  --tf-dir /path/to/etcsri-tf \
+  --app-dir /path/to/etcsri-app
+
+# Starts the standard Text-Fabric browser without opening a browser tab:
+python -m tf.browser.start app:/path/to/etcsri-app \
+  --locations=/path/to/etcsri-tf --modules= -noweb
+```
+
+For NINMED, change `--kind` to `ninmed` and point `--tf-dir`
+to that corpus's generated TF directory. Open the localhost URL printed
+by Text-Fabric in a web browser.
+
+The local app checks the **actual native document identities and node
+types**, and deliberately does not register either corpus as a released
+semantic dataset. Technical missing-span, nonword and determinative
+objects are hidden from normal ETCSRI textual display rather than
+rendered as imaginary cuneiform. Original primary ORACC annotations
+remain in the TF graph and are queryable via its Python API.
+
+The official Text-Fabric browser uses the supplied *flat* TF directory;
+do not append `/0.1.0` to the `--locations` path. This is a local
+preview feature and not a hosted service, bundled source corpus, or
+assertion of published dataset/translation licence clearance.
+
 ## Repository layout
 
 | Path | Purpose |

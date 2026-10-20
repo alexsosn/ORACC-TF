@@ -136,3 +136,35 @@ def test_native_app_prepare_cli_is_usable_outside_builder_working_dir(tmp_path: 
     assert run.returncode == 0, run.stderr
     assert (app_root / "config.yaml").is_file()
     assert "tf" in run.stdout.lower() and "app:" in run.stdout
+
+
+@pytest.mark.corpus
+def test_missing_lines_and_blank_ref_events_are_hidden_not_fake_text(
+    tmp_path: Path,
+) -> None:
+    """Two actual ETCSRI CDL events must not appear as invented words."""
+    sources = []
+    for doc_id, expected_blob in (
+        ("Q000377", "62bbca48a50205353ac5ed8225a3ce3e163c5f31"),
+        ("Q001794", "286a599b1331f437ca1fa0bbb22e16053206056e"),
+    ):
+        path = paths.DATA / "etcsri" / "corpusjson" / f"{doc_id}.json"
+        raw = path.read_bytes()
+        assert sha1(b"blob " + str(len(raw)).encode("ascii") + bytes([0]) + raw).hexdigest() == expected_blob
+        sources.append(path)
+    tf_root = tmp_path / "tf"
+    etcsri.build_tf(tf_root, source_paths=sources)
+    app_root = app_generation.generate_local_app(tf_root, tmp_path / "app", corpus_kind="etcsri")
+    cfg = yaml.safe_load((app_root / "config.yaml").read_text(encoding="utf-8"))
+    for kind in ("nontext_span", "nonword_marker", "determinative"):
+        assert cfg["typeDisplay"][kind]["hidden"] is True
+    app = use(f"app:{app_root}", locations=[str(tf_root)], modules=[""], silent="deep")
+    assert app is not None and app.api is not None
+    assert app.api.F.otype.s("nontext_span")
+    assert app.api.F.otype.s("nonword_marker")
+    assert any(
+        json.loads(app.api.F.marker_json.v(n)).get("ref") == ""
+        for n in app.api.F.otype.s("nonword_marker")
+    )
+    assert "word_json" in cfg["dataDisplay"]["excludedFeatures"]
+    assert "marker_json" in cfg["dataDisplay"]["excludedFeatures"]

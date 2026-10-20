@@ -109,3 +109,21 @@ def test_output_under_source_directory_is_rejected(tmp_path: Path) -> None:
     )
     assert result.returncode != 0
     assert not (source / "converted" / "otype.tf").exists()
+
+
+def test_text_id_selects_embedded_source_identity_not_renamed_filename(
+    tmp_path: Path,
+) -> None:
+    """ORACC filenames are provenance; a user CLI --text-id must not lie."""
+    source = _source(tmp_path)
+    # Same real ORACC bytes under a misleading basename: embedded Q000935.
+    (source / "Q000935.json").rename(source / "Q000936.json")
+    output = tmp_path / "tf"
+    result = _invoke(
+        "build-etcsri", "--source-dir", str(source),
+        "--output", str(output), "--text-id", "Q000936", cwd=tmp_path,
+    )
+    assert result.returncode != 0
+    assert "Q000936" in result.stderr
+    assert "Q000935" in result.stderr
+    assert not (output / "otype.tf").exists()

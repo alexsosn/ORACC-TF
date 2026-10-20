@@ -119,3 +119,39 @@ Do not copy whole raw CDL bodies or invent textual positions.
 5. Publishing/Agora registration and any legal reuse conclusion remain
    separate release gates after all source fidelity and installation
    acceptance checks pass.
+
+## User-installed native NINMED CLI, clean-wheel acceptance
+
+Following source-complete converter PR #178 (159 readable, 65,089 primary
+words; 91,368,897 TF bytes, 12.472s build, ~1 GiB peak combined test
+process memory), the next priority is simple use from an installed **code
+wheel**, not additional provenance infrastructure.
+
+**CLI contract:** use the existing `python -m oracc_tf` entry point with
+`build-ninmed --source-dir DIR --output DIR [--text-id P285136]`.
+Both `corpusjson/` and its parent are accepted. A requested basename is
+verified against the embedded scholarly `textid` *before* writing TF.
+Reject absent input, bad source, nonempty output or output under source.
+Default full directory selection fails closed on unreadable members,
+including the pinned zero-byte `P395407.json` source. An explicit
+`--skip-known-empty` authorizes skipping **only** that exact zero-byte
+member, with the skipped ID printed in the CLI output. All other malformed
+or empty files fail, not silently dropped. This permits an honest complete
+build of all 159 readable members from the normal 160-member snapshot.
+Do not import/ship Nino text or source data with MIT converter code.
+
+**Research → RED → implementation → test → independent review:**
+Pin actual ORACC Git blobs P285136 and P425685, assert queryable
+`cf/gw/pos`, source word/marker JSON and a real TF word→lexeme edge
+after the command finishes. Negative RED tests must cover renamed
+filename/embedded-ID mismatch, absent text, unsafe output and zero-byte
+source selection. Run a fresh wheel built by the project, installed in
+a separate virtualenv with `PYTHONPATH` unset and a user-supplied
+corpusjson directory, then load/query produced TF. A targeted installed
+smoke must not claim full-browser readiness or official published dataset
+availability; browser launch + standalone release ZIP are separate
+later milestones.
+
+**Release stop:** a working local converter and TF API are not proof of
+Nino cross-edition equivalence, translation availability, licensing or
+published corpus; issue #33 stays open for those user-facing gates.

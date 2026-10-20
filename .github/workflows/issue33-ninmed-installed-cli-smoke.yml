@@ -1,0 +1,81 @@
+name: issue33-ninmed-installed-cli-smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "programs/oracc_tf/__main__.py"
+      - "tests/test_issue33_ninmed_local_cli.py"
+      - ".github/workflows/issue33-ninmed-installed-cli-smoke.yml"
+      - "docs/plans/P-008-ninmed-source-tf-slice.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-wheel-ninmed-user-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            programs/oracc_tf
+            data/asbp/ninmed/corpusjson/P285136.json
+            data/asbp/ninmed/corpusjson/P425685.json
+            data/asbp/ninmed/corpusjson/P395407.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build code-only converter wheel
+        run: |
+          python -m pip install build
+          python -m build --wheel --outdir /tmp/ninmed-wheel
+      - name: Install wheel in isolated environment
+        run: |
+          python -m venv /tmp/ninmed-clean
+          /tmp/ninmed-clean/bin/python -m pip install /tmp/ninmed-wheel/oracc_tf-*.whl
+          mkdir -p /tmp/ninmed-source/corpusjson /tmp/ninmed-user
+          cp data/asbp/ninmed/corpusjson/P285136.json /tmp/ninmed-source/corpusjson/
+          cp data/asbp/ninmed/corpusjson/P425685.json /tmp/ninmed-source/corpusjson/
+          cp data/asbp/ninmed/corpusjson/P395407.json /tmp/ninmed-source/corpusjson/
+      - name: Validate no silent zero-byte data omission
+        run: |
+          cd /tmp/ninmed-user
+          unset PYTHONPATH
+          if /tmp/ninmed-clean/bin/python -m oracc_tf build-ninmed \
+            --source-dir /tmp/ninmed-source \
+            --output /tmp/ninmed-user/refused > /tmp/ninmed-user/refusal.log 2>&1; then
+            echo "ERROR: zero-byte P395407 was silently accepted"
+            exit 1
+          fi
+          grep -F 'P395407' /tmp/ninmed-user/refusal.log
+      - name: End-user full selected-source build and TF lexeme query
+        run: |
+          cd /tmp/ninmed-user
+          unset PYTHONPATH
+          /tmp/ninmed-clean/bin/python -m oracc_tf build-ninmed --help
+          /tmp/ninmed-clean/bin/python -m oracc_tf build-ninmed \
+            --source-dir /tmp/ninmed-source \
+            --output /tmp/ninmed-user/tf \
+            --skip-known-empty
+          /tmp/ninmed-clean/bin/python - <<'PY'
+          import json
+          from tf.fabric import Fabric
+          tf = Fabric(locations="/tmp/ninmed-user/tf", silent="deep")
+          assert tf.loadAll(silent="deep")
+          api = tf.api
+          assert len(api.F.otype.s("document")) == 2
+          assert len(api.F.otype.s("word")) == 376
+          word = next(n for n in api.F.otype.s("word") if api.F.source_id.v(n) == "P285136.l003f2")
+          assert api.F.cf.v(word) == "DÙ.DÙ.BI"
+          assert api.F.gw.v(word) == "ritual (instructions)"
+          lex = api.E.word_lex.f(word)
+          assert len(lex) == 1 and api.F.cf.v(lex[0]) == "DÙ.DÙ.BI"
+          doc = next(n for n in api.F.otype.s("document") if api.F.document_key.v(n) == "asbp/ninmed:P285136")
+          assert sum(x["marker"].get("type") == "nonx" for x in json.loads(api.F.source_markers_json.v(doc))) == 8
+          print("CLEAN-WHEEL NINMED E2E PASS: 376 source words, lexeme edge, source nonx markers")
+          PY

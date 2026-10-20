@@ -352,4 +352,40 @@ def generate_app(
             shutil.rmtree(temp, ignore_errors=True)
 
 
-__all__ = ["AppGenerationError", "generate_app"]
+def generate_local_app(
+    tf_root: Path | str,
+    target: Path | str,
+    *,
+    corpus_kind: str,
+) -> Path:
+    """Generate an unpublished local app from actual native TF, no registry edit."""
+    if corpus_kind not in {"etcsri", "ninmed"}:
+        raise AppGenerationError(f"unsupported native corpus kind: {corpus_kind!r}")
+    source, output = Path(tf_root), Path(target)
+    _validate_disjoint_paths(source, output)
+    node_types, node_features = _validate_tf_root(
+        source, "0.1.0", native_kind=corpus_kind,
+    )
+    _validate_target(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temp = Path(tempfile.mkdtemp(prefix=f".{output.name}.stage-", dir=output.parent))
+    try:
+        (temp / "config.yaml").write_bytes(
+            _config_bytes(
+                dataset=f"{corpus_kind}-local-preview",
+                tf_version="0.1.0",
+                repository_org="alexsosn",
+                docs_ref="main",
+                node_types=node_types,
+                node_features=node_features,
+                native_kind=corpus_kind,
+            )
+        )
+        _replace_tree(temp, output)
+        return output
+    finally:
+        if temp.exists():
+            shutil.rmtree(temp, ignore_errors=True)
+
+
+__all__ = ["AppGenerationError", "generate_app", "generate_local_app"]

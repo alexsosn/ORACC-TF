@@ -77,7 +77,7 @@ def _nonx_attrs(entry: dict, *, where: str) -> dict[str, str]:
     """Source-native ETCSRI nonx attributes; no invented missing text.
 
     Source census 38166385264 and real shape survey 38235200315 attest
-    694 events: numeric/n/rest/end extent, optional scope, two strict
+    694 events: positive integers, estimated integer ranges, or n/rest/end extent, optional scope, two strict
     flags and six distinct states. Preserve their original lexical strings.
     """
     allowed = {"node", "type", "ref", "scope", "state", "extent", "strict"}
@@ -97,8 +97,16 @@ def _nonx_attrs(entry: dict, *, where: str) -> dict[str, str]:
         raise ETCSRISourceError(f"{where}: unsupported nonx state {state!r}")
     if strict not in ("0", "1"):
         raise ETCSRISourceError(f"{where}: unsupported nonx strict flag {strict!r}")
-    if not (extent in ("rest", "n", "end") or
-            (extent.isascii() and extent.isdecimal() and int(extent) > 0)):
+    # Q001123 has e.g. extent="5-6" and "9-10". Preserve the *string*
+    # as an uncertainty interval; never invent positional words or lines.
+    bounds = extent.split("-")
+    numeric = extent.isascii() and extent.isdecimal() and int(extent) > 0
+    estimated_range = (
+        len(bounds) == 2
+        and all(part.isascii() and part.isdecimal() and int(part) > 0 for part in bounds)
+        and int(bounds[0]) < int(bounds[1])
+    )
+    if not (extent in ("rest", "n", "end") or numeric or estimated_range):
         raise ETCSRISourceError(f"{where}: invalid nonx extent {extent!r}")
     assert ref is not None and state is not None and extent is not None and strict is not None
     attrs = {

@@ -93,11 +93,12 @@ def test_local_native_app_rejects_mislabelled_corpus(tmp_path: Path) -> None:
 
 
 @pytest.mark.corpus
-def test_etcsri_real_text_fabric_browser_http_routes(tmp_path: Path) -> None:
-    """Actual TF browser Flask server/route stack, not just config.yaml."""
-    tf_root = _native_tf(tmp_path, "etcsri")
+@pytest.mark.parametrize("kind", ["etcsri", "ninmed"])
+def test_native_real_text_fabric_browser_http_routes(tmp_path: Path, kind: str) -> None:
+    """Actual TF browser Flask stack for both native corpora."""
+    tf_root = _native_tf(tmp_path, kind)
     app_root = app_generation.generate_local_app(
-        tf_root, tmp_path / "app", corpus_kind="etcsri",
+        tf_root, tmp_path / "app", corpus_kind=kind,
     )
     webapp = setup(
         False, f"app:{app_root}", f"--locations={tf_root}", "--modules=",

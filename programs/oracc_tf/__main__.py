@@ -6,6 +6,7 @@ not upstream ORACC source texts or a prebuilt corpus.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -34,6 +35,19 @@ def _build_etcsri(args: argparse.Namespace) -> int:
         if missing:
             raise ValueError(f"Requested ETCSRI text IDs not found: {', '.join(missing)}")
         sources = [available[text_id] for text_id in sorted(set(args.text_id))]
+        # The scholarly identity is embedded in ORACC JSON, not guaranteed
+        # by its filename. Do not report that we built a different edition.
+        for requested, path in zip(sorted(set(args.text_id)), sources, strict=True):
+            try:
+                source_doc = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, UnicodeError) as exc:
+                raise ValueError(f"Cannot read requested ETCSRI text {requested}: {path}") from exc
+            embedded = source_doc.get("textid") if isinstance(source_doc, dict) else None
+            if embedded != requested:
+                raise ValueError(
+                    f"Requested ETCSRI text {requested} from {path.name}, "
+                    f"but embedded source textid is {embedded!r}"
+                )
     else:
         sources = [available[key] for key in sorted(available)]
 

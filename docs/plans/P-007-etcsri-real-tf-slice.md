@@ -175,3 +175,34 @@ The `nonx` TF node type is intentionally `nontext_span`, not
 A ruling is not a claim that lexical text was once present. The
 source-specific `gap_state` and full `marker_json` remain recoverable;
 the technical slot is non-visible and does not count as an actual sign.
+
+## Local installation smoke for a converter-only ETCSRI delivery
+
+The primary conversion graph has now been verified over all 1,456
+checked-in source editions in merged PR #176. Source fidelity **alone**
+does not make the corpus usable by a researcher who has installed just
+the MIT-licensed converter wheel rather than cloned the large snapshot.
+
+**User-facing scope:** add one small documented CLI surface to the existing
+Python package: `python -m oracc_tf build-etcsri --source-dir DIR --output DIR`.
+The source directory is supplied by the user and contains ORACC
+`corpusjson/*.json` files. A repeatable `--text-id` selection aids
+testing one or two editions without a full expensive build. Never attempt
+to download or package upstream data, fabricate missing editions, or
+silently skip malformed selected members. Refuse writing TF into
+a nonempty output directory or beneath the supplied source directory.
+
+**RED-first acceptance:** a subprocess installed package CLI must
+list its help, select the pinned actual source `Q000935`, write
+independently loadable Text-Fabric nodes and return a nonzero code
+for unknown ID, missing input, invalid source, and nonempty output.
+The same CLI must work after building a local wheel and installing
+it in an isolated environment (without the builder repo on
+`PYTHONPATH`), using only a minimal user-supplied source fixture.
+Record approximate wheel-install and query smoke behavior; no
+unjustified release/rights assertions.
+
+**Boundaries:** this delivers a usable **converter** entry point,
+not a published ETCSRI dataset ZIP or a complete generated TF web app.
+Standalone app/distribution E2E acceptance remains a separate
+explicit release gate after the conversion interface is verified.

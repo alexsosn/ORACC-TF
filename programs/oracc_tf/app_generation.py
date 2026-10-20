@@ -373,7 +373,9 @@ def generate_local_app(
         (temp / "config.yaml").write_bytes(
             _config_bytes(
                 dataset=f"{corpus_kind}-local-preview",
-                tf_version="0.1.0",
+                # Installed native converters write TF directly in their
+                # output directory, not a /tf/0.1.0 version subfolder.
+                tf_version="",
                 repository_org="alexsosn",
                 docs_ref="main",
                 node_types=node_types,

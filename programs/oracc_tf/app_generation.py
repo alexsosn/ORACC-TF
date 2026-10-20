@@ -47,6 +47,22 @@ _DEFAULT_BROWSER_EXCLUDED_FEATURES = (
     "translation_text_raw",
     "word_id",
 )
+# Large native provenance payloads remain accessible via TF's Python API but
+# are not eager-loaded into browser-side display/search widgets by default.
+_LOCAL_NATIVE_EXCLUDED_FEATURES = (
+    "word_json",
+    "f_json",
+    "source_markers_json",
+    "source_meta_json",
+    "document_meta_json",
+    "morphology_json",
+    "para_json",
+    "props_json",
+    "marker_json",
+    "sign_json",
+)
+
+
 _TYPE_DISPLAY_POLICY: dict[str, dict[str, object]] = {
     "document": {"label": "{document}"},
     "face": {"label": "{source_id}"},
@@ -247,7 +263,11 @@ def _config_bytes(
             "version": tf_version,
         },
         "dataDisplay": {
-            "excludedFeatures": list(_DEFAULT_BROWSER_EXCLUDED_FEATURES),
+            "excludedFeatures": (
+                list(_DEFAULT_BROWSER_EXCLUDED_FEATURES)
+                if native_kind is None
+                else sorted(set(_DEFAULT_BROWSER_EXCLUDED_FEATURES) | set(_LOCAL_NATIVE_EXCLUDED_FEATURES))
+            ),
             "textFormat": "text-trans-full",
         },
         "docs": {

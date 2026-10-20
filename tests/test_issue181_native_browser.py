@@ -55,6 +55,7 @@ def test_native_local_app_renders_real_source_tf_without_public_dataset_registra
     assert cfg["apiVersion"] == 3
     assert cfg["provenanceSpec"]["corpus"] == f"{kind}-local-preview"
     assert cfg["dataDisplay"]["textFormat"] == "text-trans-full"
+    assert cfg["provenanceSpec"]["version"] == "", "local flat TF output has no version subdirectory"
     assert set(cfg["typeDisplay"])  # actual TF schema, not guessed types
     assert "word" in cfg["typeDisplay"]
 

@@ -17,7 +17,7 @@ from oracc_tf import paths
 
 
 SOURCE_BLOBS = {
-    "P285136": "a26ee7550a1f6d62187ef84ab1bfd877b2b",
+    "P285136": "a26ee7550a1f6d62187ef84b7d84ab1bfd877b2b",
     "P425685": "4df915aa78b3f701c77c7ee96b6b72708ce4eb29",
 }
 EMPTY_BLOB = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"

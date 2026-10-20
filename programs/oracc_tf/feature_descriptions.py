@@ -33,6 +33,7 @@ DESCRIPTIONS: dict[str, str] = {
     "gdl_json": "Canonical JSON serialization of the source ORACC word-level GDL payload.",
     "word_json": "Opt-in canonical JSON of the entire native ORACC source word object; not Nino/eBL lemma analysis.",
     "document_meta_json": "Opt-in canonical JSON of the native ORACC document header excluding the CDL body; preserves original source/licence/timestamp strings.",
+    "source_markers_json": "Opt-in ordered JSON of every native ORACC CDL d-event with its exact source-array index path and unmodified marker object; not individual TF marker nodes.",
     "source_sha256": "SHA-256 of the exact source corpusjson file bytes used for an opt-in native corpus conversion.",
     # Document/catalogue metadata
     "populated": "Integer flag: 1 when the ORACC edition contains parsed words, otherwise 0.",

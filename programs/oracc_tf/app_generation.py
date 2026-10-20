@@ -47,6 +47,22 @@ _DEFAULT_BROWSER_EXCLUDED_FEATURES = (
     "translation_text_raw",
     "word_id",
 )
+# Large native provenance payloads remain accessible via TF's Python API but
+# are not eager-loaded into browser-side display/search widgets by default.
+_LOCAL_NATIVE_EXCLUDED_FEATURES = (
+    "word_json",
+    "f_json",
+    "source_markers_json",
+    "source_meta_json",
+    "document_meta_json",
+    "morphology_json",
+    "para_json",
+    "props_json",
+    "marker_json",
+    "sign_json",
+)
+
+
 _TYPE_DISPLAY_POLICY: dict[str, dict[str, object]] = {
     "document": {"label": "{document}"},
     "face": {"label": "{source_id}"},
@@ -113,7 +129,9 @@ def _validate_docs_ref(docs_ref: str) -> str:
     return docs_ref
 
 
-def _validate_tf_loadable(tf_root: Path) -> tuple[tuple[str, ...], frozenset[str]]:
+def _validate_tf_loadable(
+    tf_root: Path, *, native_kind: str | None = None,
+) -> tuple[tuple[str, ...], frozenset[str]]:
     """Load the source without mutating it and return its display-relevant schema."""
     with tempfile.TemporaryDirectory(prefix="oracc-tf-app-validate-") as temp_dir:
         isolated = Path(temp_dir) / "tf"
@@ -134,11 +152,22 @@ def _validate_tf_loadable(tf_root: Path) -> tuple[tuple[str, ...], frozenset[str
             raise AppGenerationError(f"Text-Fabric could not load TF source: {tf_root}") from exc
         if not good or tf.api is None:
             raise AppGenerationError(f"Text-Fabric could not load valid TF warp: {tf_root}")
+        if native_kind is not None:
+            prefix = "etcsri:" if native_kind == "etcsri" else "asbp/ninmed:"
+            documents = tuple(tf.api.F.otype.s("document"))
+            if not documents:
+                raise AppGenerationError(f"missing native {native_kind} document identity")
+            for node in documents:
+                document_key = tf.api.F.document_key.v(node)
+                if not isinstance(document_key, str) or not document_key.startswith(prefix):
+                    raise AppGenerationError(
+                        f"{native_kind} native identity mismatch: {document_key!r}"
+                    )
         return tuple(tf.api.F.otype.all), frozenset(tf.api.Fall())
 
 
 def _validate_tf_root(
-    tf_root: Path, tf_version: str
+    tf_root: Path, tf_version: str, *, native_kind: str | None = None,
 ) -> tuple[tuple[str, ...], frozenset[str]]:
     try:
         repository_tf_root(Path("."), tf_version)
@@ -151,7 +180,7 @@ def _validate_tf_root(
         path = tf_root / name
         if path.is_symlink() or not path.is_file():
             raise AppGenerationError(f"TF root is missing required warp feature: {name}")
-    return _validate_tf_loadable(tf_root)
+    return _validate_tf_loadable(tf_root, native_kind=native_kind)
 
 
 def _validate_override(override: Mapping[str, object] | None) -> str | None:
@@ -174,10 +203,28 @@ def _validate_override(override: Mapping[str, object] | None) -> str | None:
     return css
 
 
+_LOCAL_ETCSRI_TYPE_POLICY: dict[str, dict[str, object]] = {
+    "document": {"label": "{text_id}"},
+    "text": {"hidden": True},
+    "discourse": {"hidden": True},
+    "sentence": {"hidden": True},
+    "phrase": {"hidden": True},
+    "line": {"label": "{line}", "verselike": True},
+    "nontext_span": {"hidden": True},
+    "nonword_marker": {"hidden": True},
+    "determinative": {"hidden": True},
+    "word": {"label": "{form}"},
+}
+
+
 def _type_display(
-    node_types: tuple[str, ...], node_features: frozenset[str]
+    node_types: tuple[str, ...], node_features: frozenset[str],
+    *, native_kind: str | None = None,
 ) -> dict[str, dict[str, object]]:
-    unknown = sorted(set(node_types) - set(_TYPE_DISPLAY_POLICY))
+    policy = dict(_TYPE_DISPLAY_POLICY)
+    if native_kind == "etcsri":
+        policy.update(_LOCAL_ETCSRI_TYPE_POLICY)
+    unknown = sorted(set(node_types) - set(policy))
     if unknown:
         raise AppGenerationError(
             "no browser display policy for TF node types: " + ", ".join(unknown)
@@ -185,15 +232,16 @@ def _type_display(
 
     result: dict[str, dict[str, object]] = {}
     for node_type in node_types:
-        policy = dict(_TYPE_DISPLAY_POLICY[node_type])
-        extra_features = [
-            feature
-            for feature in _TYPE_FEATURES.get(node_type, ())
-            if feature in node_features
-        ]
+        display = dict(policy[node_type])
+        desired = (
+            ("morph", "morph2", "base", "lang", "pos")
+            if native_kind == "etcsri" and node_type == "word"
+            else _TYPE_FEATURES.get(node_type, ())
+        )
+        extra_features = [feature for feature in desired if feature in node_features]
         if extra_features:
-            policy["featuresBare"] = " ".join(extra_features)
-        result[node_type] = policy
+            display["featuresBare"] = " ".join(extra_features)
+        result[node_type] = display
     return result
 
 
@@ -205,6 +253,7 @@ def _config_bytes(
     docs_ref: str,
     node_types: tuple[str, ...],
     node_features: frozenset[str],
+    native_kind: str | None = None,
 ) -> bytes:
     config = {
         "apiVersion": 3,
@@ -214,7 +263,11 @@ def _config_bytes(
             "version": tf_version,
         },
         "dataDisplay": {
-            "excludedFeatures": list(_DEFAULT_BROWSER_EXCLUDED_FEATURES),
+            "excludedFeatures": (
+                list(_DEFAULT_BROWSER_EXCLUDED_FEATURES)
+                if native_kind is None
+                else sorted(set(_DEFAULT_BROWSER_EXCLUDED_FEATURES) | set(_LOCAL_NATIVE_EXCLUDED_FEATURES))
+            ),
             "textFormat": "text-trans-full",
         },
         "docs": {
@@ -225,7 +278,7 @@ def _config_bytes(
             "featureBase": "{docBase}/reference/features.md#<feature>",
             "featurePage": "feature-reference",
         },
-        "typeDisplay": _type_display(node_types, node_features),
+        "typeDisplay": _type_display(node_types, node_features, native_kind=native_kind),
     }
     return yaml.safe_dump(
         config,
@@ -319,4 +372,42 @@ def generate_app(
             shutil.rmtree(temp, ignore_errors=True)
 
 
-__all__ = ["AppGenerationError", "generate_app"]
+def generate_local_app(
+    tf_root: Path | str,
+    target: Path | str,
+    *,
+    corpus_kind: str,
+) -> Path:
+    """Generate an unpublished local app from actual native TF, no registry edit."""
+    if corpus_kind not in {"etcsri", "ninmed"}:
+        raise AppGenerationError(f"unsupported native corpus kind: {corpus_kind!r}")
+    source, output = Path(tf_root), Path(target)
+    _validate_disjoint_paths(source, output)
+    node_types, node_features = _validate_tf_root(
+        source, "0.1.0", native_kind=corpus_kind,
+    )
+    _validate_target(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temp = Path(tempfile.mkdtemp(prefix=f".{output.name}.stage-", dir=output.parent))
+    try:
+        (temp / "config.yaml").write_bytes(
+            _config_bytes(
+                dataset=f"{corpus_kind}-local-preview",
+                # Installed native converters write TF directly in their
+                # output directory, not a /tf/0.1.0 version subfolder.
+                tf_version="",
+                repository_org="alexsosn",
+                docs_ref="main",
+                node_types=node_types,
+                node_features=node_features,
+                native_kind=corpus_kind,
+            )
+        )
+        _replace_tree(temp, output)
+        return output
+    finally:
+        if temp.exists():
+            shutil.rmtree(temp, ignore_errors=True)
+
+
+__all__ = ["AppGenerationError", "generate_app", "generate_local_app"]

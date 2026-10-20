@@ -132,6 +132,56 @@ ETCSRI are still tracked in
 A clean-wheel end-to-end CI smoke test exercises this command against
 the pinned real edition Q000935 and checks TF morphology queries.
 
+## NINMED converter: local ORACC source (development preview)
+
+The source-complete native `asbp/ninmed` converter supports a code-only
+wheel with a user-supplied primary ORACC `corpusjson` directory:
+
+```bash
+python -m oracc_tf build-ninmed \
+  --source-dir /path/to/asbp/ninmed/corpusjson \
+  --output /path/to/my-ninmed-tf \
+  --skip-known-empty
+```
+
+**Why `--skip-known-empty`?** The currently checked-in ORACC NINMED source
+tree contains 160 `*.json` files: 159 readable texts and one genuinely
+zero-byte `P395407.json`. A full-directory build rejects that file
+without explicit opt-in; the flag excludes **only that known empty
+member** and reports its ID. Unknown empty or malformed sources still
+fail. Omit the flag when building a selected readable edition, for example:
+
+```bash
+python -m oracc_tf build-ninmed \
+  --source-dir /path/to/asbp/ninmed/corpusjson \
+  --output /path/to/one-text-tf \
+  --text-id P285136
+```
+
+To query the resulting native word→lexeme graph:
+
+```python
+from tf.fabric import Fabric
+tf = Fabric(locations="/path/to/my-ninmed-tf", silent="deep")
+assert tf.loadAll(silent="deep")
+api = tf.api
+matches = [w for w in api.F.otype.s("word") if api.F.cf.v(w) == "DÙ.DÙ.BI"]
+for w in matches[:5]:
+    print(api.F.source_id.v(w), api.E.word_lex.f(w))
+```
+
+In the initial whole-source GitHub runner measurement, building the 159
+readable editions took **12.47 s**, generating **91.4 MB** of TF
+files, with **~997 MiB peak process RSS** including TF verification/load.
+These are indicative build/test measurements, not a laptop memory guarantee.
+
+This is a **converter** preview rather than a published NINMED corpus
+archive, Text-Fabric browser app, or a replacement for
+`Nino-cunei/ninmed`; primary-source form differences remain documented
+under [issue #33](https://github.com/alexsosn/ORACC-TF/issues/33).
+A clean-wheel E2E smoke installs the code without cloning the large
+source tree and queries real P285136/P425685 TF data.
+
 ## Repository layout
 
 | Path | Purpose |

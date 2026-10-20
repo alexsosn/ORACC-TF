@@ -1,0 +1,60 @@
+name: issue32-etcsri-installed-cli-smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "programs/oracc_tf/__main__.py"
+      - "tests/test_issue32_etcsri_local_cli.py"
+      - ".github/workflows/issue32-etcsri-installed-cli-smoke.yml"
+      - "docs/plans/P-007-etcsri-real-tf-slice.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-wheel-user-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            programs/oracc_tf
+            data/etcsri/corpusjson/Q000935.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build a code-only wheel
+        run: |
+          python -m pip install build
+          python -m build --wheel --outdir /tmp/oracc-wheel
+      - name: Install converter in new environment outside the repository
+        run: |
+          python -m venv /tmp/oracc-clean
+          /tmp/oracc-clean/bin/python -m pip install /tmp/oracc-wheel/oracc_tf-*.whl
+          mkdir -p /tmp/oracc-source/corpusjson /tmp/oracc-user
+          cp data/etcsri/corpusjson/Q000935.json /tmp/oracc-source/corpusjson/
+      - name: Execute independent CLI and TF query as end user
+        run: |
+          cd /tmp/oracc-user
+          unset PYTHONPATH
+          /tmp/oracc-clean/bin/python -m oracc_tf build-etcsri --help
+          /tmp/oracc-clean/bin/python -m oracc_tf build-etcsri \
+            --source-dir /tmp/oracc-source \
+            --output /tmp/oracc-user/tf \
+            --text-id Q000935
+          /tmp/oracc-clean/bin/python - <<'PY'
+          from tf.fabric import Fabric
+          tf = Fabric(locations="/tmp/oracc-user/tf", silent="deep")
+          assert tf.loadAll(silent="deep")
+          api = tf.api
+          words = api.F.otype.s("word")
+          assert len(words) == 7
+          assert all(api.F.document_key.v(n) == "etcsri:Q000935" for n in words)
+          assert sum(bool(api.F.morph.v(n)) for n in words) == 7
+          print("CLEAN-WHEEL ETCSRI E2E PASS: 7 real words, morphology query")
+          PY

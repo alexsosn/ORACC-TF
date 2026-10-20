@@ -109,3 +109,22 @@ def test_etcsri_real_text_fabric_browser_http_routes(tmp_path: Path) -> None:
         html = response.get_data(as_text=True)
         assert "<html" in html.lower()
         assert "Traceback" not in html
+
+
+@pytest.mark.corpus
+def test_native_app_prepare_cli_is_usable_outside_builder_working_dir(tmp_path: Path) -> None:
+    import subprocess
+    import sys
+    tf_root = _native_tf(tmp_path, "ninmed")
+    app_root = tmp_path / "app"
+    run = subprocess.run(
+        [
+            sys.executable, "-m", "oracc_tf", "prepare-local-app",
+            "--kind", "ninmed", "--tf-dir", str(tf_root),
+            "--app-dir", str(app_root),
+        ],
+        cwd=tmp_path, text=True, capture_output=True, check=False,
+    )
+    assert run.returncode == 0, run.stderr
+    assert (app_root / "config.yaml").is_file()
+    assert "tf" in run.stdout.lower() and "app:" in run.stdout

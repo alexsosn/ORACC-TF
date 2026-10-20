@@ -104,12 +104,18 @@ def test_etcsri_real_text_fabric_browser_http_routes(tmp_path: Path) -> None:
     )
     assert webapp is not None
     client = webapp.test_client()
-    for route in ("/", "/sections", "/query"):
+    # TF's front page is HTML, but its section/query endpoints deliberately
+    # return JSON response payloads for the browser client, not entire pages.
+    front = client.get("/")
+    assert front.status_code == 200
+    assert "<html" in front.get_data(as_text=True).lower()
+    for route in ("/sections", "/query"):
         response = client.get(route)
         assert response.status_code == 200, (route, response.get_data(as_text=True)[-1000:])
-        html = response.get_data(as_text=True)
-        assert "<html" in html.lower()
-        assert "Traceback" not in html
+        assert response.is_json, (route, response.content_type)
+        payload = response.get_json()
+        assert isinstance(payload, dict) and "messages" in payload
+        assert "Traceback" not in response.get_data(as_text=True)
 
 
 @pytest.mark.corpus

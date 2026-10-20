@@ -92,6 +92,46 @@ The fast test suite does not require a full-corpus run. Whole-corpus and
 integration work uses the source data under `data/` and is intentionally
 separate from the normal researcher installation path.
 
+## ETCSRI converter: locally supplied ORACC source (development preview)
+
+After installing a wheel built from this repository, researchers can create
+a separate ETCSRI Text-Fabric corpus **without cloning the large builder
+repository or receiving upstream ORACC source files in the wheel**:
+
+```bash
+python -m pip install /path/to/oracc_tf-0.1.0-py3-none-any.whl
+python -m oracc_tf build-etcsri \
+  --source-dir /path/to/etcsri/corpusjson \
+  --output /path/to/my-etcsri-tf
+```
+
+`--source-dir` may also point to the parent of `corpusjson/`.
+Optionally repeat `--text-id Q000935` to build a selected subset.
+The command refuses missing source files and nonempty output directories;
+it does not download, redistribute, or silently skip source material.
+
+To query the resulting TF directly:
+
+```python
+from tf.fabric import Fabric
+tf = Fabric(locations="/path/to/my-etcsri-tf", silent="deep")
+assert tf.loadAll(silent="deep")
+api = tf.api
+matching_words = [
+    n for n in api.F.otype.s("word")
+    if api.F.morph.v(n)
+]
+print(len(matching_words))
+```
+
+This is a **converter-only preview**, not an announced public ETCSRI
+dataset archive, an integrated TF browser app, or a licence statement.
+The standalone release path and researcher-facing app acceptance for
+ETCSRI are still tracked in
+[issue #32](https://github.com/alexsosn/ORACC-TF/issues/32).
+A clean-wheel end-to-end CI smoke test exercises this command against
+the pinned real edition Q000935 and checks TF morphology queries.
+
 ## Repository layout
 
 | Path | Purpose |

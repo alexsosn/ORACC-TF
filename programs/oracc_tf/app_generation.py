@@ -187,10 +187,28 @@ def _validate_override(override: Mapping[str, object] | None) -> str | None:
     return css
 
 
+_LOCAL_ETCSRI_TYPE_POLICY: dict[str, dict[str, object]] = {
+    "document": {"label": "{text_id}"},
+    "text": {"hidden": True},
+    "discourse": {"hidden": True},
+    "sentence": {"hidden": True},
+    "phrase": {"hidden": True},
+    "line": {"label": "{line}", "verselike": True},
+    "nontext_span": {"hidden": True},
+    "nonword_marker": {"hidden": True},
+    "determinative": {"hidden": True},
+    "word": {"label": "{form}"},
+}
+
+
 def _type_display(
-    node_types: tuple[str, ...], node_features: frozenset[str]
+    node_types: tuple[str, ...], node_features: frozenset[str],
+    *, native_kind: str | None = None,
 ) -> dict[str, dict[str, object]]:
-    unknown = sorted(set(node_types) - set(_TYPE_DISPLAY_POLICY))
+    policy = dict(_TYPE_DISPLAY_POLICY)
+    if native_kind == "etcsri":
+        policy.update(_LOCAL_ETCSRI_TYPE_POLICY)
+    unknown = sorted(set(node_types) - set(policy))
     if unknown:
         raise AppGenerationError(
             "no browser display policy for TF node types: " + ", ".join(unknown)
@@ -198,15 +216,16 @@ def _type_display(
 
     result: dict[str, dict[str, object]] = {}
     for node_type in node_types:
-        policy = dict(_TYPE_DISPLAY_POLICY[node_type])
-        extra_features = [
-            feature
-            for feature in _TYPE_FEATURES.get(node_type, ())
-            if feature in node_features
-        ]
+        display = dict(policy[node_type])
+        desired = (
+            ("morph", "morph2", "base", "lang", "pos")
+            if native_kind == "etcsri" and node_type == "word"
+            else _TYPE_FEATURES.get(node_type, ())
+        )
+        extra_features = [feature for feature in desired if feature in node_features]
         if extra_features:
-            policy["featuresBare"] = " ".join(extra_features)
-        result[node_type] = policy
+            display["featuresBare"] = " ".join(extra_features)
+        result[node_type] = display
     return result
 
 
@@ -218,6 +237,7 @@ def _config_bytes(
     docs_ref: str,
     node_types: tuple[str, ...],
     node_features: frozenset[str],
+    native_kind: str | None = None,
 ) -> bytes:
     config = {
         "apiVersion": 3,
@@ -238,7 +258,7 @@ def _config_bytes(
             "featureBase": "{docBase}/reference/features.md#<feature>",
             "featurePage": "feature-reference",
         },
-        "typeDisplay": _type_display(node_types, node_features),
+        "typeDisplay": _type_display(node_types, node_features, native_kind=native_kind),
     }
     return yaml.safe_dump(
         config,

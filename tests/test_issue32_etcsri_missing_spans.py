@@ -192,3 +192,60 @@ def test_real_q000834_ruling_is_a_nontext_event_not_a_missing_text_span(tmp_path
     slot, = api.L.d(mark, otype="sign")
     assert api.F.synthetic.v(slot) == 1
     assert api.F.utf8.v(slot) is None
+
+
+@pytest.mark.corpus
+def test_real_q001123_nonx_uncertain_extent_range_roundtrips_without_extra_lines(
+    tmp_path: Path,
+) -> None:
+    """Exact source witness: ORACC extent '9-10' means a range, not ten TF lines."""
+    source = paths.DATA / "etcsri" / "corpusjson" / "Q001123.json"
+    raw = source.read_bytes()
+    actual_sha = sha1(b"blob " + str(len(raw)).encode("ascii") + bytes([0]) + raw).hexdigest()
+    assert actual_sha == "fe6610223c4966153165af76c5d5dd97d121dbb7"
+    doc = json.loads(raw)
+    assert doc["textid"] == "Q001123" and doc["project"] == "etcsri"
+    text = doc["cdl"][0]
+    discourse = text["cdl"][0]
+    sentence = next(x for x in discourse["cdl"] if x.get("id") == "Q001123.U24")
+    raw_range = next(x for x in sentence["cdl"] if x.get("type") == "nonx" and x.get("extent") == "9-10")
+    assert raw_range == {
+        "node": "d", "type": "nonx", "ref": "Q001123.117",
+        "strict": "1", "extent": "9-10", "scope": "line", "state": "missing",
+    }
+    doc["cdl"] = [text]
+    text["cdl"] = [discourse]
+    discourse["cdl"] = [sentence]
+    src = tmp_path / "Q001123.json"
+    src.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+    real_lines = sum(
+        n.get("node") == "d" and n.get("type") == "line-start"
+        for n in sentence["cdl"]
+    )
+    report = etcsri.build_tf(tmp_path / "tf", source_paths=[src])
+    assert report.lines == real_lines
+    fabric = Fabric(locations=str(tmp_path / "tf"), silent="deep")
+    assert fabric.loadAll(silent="deep")
+    api = fabric.api
+    assert api is not None
+    gaps = [
+        n for n in api.F.otype.s("nontext_span")
+        if api.F.source_id.v(n) == "Q001123.117"
+    ]
+    assert len(gaps) == 1
+    assert api.F.gap_extent.v(gaps[0]) == "9-10"
+    assert json.loads(api.F.marker_json.v(gaps[0])) == raw_range
+    slot, = api.L.d(gaps[0], otype="sign")
+    assert api.F.synthetic.v(slot) == 1
+    assert api.F.utf8.v(slot) is None
+    assert all(slot not in api.L.d(n, otype="sign") for n in api.F.otype.s("line"))
+
+
+@pytest.mark.parametrize("invalid", ["0-1", "3-0", "10-9", "3--4", "3-", "-4", "1-1", "abc-def"])
+def test_nonx_extent_range_must_have_two_positive_increasing_bounds(invalid: str) -> None:
+    marker = {
+        "node": "d", "type": "nonx", "ref": "Q001123.117",
+        "strict": "1", "extent": invalid, "scope": "line", "state": "missing",
+    }
+    with pytest.raises(etcsri.ETCSRISourceError, match="extent"):
+        etcsri._nonx_attrs(marker, where="Q001123")

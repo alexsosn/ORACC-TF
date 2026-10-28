@@ -96,6 +96,12 @@ jobs:
               )
               payload = response.get_json()
               assert isinstance(payload, dict) and "messages" in payload
-          print(f"CLEAN-WHEEL NATIVE TF BROWSER HTTP PASS: {kind}")
+          response = client.post("/query", data={"query": "word", "jobName": "smoke"})
+          assert response.status_code == 200 and response.is_json
+          result = response.get_json()
+          assert result["status"] is True, (kind, result.get("messages"))
+          assert result["nResults"] == (7 if kind == "etcsri" else 204), result
+          assert result["table"]
+          print(f"CLEAN-WHEEL NATIVE TF BROWSER QUERY PASS: {kind}, {result['nResults']} words")
           PY
           done

@@ -1,0 +1,107 @@
+name: issue181-native-local-tf-browser
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "programs/oracc_tf/app_generation.py"
+      - "programs/oracc_tf/__main__.py"
+      - "tests/test_issue181_native_browser.py"
+      - ".github/workflows/issue181-native-local-tf-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-tf-local-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            programs/oracc_tf
+            tests/test_issue181_native_browser.py
+            data/etcsri/corpusjson/Q000935.json
+            data/etcsri/corpusjson/Q000377.json
+            data/etcsri/corpusjson/Q001794.json
+            data/asbp/ninmed/corpusjson/P285136.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual TF browser and converter
+        run: python -m pip install -e ".[dev]" "text-fabric>=13.1,<14"
+      - name: Native ORACC TF -> local app -> Flask browser routes
+        run: python -m pytest -vv -s -m corpus tests/test_issue181_native_browser.py
+
+  clean-wheel-native-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            programs/oracc_tf
+            data/etcsri/corpusjson/Q000935.json
+            data/asbp/ninmed/corpusjson/P285136.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and install code-only wheel outside source checkout
+        run: |
+          python -m pip install build
+          python -m build --wheel --outdir /tmp/native-app-wheel
+          python -m venv /tmp/native-app-user-venv
+          /tmp/native-app-user-venv/bin/python -m pip install /tmp/native-app-wheel/oracc_tf-*.whl
+          mkdir -p /tmp/native-user /tmp/native-source/etcsri/corpusjson /tmp/native-source/ninmed/corpusjson
+          cp data/etcsri/corpusjson/Q000935.json /tmp/native-source/etcsri/corpusjson/
+          cp data/asbp/ninmed/corpusjson/P285136.json /tmp/native-source/ninmed/corpusjson/
+      - name: Build and prepare both native apps using only installed wheel and supplied source
+        run: |
+          cd /tmp/native-user
+          unset PYTHONPATH
+          for kind in etcsri ninmed; do
+            /tmp/native-app-user-venv/bin/python -m oracc_tf "build-$kind" \
+              --source-dir "/tmp/native-source/$kind" \
+              --output "/tmp/native-user/$kind-tf"
+            /tmp/native-app-user-venv/bin/python -m oracc_tf prepare-local-app \
+              --kind "$kind" --tf-dir "/tmp/native-user/$kind-tf" \
+              --app-dir "/tmp/native-user/$kind-app"
+          done
+      - name: Exercise real local Text-Fabric browser HTTP routes from wheel
+        run: |
+          cd /tmp/native-user
+          unset PYTHONPATH
+          for kind in etcsri ninmed; do
+            /tmp/native-app-user-venv/bin/python - "$kind" <<'PY'
+          import sys
+          from tf.browser.web import setup
+          kind = sys.argv[1]
+          root = f"/tmp/native-user/{kind}-tf"
+          app = f"/tmp/native-user/{kind}-app"
+          browser = setup(False, f"app:{app}", f"--locations={root}", "--modules=")
+          assert browser is not None
+          client = browser.test_client()
+          front = client.get("/")
+          assert front.status_code == 200 and "<html" in front.get_data(as_text=True).lower()
+          for route in ("/sections", "/query"):
+              response = client.get(route)
+              assert response.status_code == 200 and response.is_json, (
+                  kind, route, response.status_code, response.get_data(as_text=True)[-500:]
+              )
+              payload = response.get_json()
+              assert isinstance(payload, dict) and "messages" in payload
+          response = client.post("/query", data={"query": "word", "jobName": "smoke"})
+          assert response.status_code == 200 and response.is_json
+          result = response.get_json()
+          assert result["status"] is True, (kind, result.get("messages"))
+          assert result["nResults"] == (7 if kind == "etcsri" else 204), result
+          assert result["table"]
+          print(f"CLEAN-WHEEL NATIVE TF BROWSER QUERY PASS: {kind}, {result['nResults']} words")
+          PY
+          done

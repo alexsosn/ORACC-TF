@@ -162,9 +162,14 @@ def test_missing_lines_and_blank_ref_events_are_hidden_not_fake_text(
     assert app is not None and app.api is not None
     assert app.api.F.otype.s("nontext_span")
     assert app.api.F.otype.s("nonword_marker")
-    assert any(
-        json.loads(app.api.F.marker_json.v(n)).get("ref") == ""
-        for n in app.api.F.otype.s("nonword_marker")
-    )
     assert "word_json" in cfg["dataDisplay"]["excludedFeatures"]
     assert "marker_json" in cfg["dataDisplay"]["excludedFeatures"]
+    # The official TF browser deliberately does not load excluded heavyweight
+    # provenance. Assert native source fidelity via a separate *full* TF API.
+    from tf.fabric import Fabric
+    full_tf = Fabric(locations=str(tf_root), silent="deep")
+    assert full_tf.loadAll(silent="deep")
+    assert any(
+        json.loads(full_tf.api.F.marker_json.v(n)).get("ref") == ""
+        for n in full_tf.api.F.otype.s("nonword_marker")
+    )

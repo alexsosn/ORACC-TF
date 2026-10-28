@@ -173,3 +173,18 @@ def test_missing_lines_and_blank_ref_events_are_hidden_not_fake_text(
         json.loads(full_tf.api.F.marker_json.v(n)).get("ref") == ""
         for n in full_tf.api.F.otype.s("nonword_marker")
     )
+
+
+@pytest.mark.corpus
+def test_local_browser_does_not_overwrite_researcher_owned_app_directory(
+    tmp_path: Path,
+) -> None:
+    """Local preview must not replace an unrelated user directory with a config."""
+    tf_root = _native_tf(tmp_path, "etcsri")
+    target = tmp_path / "notes-and-app"
+    target.mkdir()
+    (target / "research-notes.md").write_text("do not erase", encoding="utf8")
+    with pytest.raises(app_generation.AppGenerationError, match="nonempty|empty|overwrite|user"):
+        app_generation.generate_local_app(tf_root, target, corpus_kind="etcsri")
+    assert (target / "research-notes.md").read_text(encoding="utf8") == "do not erase"
+    assert not (target / "config.yaml").exists()

@@ -201,8 +201,9 @@ python -m tf.browser.start app:/path/to/etcsri-app \
 ```
 
 For NINMED, change `--kind` to `ninmed` and point `--tf-dir`
-to that corpus's generated TF directory. Open the localhost URL printed
-by Text-Fabric in a web browser.
+to that corpus's generated TF directory. Use a **new or empty** `--app-dir`
+for each preview: local generation refuses to overwrite a nonempty folder.
+Open the localhost URL printed by Text-Fabric in a web browser.
 
 The local app checks the **actual native document identities and node
 types**, and deliberately does not register either corpus as a released

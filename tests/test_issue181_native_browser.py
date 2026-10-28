@@ -118,6 +118,15 @@ def test_native_real_text_fabric_browser_http_routes(tmp_path: Path, kind: str) 
         assert isinstance(payload, dict) and "messages" in payload
         assert "Traceback" not in response.get_data(as_text=True)
 
+    # A real TF search request must reach the engine and return *actual*
+    # native words, not just a 200 response with an empty placeholder.
+    response = client.post("/query", data={"query": "word", "jobName": "smoke"})
+    assert response.status_code == 200 and response.is_json
+    result = response.get_json()
+    assert result["status"] is True, (kind, result.get("messages"))
+    assert result["nResults"] == (7 if kind == "etcsri" else 204)
+    assert result["table"] and "Traceback" not in str(result["table"])
+
 
 @pytest.mark.corpus
 def test_native_app_prepare_cli_is_usable_outside_builder_working_dir(tmp_path: Path) -> None:

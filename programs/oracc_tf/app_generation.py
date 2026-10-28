@@ -387,6 +387,10 @@ def generate_local_app(
         source, "0.1.0", native_kind=corpus_kind,
     )
     _validate_target(output)
+    if output.exists() and any(output.iterdir()):
+        raise AppGenerationError(
+            f"local app destination must be empty; refusing to overwrite user files: {output}"
+        )
     output.parent.mkdir(parents=True, exist_ok=True)
     temp = Path(tempfile.mkdtemp(prefix=f".{output.name}.stage-", dir=output.parent))
     try:

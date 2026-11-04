@@ -120,7 +120,12 @@ def test_native_real_text_fabric_browser_http_routes(tmp_path: Path, kind: str) 
 
     # A real TF search request must reach the engine and return *actual*
     # native words, not just a 200 response with an empty placeholder.
-    response = client.post("/query", data={"query": "word", "jobName": "smoke"})
+    # The official UI always submits a condensation node type along with
+    # the query; omission triggers a Text-Fabric 13.1 upstream display error.
+    response = client.post(
+        "/query",
+        data={"query": "word", "jobName": "smoke", "condenseType": "line"},
+    )
     assert response.status_code == 200 and response.is_json
     result = response.get_json()
     assert result["status"] is True, (kind, result.get("messages"))

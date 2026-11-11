@@ -7,10 +7,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 from pathlib import Path
 import sys
 
-from . import etcsri, ninmed
+from . import app_generation, etcsri, ninmed
 
 
 def _build_etcsri(args: argparse.Namespace) -> int:
@@ -120,6 +121,21 @@ def _build_ninmed(args: argparse.Namespace) -> int:
     return 0
 
 
+def _prepare_local_app(args: argparse.Namespace) -> int:
+    tf_root = Path(args.tf_dir).expanduser().resolve()
+    app_root = Path(args.app_dir).expanduser().resolve()
+    app_generation.generate_local_app(tf_root, app_root, corpus_kind=args.kind)
+    print(f"Prepared unpublished {args.kind} local TF app at {app_root}")
+    print(
+        "Launch Text-Fabric browser with: python -m tf.browser.start "
+        + shlex.quote(f"app:{app_root}")
+        + " "
+        + shlex.quote(f"--locations={tf_root}")
+        + " --modules= -noweb"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m oracc_tf",
@@ -162,8 +178,17 @@ def main(argv: list[str] | None = None) -> int:
         "--skip-known-empty", action="store_true",
         help="For full-corpus input only: explicitly exclude known zero-byte P395407.json.",
     )
+    preview = commands.add_parser(
+        "prepare-local-app",
+        help="Prepare a local (unpublished) native ORACC Text-Fabric browser app.",
+    )
+    preview.add_argument("--kind", required=True, choices=("etcsri", "ninmed"))
+    preview.add_argument("--tf-dir", required=True, help="Directory of generated native TF features.")
+    preview.add_argument("--app-dir", required=True, help="Separate target directory for local app config.")
     args = parser.parse_args(argv)
     try:
+        if args.command == "prepare-local-app":
+            return _prepare_local_app(args)
         if args.command == "build-etcsri":
             return _build_etcsri(args)
         if args.command == "build-ninmed":

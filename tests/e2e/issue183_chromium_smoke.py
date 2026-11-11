@@ -32,7 +32,7 @@ def verify_primary_source(kind: str, text_id: str, expected_sha: str) -> None:
     path = Path(f"/tmp/issue183-native-source/{kind}/corpusjson/{text_id}.json")
     raw = path.read_bytes()
     blob_sha = hashlib.sha1(
-        b"blob " + str(len(raw)).encode("ascii") + b"\\0" + raw
+        b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw
     ).hexdigest()
     assert blob_sha == expected_sha, (kind, blob_sha)
     assert json.loads(raw)["textid"] == text_id
@@ -57,14 +57,14 @@ def collect_process_info(kind: str, process: subprocess.Popen[str], root: Path) 
     status = Path(f"/proc/{process.pid}/status")
     high_water = "unavailable"
     if status.is_file():
-        match = re.search(r"^VmHWM:\\s*(.+)$", status.read_text(), flags=re.MULTILINE)
+        match = re.search(r"^VmHWM:\s*(.+)$", status.read_text(), flags=re.MULTILINE)
         if match:
             high_water = match.group(1)
     disk_bytes = sum(f.stat().st_size for f in root.glob("*.tf"))
     record = {"kind": kind, "server_pid": process.pid, "server_peak_rss": high_water,
               "tf_disk_bytes": disk_bytes}
     (ARTIFACTS / f"{kind}-measurements.json").write_text(
-        json.dumps(record, indent=2) + "\\n", encoding="utf8"
+        json.dumps(record, indent=2) + "\n", encoding="utf8"
     )
     print(f"CHROMIUM MEASUREMENT {record}", flush=True)
 

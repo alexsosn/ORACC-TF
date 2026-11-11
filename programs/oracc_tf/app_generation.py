@@ -280,6 +280,11 @@ def _config_bytes(
         },
         "typeDisplay": _type_display(node_types, node_features, native_kind=native_kind),
     }
+    if native_kind is not None:
+        # Native morphology/lexical features are already declared in
+        # typeDisplay.featuresBare, but TF hides them by default unless
+        # standardFeatures is enabled in its own browser interface.
+        config["interfaceDefaults"] = {"standardFeatures": True}
     return yaml.safe_dump(
         config,
         allow_unicode=True,

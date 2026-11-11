@@ -38,7 +38,10 @@ jobs:
           python -m build --wheel --outdir /tmp/issue183-wheel
           python -m venv /tmp/issue183-venv
           /tmp/issue183-venv/bin/python -m pip install /tmp/issue183-wheel/oracc_tf-*.whl playwright==1.56.0
-          /tmp/issue183-venv/bin/python -m playwright install --with-deps chromium
+          # GitHub's Ubuntu runner already has the required Chromium libraries.
+          # Avoid Playwright's APT step: transient Ubuntu mirror DNS failures
+          # otherwise abort before the browser-based acceptance test can run.
+          /tmp/issue183-venv/bin/python -m playwright install chromium
       - name: Build two native Text-Fabric corpora and local apps outside checkout
         run: |
           set -euo pipefail

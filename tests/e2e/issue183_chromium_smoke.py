@@ -123,6 +123,33 @@ def visit_kind(browser, kind: str, count: int) -> None:
                 )
                 table_text = page.locator("#queryTable").inner_text()
                 assert len(table_text.strip()) > 8, (kind, table_text[:200])
+                # #185 (test first): an actual researcher must be able to
+                # expand a real result and inspect source-grounded morphology.
+                # The native TF browser lazily fetches /query/<sequence> only
+                # after a <details> disclosure is clicked in the real page.
+                if kind == "etcsri":
+                    first = page.locator("#queryTable details.pretty[seq='1']")
+                    first.locator("summary").wait_for(state="visible")
+                    with page.expect_response(
+                        lambda r: r.request.method == "POST"
+                        and r.url.split("?")[0].rstrip("/").endswith("/query/1"),
+                        timeout=60000,
+                    ) as detail_ajax:
+                        first.locator("summary").click()
+                    assert detail_ajax.value.status == 200, (kind, detail_ajax.value.status)
+                    expanded = first.locator(":scope > div.pretty")
+                    expanded.wait_for(state="visible", timeout=60000)
+                    page.wait_for_function(
+                        """() => document.querySelector(
+                          '#queryTable details.pretty[seq="1"] > div.pretty'
+                        )?.textContent.includes('N1=Urnammak')""",
+                        timeout=60000,
+                    )
+                    assert "N1=Urnammak" in expanded.inner_text(), (
+                        kind, expanded.inner_text()[:1000]
+                    )
+                    page.screenshot(path=str(ARTIFACTS / "etcsri-expanded-morphology.png"))
+                    print("CHROMIUM MORPH PASS etcsri: Q000935.1.1 N1=Urnammak", flush=True)
                 assert not errors, (kind, errors)
                 page.screenshot(path=str(ARTIFACTS / f"{kind}-search.png"))
                 collect_process_info(kind, process, root)

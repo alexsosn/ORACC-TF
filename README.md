@@ -175,8 +175,8 @@ readable editions took **12.47 s**, generating **91.4 MB** of TF
 files, with **~997 MiB peak process RSS** including TF verification/load.
 These are indicative build/test measurements, not a laptop memory guarantee.
 
-This is a **converter** preview rather than a published NINMED corpus
-archive, Text-Fabric browser app, or a replacement for
+The converter and local browser are **development previews**, not a published
+NINMED corpus archive, hosted Text-Fabric app, or a replacement for
 `Nino-cunei/ninmed`; primary-source form differences remain documented
 under [issue #33](https://github.com/alexsosn/ORACC-TF/issues/33).
 A clean-wheel E2E smoke installs the code without cloning the large

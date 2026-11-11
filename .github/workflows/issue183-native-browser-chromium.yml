@@ -1,0 +1,77 @@
+name: issue183-native-browser-chromium
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/e2e/issue183_chromium_smoke.py"
+      - ".github/workflows/issue183-native-browser-chromium.yml"
+      - "programs/oracc_tf/app_generation.py"
+      - "programs/oracc_tf/__main__.py"
+      - "README.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-wheel-real-chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            programs/oracc_tf
+            tests/e2e/issue183_chromium_smoke.py
+            data/etcsri/corpusjson/Q000935.json
+            data/asbp/ninmed/corpusjson/P285136.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and install only code, Playwright and Chromium
+        run: |
+          set -euo pipefail
+          python -m pip install build
+          python -m build --wheel --outdir /tmp/issue183-wheel
+          python -m venv /tmp/issue183-venv
+          /tmp/issue183-venv/bin/python -m pip install /tmp/issue183-wheel/oracc_tf-*.whl playwright==1.56.0
+          # GitHub's Ubuntu runner already has the required Chromium libraries.
+          # Avoid Playwright's APT step: transient Ubuntu mirror DNS failures
+          # otherwise abort before the browser-based acceptance test can run.
+          /tmp/issue183-venv/bin/python -m playwright install chromium
+      - name: Build two native Text-Fabric corpora and local apps outside checkout
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/issue183-native-user
+          mkdir -p /tmp/issue183-native-source/etcsri/corpusjson
+          mkdir -p /tmp/issue183-native-source/ninmed/corpusjson
+          cp data/etcsri/corpusjson/Q000935.json /tmp/issue183-native-source/etcsri/corpusjson/
+          cp data/asbp/ninmed/corpusjson/P285136.json /tmp/issue183-native-source/ninmed/corpusjson/
+          cd /tmp/issue183-native-user
+          unset PYTHONPATH
+          for kind in etcsri ninmed; do
+            /tmp/issue183-venv/bin/python -m oracc_tf "build-$kind" \
+              --source-dir "/tmp/issue183-native-source/$kind" \
+              --output "/tmp/issue183-native-user/$kind-tf"
+            /tmp/issue183-venv/bin/python -m oracc_tf prepare-local-app \
+              --kind "$kind" \
+              --tf-dir "/tmp/issue183-native-user/$kind-tf" \
+              --app-dir "/tmp/issue183-native-user/$kind-app"
+          done
+      - name: Click search in Chromium and require visible native word results
+        run: |
+          set -euo pipefail
+          cd /tmp/issue183-native-user
+          unset PYTHONPATH
+          /tmp/issue183-venv/bin/python "$GITHUB_WORKSPACE/tests/e2e/issue183_chromium_smoke.py"
+      - name: Upload source-grounded screenshots, browser logs and measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue183-native-chromium-screenshots
+          path: /tmp/issue183-artifacts/
+          if-no-files-found: warn
+          retention-days: 14

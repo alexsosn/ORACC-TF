@@ -220,7 +220,7 @@ For Ubuntu 22.04/24.04 and compatible systems:
 ```bash
 sudo apt-get install fonts-noto-core
 fc-cache -f
-fc-match -f '%{family}:%{file}\\n' 'sans-serif:charset=1202D'
+fc-match -f '%{family}:%{file}\n' 'sans-serif:charset=1202D'
 ```
 
 The last command should resolve U+1202D (`𒀭`) to a cuneiform-capable font

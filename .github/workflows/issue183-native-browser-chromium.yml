@@ -42,6 +42,30 @@ jobs:
           # Avoid Playwright's APT step: transient Ubuntu mirror DNS failures
           # otherwise abort before the browser-based acceptance test can run.
           /tmp/issue183-venv/bin/python -m playwright install chromium
+      - name: Provide pinned cuneiform font to Chromium without APT
+        run: |
+          set -euo pipefail
+          # Font stays in the CI runner's HOME, never in wheel or corpus.
+          font_dir="$HOME/.local/share/fonts"
+          mkdir -p "$font_dir"
+          font="$font_dir/NotoSansCuneiform-Regular.ttf"
+          curl --fail --location --silent --show-error --retry 3 \
+            --connect-timeout 10 --max-time 90 \
+            "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/unhinted/ttf/NotoSansCuneiform/NotoSansCuneiform-Regular.ttf" \
+            --output "$font"
+          python - "$font" <<'PY'
+          import hashlib
+          from pathlib import Path
+          import sys
+
+          raw = Path(sys.argv[1]).read_bytes()
+          git_blob = hashlib.sha1(
+              b"blob " + str(len(raw)).encode("ascii") + b"\\0" + raw
+          ).hexdigest()
+          assert git_blob == "22a3a8d517fe6ab5d47ae8432aa1b054fab8bcac", git_blob
+          PY
+          fc-cache -f "$font_dir"
+          fc-match -f '%{family}:%{file}\n' 'sans-serif:charset=1202D'
       - name: Build two native Text-Fabric corpora and local apps outside checkout
         run: |
           set -euo pipefail

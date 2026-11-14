@@ -60,7 +60,7 @@ jobs:
 
           raw = Path(sys.argv[1]).read_bytes()
           git_blob = hashlib.sha1(
-              b"blob " + str(len(raw)).encode("ascii") + b"\\0" + raw
+              b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw
           ).hexdigest()
           assert git_blob == "22a3a8d517fe6ab5d47ae8432aa1b054fab8bcac", git_blob
           PY

@@ -210,6 +210,24 @@ def main() -> None:
                 out["results"].append(probe(kind, "word-base-override"))
             finally:
                 conf_path.write_bytes(original)
+        # Assertions only for the proved baseline interoperability paths.
+        # Broken/empty word summaries and format whitelisting remain research
+        # observations, never passing criteria for a user-facing reader.
+        assert len(out["results"]) == 4
+        for case in out["results"]:
+            assert case["health"]["status"] == 200, case
+            assert case["sections"]["root"] == 200, case
+            assert case["sections"]["hops"], case
+            for name in ("passage", "interlinear", "word_summary", "word_info"):
+                assert case[name]["status"] == 200, (name, case[name])
+            original_cf = case["source_features"].get("cf")
+            shown_cf = case["word_info"]["feature_subset"].get("cf")
+            assert shown_cf == original_cf, (case["kind"], shown_cf, original_cf)
+            assert case["format_requested_default"] == "text-trans-full"
+            if case["mode"] == "baseline":
+                assert case["tfql_search"]["state"] == "done", case["tfql_search"]
+                assert case["tfql_search"]["count"] == SOURCES[case["kind"]][2]
+        assert all(x["mode"] in {"baseline", "word-base-override"} for x in out["results"])
     finally:
         out["rss_kb_highwater"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         out["tf_bytes"] = sum(p.stat().st_size for p in ROOT.rglob("*.tf"))

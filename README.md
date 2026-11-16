@@ -204,6 +204,32 @@ For NINMED, change `--kind` to `ninmed` and point `--tf-dir`
 to that corpus's generated TF directory. Use a **new or empty** `--app-dir`
 for each preview: local generation refuses to overwrite a nonempty folder.
 Open the localhost URL printed by Text-Fabric in a web browser.
+In the search pad, enter `word`, click the search button, and expand a result
+with its disclosure triangle. The native browser shows source-attested ETCSRI
+morphology or NINMED lexical features in the expanded word card; it does not
+infer absent annotations. The original document and line identifiers remain
+available for cross-checking the source.
+
+**Cuneiform font:** The browser renders source UTF-8 signs from
+`text-orig-full`. If the sign boxes or the *Special characters in
+text-orig-full* palette show empty squares, install a system font with
+Unicode cuneiform coverage, such as
+[Noto Sans Cuneiform](https://notofonts.github.io/cuneiform/).
+For Ubuntu 22.04/24.04 and compatible systems:
+
+```bash
+sudo apt-get install fonts-noto-core
+fc-cache -f
+fc-match -f '%{family}:%{file}\n' 'sans-serif:charset=1202D'
+```
+
+The last command should resolve U+1202D (`𒀭`) to a cuneiform-capable font
+such as `Noto Sans Cuneiform`, rather than a generic fallback without the glyph.
+On Windows or macOS, install Noto Sans Cuneiform using the operating system's
+font manager and restart the browser. Font rendering is a *local browser/OS
+requirement*: the Python wheel and TF output intentionally do **not** bundle
+fonts or fetch remote fonts at runtime. Missing squares do not imply that the
+original ORACC signs have been removed or replaced by the converter.
 
 The local app checks the **actual native document identities and node
 types**, and deliberately does not register either corpus as a released

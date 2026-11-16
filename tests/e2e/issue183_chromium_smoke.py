@@ -150,6 +150,34 @@ def visit_kind(browser, kind: str, count: int) -> None:
                     )
                     page.screenshot(path=str(ARTIFACTS / "etcsri-expanded-morphology.png"))
                     print("CHROMIUM MORPH PASS etcsri: Q000935.1.1 N1=Urnammak", flush=True)
+                if kind == "ninmed":
+                    # Primary ORACC P285136.l003f2 has gw=ritual (instructions).
+                    # Require an actual browser disclosure and visible lexical gloss.
+                    first = page.locator("#queryTable details.pretty[seq='1']")
+                    first.locator("summary").wait_for(state="visible")
+                    with page.expect_response(
+                        lambda r: r.request.method == "POST"
+                        and r.url.split("?")[0].rstrip("/").endswith("/query/1"),
+                        timeout=60000,
+                    ) as detail_ajax:
+                        first.locator("summary").click()
+                    assert detail_ajax.value.status == 200, (kind, detail_ajax.value.status)
+                    expanded = first.locator(":scope > div.pretty")
+                    expanded.wait_for(state="visible", timeout=60000)
+                    page.wait_for_function(
+                        """() => document.querySelector(
+                          '#queryTable details.pretty[seq="1"] > div.pretty'
+                        )?.textContent.includes('ritual (instructions)')""",
+                        timeout=60000,
+                    )
+                    assert "ritual (instructions)" in expanded.inner_text(), (
+                        kind, expanded.inner_text()[:1000]
+                    )
+                    page.screenshot(path=str(ARTIFACTS / "ninmed-expanded-lexical.png"))
+                    print(
+                        "CHROMIUM LEXICAL PASS ninmed: P285136.1.1 ritual (instructions)",
+                        flush=True,
+                    )
                 assert not errors, (kind, errors)
                 page.screenshot(path=str(ARTIFACTS / f"{kind}-search.png"))
                 collect_process_info(kind, process, root)
@@ -171,6 +199,23 @@ def visit_kind(browser, kind: str, count: int) -> None:
     )
 
 
+def verify_cuneiform_font() -> None:
+    """A browser cannot render the real Unicode signs without a covering font.
+
+    The CI-only font setup is deliberately external to the installed wheel.
+    Fontconfig asks for the actual U+1202D (𒀭) coverage, not a font name alone.
+    """
+    result = subprocess.run(
+        ["fc-match", "-f", "%{family}:%{file}\\n", "sans-serif:charset=1202D"],
+        text=True, capture_output=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Noto Sans Cuneiform" in result.stdout.split(":", 1)[0], (
+        "missing Unicode cuneiform font fallback for U+1202D", result.stdout
+    )
+    print(f"CHROMIUM FONT PASS: {result.stdout.strip()}", flush=True)
+
+
 def main() -> None:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     for kind, text_id, expected_sha, _ in CASES:
@@ -182,6 +227,7 @@ def main() -> None:
                 visit_kind(browser, kind, count)
         finally:
             browser.close()
+    verify_cuneiform_font()
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ on:
     paths:
       - "tests/e2e/issue190_caccht_explorer_probe.py"
       - "tests/e2e/issue190_caccht_release_probe.py"
+      - "tests/e2e/issue190_tf_baseline_probe.py"
       - ".github/workflows/issue190-caccht-explorer.yml"
   workflow_dispatch:
 
@@ -84,6 +85,7 @@ jobs:
         with:
           sparse-checkout: |
             tests/e2e/issue190_caccht_release_probe.py
+            tests/e2e/issue190_tf_baseline_probe.py
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
@@ -117,6 +119,13 @@ jobs:
           set -euo pipefail
           /tmp/issue190-release-venv/bin/python \
             "$GITHUB_WORKSPACE/tests/e2e/issue190_caccht_release_probe.py"
+      - name: Compare full release load in isolated Text-Fabric 13.1.2 process
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/issue190-raw-tf
+          /tmp/issue190-raw-tf/bin/python -m pip install "text-fabric==13.1.2"
+          /tmp/issue190-raw-tf/bin/python \
+            "$GITHUB_WORKSPACE/tests/e2e/issue190_tf_baseline_probe.py"
       - name: Upload release compatibility evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -124,6 +133,7 @@ jobs:
           name: issue190-riao-rinap-release-compatibility
           path: |
             /tmp/issue190-release/released-v1-explorer.json
+            /tmp/issue190-release/raw-tf-baseline.json
             /tmp/issue190-release-versions.txt
           if-no-files-found: warn
           retention-days: 14

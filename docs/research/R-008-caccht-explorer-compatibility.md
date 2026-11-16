@@ -1,3 +1,16 @@
+---
+id: R-008
+title: CACCHT Explorer compatibility with ORACC-TF
+type: research
+status: active
+priority: P0
+depends_on: [R-006]
+updated: 2026-11-17
+fact_policy: snapshot-evidence
+evidence_date: 2026-11-17
+evidence_basis: GitHub Actions source-pinned ETCSRI/NINMED and SHA256-verified published RIAO/RINAP v1.0.0 Explorer 0.1.2 probes
+---
+
 # R-008 — CACCHT Explorer compatibility with ORACC-TF (2026-11-17)
 
 Status: **research verified, conditional reuse; not a usable ORACC reader without changes**.

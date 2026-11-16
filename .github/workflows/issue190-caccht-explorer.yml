@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "tests/e2e/issue190_caccht_explorer_probe.py"
+      - "tests/e2e/issue190_caccht_release_probe.py"
       - ".github/workflows/issue190-caccht-explorer.yml"
   workflow_dispatch:
 
@@ -72,5 +73,57 @@ jobs:
           path: |
             /tmp/issue190-explorer/compatibility.json
             /tmp/issue190-requirements.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  published-riao-rinap-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tests/e2e/issue190_caccht_release_probe.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install published CACCHT Explorer without ORACC-TF builder
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/issue190-release-venv
+          /tmp/issue190-release-venv/bin/python -m pip install \
+            "cfabric-browser==0.1.2" "httpx>=0.27,<1"
+          /tmp/issue190-release-venv/bin/python -m pip freeze > /tmp/issue190-release-versions.txt
+      - name: Download the exact public ORACC-TF v1.0.0 release and verify SHA256
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/issue190-release/unpacked
+          cd /tmp/issue190-release
+          url=https://github.com/alexsosn/ORACC-TF/releases/download/v1.0.0
+          curl --fail --location --show-error --silent --retry 3 \
+            --connect-timeout 15 --max-time 420 \
+            -o assyrian-royal-inscriptions-1.0.0.zip \
+            "$url/assyrian-royal-inscriptions-1.0.0.zip"
+          curl --fail --location --show-error --silent --retry 3 \
+            --connect-timeout 15 --max-time 60 \
+            -o assyrian-royal-inscriptions-1.0.0.zip.sha256 \
+            "$url/assyrian-royal-inscriptions-1.0.0.zip.sha256"
+          sha256sum -c assyrian-royal-inscriptions-1.0.0.zip.sha256
+          unzip -q assyrian-royal-inscriptions-1.0.0.zip -d unpacked
+          find unpacked -name otext.tf -print
+      - name: Test RIAO/RINAP reader, native citations and TEI translation representation
+        run: |
+          set -euo pipefail
+          /tmp/issue190-release-venv/bin/python \
+            "$GITHUB_WORKSPACE/tests/e2e/issue190_caccht_release_probe.py"
+      - name: Upload release compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue190-riao-rinap-release-compatibility
+          path: |
+            /tmp/issue190-release/released-v1-explorer.json
+            /tmp/issue190-release-versions.txt
           if-no-files-found: warn
           retention-days: 14

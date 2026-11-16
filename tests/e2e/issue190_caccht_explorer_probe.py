@@ -218,8 +218,10 @@ def main() -> None:
             assert case["health"]["status"] == 200, case
             assert case["sections"]["root"] == 200, case
             assert case["sections"]["hops"], case
-            for name in ("passage", "interlinear", "word_summary", "word_info"):
+            for name in ("passage", "interlinear"):
                 assert case[name]["status"] == 200, (name, case[name])
+            assert case["word_summary"]["type"] == "word", case["word_summary"]
+            assert "feature_subset" in case["word_info"], case["word_info"]
             original_cf = case["source_features"].get("cf")
             shown_cf = case["word_info"]["feature_subset"].get("cf")
             assert shown_cf == original_cf, (case["kind"], shown_cf, original_cf)

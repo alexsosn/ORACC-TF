@@ -161,6 +161,20 @@ def main() -> None:
                     "includes_full_selected_translation": bool(wanted) and wanted in serial,
                     "selected_translation_snippet": wanted[:70],
                 }
+    # Passing the research job must require concrete API interoperability,
+    # not silently pass with all probes recording exceptions. Translation
+    # visibility is independently recorded as a known negative, not hidden.
+    assert report["translation_source_witness"] is not None, (
+        "public release must retain its source-linked TEI translation",
+        report["translation_unit_count"],
+    )
+    assert report["catalog"]["status"] == 200, report["catalog"]
+    assert report["catalog"]["count"] == len(documents), (
+        report["catalog"]["count"], len(documents)
+    )
+    for name in ("health", "card", "passage", "interlinear", "summary"):
+        assert report[name]["status"] == 200, (name, report[name])
+    assert report["translation_edges_present"]
     report["peak_rss_kb"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     report["tf_bytes"] = sum(p.stat().st_size for p in path.glob("*.tf"))
     report["cache_bytes"] = sum(p.stat().st_size for p in path.rglob("*.cfm"))

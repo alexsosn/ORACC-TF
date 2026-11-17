@@ -24,7 +24,7 @@ def _source(kind: str) -> Path:
     selected = next(item for item in WITNESSES if item[0] == kind)
     source = paths.DATA / selected[1]
     payload = source.read_bytes()
-    actual = sha1(f"blob {len(payload)}\\0".encode("ascii") + payload).hexdigest()
+    actual = sha1(f"blob {len(payload)}\0".encode("ascii") + payload).hexdigest()
     assert actual == selected[2], f"{kind} source changed: review edition before release"
     return source
 
@@ -32,7 +32,7 @@ def _source(kind: str) -> Path:
 def _registry(tmp_path: Path, *datasets: str) -> Path:
     registry = tmp_path / "datasets.toml"
     registry.write_text(
-        "".join(f'[{kind}]\\narchives = ["{kind}"]\\n' for kind in datasets),
+        "".join(f'[{kind}]\narchives = ["{kind}"]\n' for kind in datasets),
         encoding="utf-8",
     )
     return registry

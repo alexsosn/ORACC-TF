@@ -86,3 +86,40 @@ def test_ninmed_manual_explains_native_lexicon_and_known_zero_byte_member() -> N
             found.append(node["f"])
         stack.extend(node.get("cdl") or [])
     assert any(f.get("cf") == "DÙ.DÙ.BI" and f.get("gw") == "ritual (instructions)" for f in found)
+
+
+@pytest.mark.corpus
+@pytest.mark.parametrize("kind,text_id", (("etcsri", "Q000935"), ("ninmed", "P285136")))
+def test_copy_paste_python_quickstart_executes_on_actual_oracc_tf(
+    tmp_path: Path, kind: str, text_id: str
+) -> None:
+    """User-facing Python examples must run, not merely mention correct words."""
+    import re
+    import subprocess
+    import sys
+
+    from oracc_tf import etcsri, ninmed
+
+    source = (
+        paths.DATA / "etcsri" / "corpusjson" / f"{text_id}.json"
+        if kind == "etcsri"
+        else paths.DATA / "asbp" / "ninmed" / "corpusjson" / f"{text_id}.json"
+    )
+    if kind == "etcsri":
+        etcsri.build_tf(tmp_path / "etcsri-tf", source_paths=[source])
+    else:
+        ninmed.build_tf(tmp_path / "ninmed-tf", source_paths=[source])
+
+    markdown = (MANUALS / kind / "quick-start.md").read_text(encoding="utf-8")
+    snippets = re.findall(r"```python\\n(.*?)\\n```", markdown, flags=re.S)
+    assert len(snippets) == 1, "one complete Python sample per native manual"
+    run = subprocess.run(
+        [sys.executable, "-c", snippets[0]],
+        cwd=tmp_path, text=True, capture_output=True, timeout=60, check=False,
+    )
+    assert run.returncode == 0, (kind, run.stdout, run.stderr)
+    if kind == "etcsri":
+        assert "N1=Urnammak" in run.stdout
+    else:
+        assert "DÙ.DÙ.BI" in run.stdout
+        assert "ritual (instructions)" in run.stdout

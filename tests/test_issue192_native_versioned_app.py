@@ -142,9 +142,10 @@ def test_versioned_native_app_loads_and_searches_in_real_tf_browser(
         repository_org="alexsosn", datasets_path=_registry(tmp_path, kind),
         native_kind=kind,
     )
+    # A researcher extracting the standalone archive should not have to
+    # supply internal TF paths. Probe ordinary sibling auto-discovery.
     application = use(
-        f"app:{app}", locations=[str(published_tf)], modules=[""],
-        silent="deep",
+        f"app:{app}", modules=[""], silent="deep",
     )
     assert application is not None and application.api is not None
     assert application.context.version == "0.1.0"
@@ -152,7 +153,7 @@ def test_versioned_native_app_loads_and_searches_in_real_tf_browser(
     assert len(application.api.F.otype.s("word")) == words
 
     browser = setup(
-        False, f"app:{app}", f"--locations={published_tf}", "--modules=",
+        False, f"app:{app}", "--modules=",
     )
     assert browser is not None
     client = browser.test_client()

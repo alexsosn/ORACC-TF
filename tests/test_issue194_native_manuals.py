@@ -111,7 +111,7 @@ def test_copy_paste_python_quickstart_executes_on_actual_oracc_tf(
         ninmed.build_tf(tmp_path / "ninmed-tf", source_paths=[source])
 
     markdown = (MANUALS / kind / "quick-start.md").read_text(encoding="utf-8")
-    snippets = re.findall(r"```python\\n(.*?)\\n```", markdown, flags=re.S)
+    snippets = re.findall(r"```python\n(.*?)\n```", markdown, flags=re.S)
     assert len(snippets) == 1, "one complete Python sample per native manual"
     run = subprocess.run(
         [sys.executable, "-c", snippets[0]],

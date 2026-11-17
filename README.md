@@ -70,6 +70,14 @@ checks, and the publishing workflow downloaded and verified both public assets.
 Independent fresh-machine extraction, load and browser acceptance of those
 exact public bytes is the remaining final gate.
 
+The two separately developed native corpora have dedicated, source-specific
+researcher manuals: [ETCSRI](docs/native/etcsri/index.md) (Sumerian royal
+inscriptions and morphological annotations) and
+[NINMED](docs/native/ninmed/index.md) (Nineveh medical texts and ORACC lexemes).
+These currently describe local converter/browser previews and their source
+rights. Neither native corpus has a public standalone TF ZIP yet;
+the release-delivery gate is [#194](https://github.com/alexsosn/ORACC-TF/issues/194).
+
 Maintainer research, design plans, reports, and the agentic-development
 registry are indexed separately in [`docs/README.md`](docs/README.md).
 
@@ -124,8 +132,10 @@ matching_words = [
 print(len(matching_words))
 ```
 
-This is a **converter-only preview**, not an announced public ETCSRI
-dataset archive, an integrated TF browser app, or a licence statement.
+This is an **unpublished converter and local TF browser preview**, not an
+announced public ETCSRI dataset archive. See the
+[source-specific reader manual](docs/native/etcsri/index.md) for features,
+installation and rights boundaries.
 The standalone release path and researcher-facing app acceptance for
 ETCSRI are still tracked in
 [issue #32](https://github.com/alexsosn/ORACC-TF/issues/32).
@@ -177,7 +187,9 @@ These are indicative build/test measurements, not a laptop memory guarantee.
 
 The converter and local browser are **development previews**, not a published
 NINMED corpus archive, hosted Text-Fabric app, or a replacement for
-`Nino-cunei/ninmed`; primary-source form differences remain documented
+`Nino-cunei/ninmed`. Read the
+[NINMED manual](docs/native/ninmed/index.md) for native lexical features,
+installation, source exceptions and reuse rights. Primary-source form differences remain documented
 under [issue #33](https://github.com/alexsosn/ORACC-TF/issues/33).
 A clean-wheel E2E smoke installs the code without cloning the large
 source tree and queries real P285136/P425685 TF data.

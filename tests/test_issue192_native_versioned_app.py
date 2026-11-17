@@ -118,3 +118,50 @@ def test_versioned_app_rejects_cross_corpus_primary_source_identity(tmp_path: Pa
             datasets_path=registry, native_kind="etcsri",
         )
     assert not (tmp_path / "app").exists()
+
+
+@pytest.mark.corpus
+@pytest.mark.parametrize("kind,words", (("etcsri", 7), ("ninmed", 204)))
+def test_versioned_native_app_loads_and_searches_in_real_tf_browser(
+    tmp_path: Path, kind: str, words: int
+) -> None:
+    """Exercise the 13.1 app+Flask stack from the release-shaped sibling layout."""
+    from shutil import copytree
+    from tf.app import use
+    from tf.browser.web import setup
+
+    original_tf = _native_tf(tmp_path, kind)
+    root = tmp_path / "standalone"
+    published_tf = root / "tf" / "0.1.0"
+    copytree(original_tf, published_tf)
+    app = app_generation.generate_app(
+        published_tf, root / "app", dataset=kind, tf_version="0.1.0",
+        repository_org="alexsosn", datasets_path=_registry(tmp_path, kind),
+        native_kind=kind,
+    )
+    application = use(
+        f"app:{app}", locations=[str(published_tf)], modules=[""],
+        silent="deep",
+    )
+    assert application is not None and application.api is not None
+    assert application.context.version == "0.1.0"
+    assert len(application.api.F.otype.s("document")) == 1
+    assert len(application.api.F.otype.s("word")) == words
+
+    browser = setup(
+        False, f"app:{app}", f"--locations={published_tf}", "--modules=",
+    )
+    assert browser is not None
+    client = browser.test_client()
+    for route in ("/", "/sections", "/query"):
+        result = client.get(route)
+        assert result.status_code == 200, (kind, route, result.get_data(as_text=True)[-500:])
+    result = client.post(
+        "/query",
+        data={"query": "word", "jobName": "release-smoke", "condenseType": "line"},
+    )
+    assert result.status_code == 200 and result.is_json
+    response = result.get_json()
+    assert response["status"] is True, (kind, response["messages"])
+    assert response["nResults"] == words
+    assert response["table"] and "Traceback" not in str(response["table"])

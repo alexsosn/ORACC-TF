@@ -77,8 +77,11 @@ def test_registered_versioned_app_preserves_native_identity_and_display(
         assert set(("base", "morph", "morph2")) <= set(
             config["typeDisplay"]["word"]["featuresBare"].split()
         )
-        assert config["typeDisplay"]["nontext_span"]["hidden"] is True
-        assert config["typeDisplay"]["nonword_marker"]["hidden"] is True
+        # Q000935 has no nontext/nonword events: policy describes only
+        # source-attested TF node types, not a fabricated full type list.
+        for marker_type in ("nontext_span", "nonword_marker"):
+            if marker_type in config["typeDisplay"]:
+                assert config["typeDisplay"][marker_type]["hidden"] is True
     else:
         assert set(("cf", "gw", "pos")) <= set(
             config["typeDisplay"]["word"]["featuresBare"].split()

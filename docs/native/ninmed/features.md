@@ -6,7 +6,7 @@ For the real word `P285136.l003f2`, source `form = DU₃.DU₃.BI`, `cf = DÙ.D�
 
 `word_json` preserves each complete original ORACC source word and `document_meta_json` keeps the edition header. `source_markers_json` preserves each source `node=d` structural, line-start, nontext and nonword event in traversal order, with a path of integer child indices through the original `cdl` tree. It is a **lossless document-level record**, not a claim that each source event has a separately addressable TF marker node. Do not infer line gaps or missing signs by expanding `extent`.
 
-Text-Fabric graph nodes include `document`, line/section nodes, `word`, `sign` and `lex` where attested. Synthetic technical sign slots, when necessary to preserve structural TF locality, are marked `synthetic=1` and must not count as source GDL signs. Each word remains traceable through `document_key`, `source_id` and `source_sha256`.
+Text-Fabric graph nodes include `document`, line/section nodes, `word`, `sign` and `lex` where attested. Synthetic technical sign slots, when necessary to preserve structural TF locality, are marked `synthetic=1` and must not count as source GDL signs. Each word remains traceable by its own `document_key` and `source_id`. The `source_sha256` belongs to the **document node**, not to the word, and verifies the original JSON bytes for that edition.
 
 No official running translation series is present in the native JSON-derived TF output. The built-in TF browser uses specialized TFQL query syntax; an ordinary text-search interface is still under development.
 

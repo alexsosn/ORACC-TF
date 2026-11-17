@@ -223,6 +223,9 @@ Canonical app/docs/release support path ownership — GitHub #79.
 ### ISSUE-83
 Lightweight local installation, standalone acquisition path, and disk/RAM measurements — GitHub #83.
 
+### ISSUE-192
+Versioned native ETCSRI/NINMED TF app generation for release-format distributions — GitHub #192. Source identity, publishable provenance, native morphology and lexical display must be checked before the corresponding ETCSRI/NINMED release gates are treated as complete.
+
 ### ISSUE-124
 Final source-to-TF correctness and completeness audit — GitHub #124.
 

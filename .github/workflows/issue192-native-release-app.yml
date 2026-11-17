@@ -1,0 +1,27 @@
+name: issue192-native-release-app
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "programs/oracc_tf/app_generation.py"
+      - "tests/test_issue192_native_versioned_app.py"
+      - ".github/workflows/issue192-native-release-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-release-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install converter and pinned Text-Fabric
+        run: python -m pip install -e ".[dev]" "text-fabric==13.1.0"
+      - name: Verify versioned ETCSRI/NINMED native browser configs on primary JSON
+        run: python -m pytest -q -s tests/test_issue192_native_versioned_app.py

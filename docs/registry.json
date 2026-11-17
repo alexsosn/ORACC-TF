@@ -936,6 +936,17 @@
       "status": "todo",
       "issue": 83,
       "evidence_file": "docs/task-state/ISSUE-83.json"
+    },
+    {
+      "id": "ISSUE-192",
+      "title": "Versioned native ETCSRI/NINMED release app generation",
+      "plan": "P-004",
+      "spec": "§ISSUE-192",
+      "priority": "P0",
+      "blocked_by": [],
+      "status": "todo",
+      "issue": 192,
+      "evidence_file": "docs/task-state/ISSUE-192.json"
     }
   ],
   "selection_rule": "enumerate every claim/start-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; completion_blocked_by gates finalization without suppressing explicitly permitted early research/design; losing sessions reselect unrelated ready work",

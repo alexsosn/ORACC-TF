@@ -330,6 +330,7 @@ def generate_app(
     docs_ref: str = "main",
     datasets_path: Path | str = paths.ROOT / "datasets.toml",
     override: Mapping[str, object] | None = None,
+    native_kind: str | None = None,
 ) -> Path:
     """Generate one minimal deterministic Text-Fabric app directory.
 
@@ -346,9 +347,23 @@ def generate_app(
 
     _validate_disjoint_paths(source, output)
     _validate_registered_dataset(dataset, registry)
+    # A public/registered native corpus must use its own source-validated
+    # display contract, never the default Assyrian royal-inscriptions policy.
+    # Reject mismatches before touching the TF source or destination.
+    if dataset in {"etcsri", "ninmed"}:
+        if native_kind != dataset:
+            raise AppGenerationError(
+                f"native dataset {dataset!r} requires native_kind={dataset!r}"
+            )
+    elif native_kind is not None:
+        raise AppGenerationError(
+            f"native_kind {native_kind!r} is not valid for dataset {dataset!r}"
+        )
     org = _validate_repository_org(repository_org)
     help_ref = _validate_docs_ref(docs_ref)
-    node_types, node_features = _validate_tf_root(source, tf_version)
+    node_types, node_features = _validate_tf_root(
+        source, tf_version, native_kind=native_kind,
+    )
     css = _validate_override(override)
     _validate_target(output)
 
@@ -363,6 +378,7 @@ def generate_app(
                 docs_ref=help_ref,
                 node_types=node_types,
                 node_features=node_features,
+                native_kind=native_kind,
             )
         )
         if css is not None:

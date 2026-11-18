@@ -190,6 +190,100 @@ def assemble_manual(
     return target
 
 
+
+_NATIVE_DATASETS = frozenset({"etcsri", "ninmed"})
+_NATIVE_PAGES = ("index.md", "quick-start.md", "features.md", "rights.md")
+
+
+def assemble_native_manual(
+    repository_root: Path | str, output_dir: Path | str, *, dataset: str
+) -> Path:
+    """Assemble only one source-native corpus manual, never the royal handbook.
+
+    The existing P-005 publisher owns downstream manifest/ZIP integrity.
+    Keep this a small sibling of the royal manual assembler and use the same
+    link validation and transaction/rollback semantics.
+    """
+    if dataset not in _NATIVE_DATASETS:
+        raise ManualAssemblyError(f"unsupported native corpus: {dataset!r}")
+    repository = Path(repository_root)
+    target = Path(output_dir)
+    if repository.is_symlink() or not repository.is_dir():
+        raise ManualAssemblyError("native manual repository is missing or a symlink")
+    source = repository / "docs" / "native" / dataset
+    if source.is_symlink() or not source.is_dir():
+        raise ManualAssemblyError(f"native corpus manual missing for {dataset}")
+    if not _is_within(source.resolve(strict=True), repository.resolve(strict=True)):
+        raise ManualAssemblyError("native corpus manual escapes repository")
+    if set(path.name for path in source.iterdir()) != set(_NATIVE_PAGES):
+        raise ManualAssemblyError(f"native manual has missing or unowned pages: {dataset}")
+    for name in _NATIVE_PAGES:
+        path = source / name
+        if path.is_symlink() or not path.is_file() or not path.stat().st_size:
+            raise ManualAssemblyError(f"native manual page missing or invalid: {name}")
+    if dataset.lower() not in (source / "index.md").read_text(encoding="utf-8").lower():
+        raise ManualAssemblyError("native corpus identity absent from manual index")
+    for filename in ("CITATION.cff", "LICENSE_SCOPE.md"):
+        path = repository / filename
+        if path.is_symlink() or not path.is_file() or not path.stat().st_size:
+            raise ManualAssemblyError(f"missing software/source rights record: {filename}")
+
+    src_root = repository.resolve(strict=True)
+    dst_root = target.resolve(strict=False)
+    if _is_within(dst_root, src_root) or _is_within(src_root, dst_root):
+        raise ManualAssemblyError("native manual destination overlaps source checkout")
+    if target.is_symlink() or (target.exists() and not target.is_dir()):
+        raise ManualAssemblyError("native manual destination is not a regular directory")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{target.name}-native-manual-", dir=target.parent))
+    candidate = staging / "new"
+    old = staging / "old"
+    try:
+        ref = candidate / "reference"
+        ref.mkdir(parents=True)
+        for name in _NATIVE_PAGES:
+            shutil.copyfile(source / name, ref / name)
+        (ref / "installation.md").write_text(
+            f"# {dataset} released archive: offline installation\n\n"
+            "From the extracted archive root, install the reader runtime with "
+            "`python -m pip install text-fabric==13.1.0`. "
+            "To load the corpus, use `from tf.app import use` and "
+            "`A = use('app:' + str(Path.cwd() / 'app'))` after importing "
+            "`Path` from `pathlib`. For the standard TF browser, run "
+            "`tf \"app:$PWD/app\"`. Raw ORACC JSON and the ORACC-TF converter "
+            "are not required to read the extracted TF data. "
+            "The full source schema and examples are in "
+            "[Quick start](quick-start.md), [Features](features.md) and "
+            "[Rights](rights.md).\n",
+            encoding="utf-8",
+        )
+        for filename in ("CITATION.cff", "LICENSE_SCOPE.md"):
+            shutil.copyfile(repository / filename, candidate / filename)
+        (candidate / "index.md").write_text(
+            f"# {dataset} standalone researcher manual\n\n"
+            "Start at [installation](reference/installation.md) and "
+            "[quick start](reference/quick-start.md). See "
+            "[source-native features](reference/features.md), "
+            "[source rights](reference/rights.md) and "
+            "[software-only citation](CITATION.cff). "
+            "The [software/data license boundary](LICENSE_SCOPE.md) "
+            "retains the original ORACC rights separately from MIT code.\n",
+            encoding="utf-8",
+        )
+        _validate_internal_links(candidate)
+        if target.exists():
+            target.rename(old)
+        try:
+            candidate.rename(target)
+        except OSError:
+            if old.exists():
+                old.rename(target)
+            raise
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    return target
+
+
 def main(argv: list[str] | None = None) -> int:
     """Maintainer staging CLI; consuming the released corpus needs no builder."""
     import argparse

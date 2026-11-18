@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-11-17",
+  "updated": "2026-11-18",
   "documents": [
     {
       "id": "G-001",
@@ -632,6 +632,17 @@
       "evidence_file": "docs/task-state/P-005.PH0.json"
     },
     {
+      "id": "ISSUE-194",
+      "title": "ETCSRI and NINMED standalone release, reader manuals and clean-user acceptance",
+      "plan": "P-004",
+      "spec": "§ISSUE-194",
+      "priority": "P0",
+      "blocked_by": [],
+      "status": "done",
+      "issue": 194,
+      "evidence_file": "docs/task-state/ISSUE-194.json"
+    },
+    {
       "id": "ISSUE-32",
       "title": "ETCSRI morphology-rich TF dataset",
       "plan": "P-004",
@@ -947,6 +958,30 @@
       "status": "todo",
       "issue": 83,
       "evidence_file": "docs/task-state/ISSUE-83.json"
+    },
+    {
+      "id": "ISSUE-192",
+      "title": "Versioned native ETCSRI/NINMED release app generation",
+      "plan": "P-004",
+      "spec": "§ISSUE-192",
+      "priority": "P0",
+      "blocked_by": [],
+      "status": "done",
+      "issue": 192,
+      "evidence_file": "docs/task-state/ISSUE-192.json"
+    },
+    {
+      "id": "ISSUE-196",
+      "title": "Native ETCSRI/NINMED standalone release archive candidates",
+      "plan": "P-004",
+      "spec": "§ISSUE-196",
+      "priority": "P0",
+      "blocked_by": [
+        "ISSUE-192"
+      ],
+      "status": "done",
+      "issue": 196,
+      "evidence_file": "docs/task-state/ISSUE-196.json"
     }
   ],
   "selection_rule": "enumerate every claim/start-ready todo task by priority, reconcile each mapped GitHub issue/claim/PR with oracc_tf.coordination, post a lease claim, immediately re-read GitHub, and proceed only if that session owns the winning claim; completion_blocked_by gates finalization without suppressing explicitly permitted early research/design; losing sessions reselect unrelated ready work",

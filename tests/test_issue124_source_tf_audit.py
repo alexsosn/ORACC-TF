@@ -287,7 +287,11 @@ def test_audit_json_is_deterministic_and_checkout_path_independent(tmp_path: Pat
 
 def test_release_workflow_verifies_pinned_source_tree_before_audit() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
-    assert 'git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap datasets.toml' in workflow
+    # Keep the actual pinned royal source tree immutable while allowing
+    # independent semantic datasets (ETCSRI, NINMED) to be registered.
+    assert 'git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap' in workflow
+    assert '["git", "show", f"{os.environ[\'SOURCE_REVISION\']}:datasets.toml"]' in workflow
+    assert 'current["assyrian-royal-inscriptions"] == previous["assyrian-royal-inscriptions"]' in workflow
 
 
 def test_audit_cli_emits_machine_readable_json(tmp_path: Path) -> None:

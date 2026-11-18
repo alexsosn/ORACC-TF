@@ -1,0 +1,161 @@
+name: issue196-native-full-corpus-candidate
+
+# Complete candidate assets only. Public GitHub Release publication requires
+# an independent exact-asset consumer verification and explicit release gate.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "datasets.toml"
+      - "programs/oracc_tf/manual.py"
+      - "programs/oracc_tf/release_archive.py"
+      - "scripts/build_native_releases.py"
+      - "docs/native/**"
+      - ".github/workflows/issue196-native-full-corpus.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-native-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        corpus: [etcsri, ninmed]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            datasets.toml
+            CITATION.cff
+            LICENSE_SCOPE.md
+            programs/oracc_tf
+            scripts/build_native_releases.py
+            docs/native
+            data/etcsri/corpusjson
+            data/asbp/ninmed/corpusjson
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install real TF and native converter
+        run: python -m pip install -e . "text-fabric==13.1.0"
+      - name: Convert complete primary snapshot into release-format candidate ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/time -v python scripts/build_native_releases.py \
+            --corpus "${{ matrix.corpus }}" \
+            --checkout "$GITHUB_WORKSPACE" \
+            --output-base "/tmp/native-candidate-${{ matrix.corpus }}" \
+            --builder-commit "$(git rev-parse HEAD)"
+          cd "/tmp/native-candidate-${{ matrix.corpus }}/assets"
+          sha256sum -c *.sha256
+          du -sh .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.corpus }}-candidate
+          path: /tmp/native-candidate-${{ matrix.corpus }}/assets/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  clean-user-extracted-zip:
+    needs: full-native-candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        corpus: [etcsri, ninmed]
+    steps:
+      # Deliberately NO repository checkout or oracc_tf install.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install only consumer Text-Fabric
+        run: python -m pip install "text-fabric==13.1.0"
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-${{ matrix.corpus }}-candidate
+          path: /tmp/native-download
+      - name: Independently check artifact SHA256, unpack, query and open browser
+        env:
+          CORPUS: ${{ matrix.corpus }}
+        run: |
+          set -euo pipefail
+          cd /tmp/native-download
+          sha256sum -c *.sha256
+          /usr/bin/time -v python - <<'PY'
+          import hashlib
+          import importlib.util
+          import json
+          import os
+          from pathlib import Path
+          from zipfile import ZipFile
+          from tf.app import use
+          from tf.browser.web import setup
+
+          assert importlib.util.find_spec("oracc_tf") is None, "builder leaked into clean user"
+          kind = os.environ["CORPUS"]
+          root = Path("/tmp/native-extracted") / kind
+          archive = next(Path("/tmp/native-download").glob("*.zip"))
+          with ZipFile(archive) as zf:
+              paths = zf.namelist()
+              assert not any(p.startswith(("data/", "programs/", "docs/native/")) for p in paths)
+              zf.extractall(root)
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          assert manifest["dataset"] == kind
+          assert manifest["tf_version"] == "0.1.0"
+          assert manifest["tf_root"] == "tf/0.1.0"
+          assert manifest["source_state"].startswith("sha256:")
+          for required in ("app/config.yaml", "docs/reference/index.md",
+                           "docs/reference/rights.md", "docs/reference/installation.md",
+                           "tf/0.1.0/otype.tf", "tf/0.1.0/oslots.tf"):
+              assert (root / required).is_file(), required
+
+          app = use(f"app:{root / 'app'}", modules=[""], silent="deep")
+          assert app is not None and app.api is not None
+          api = app.api
+          expected_docs, expected_words = (
+              (1456, 29573) if kind == "etcsri" else (159, 65089)
+          )
+          assert len(api.F.otype.s("document")) == expected_docs
+          assert len(api.F.otype.s("word")) == expected_words
+          key, word_id = (
+              ("etcsri:Q000935", "Q000935.l04855") if kind == "etcsri"
+              else ("asbp/ninmed:P285136", "P285136.l003f2")
+          )
+          matches = [w for w in api.F.otype.s("word")
+                     if api.F.document_key.v(w) == key and api.F.source_id.v(w) == word_id]
+          assert len(matches) == 1
+          word = matches[0]
+          if kind == "etcsri":
+              assert api.F.morph.v(word) == "N1=Urnammak"
+              assert api.F.morph2.v(word) == "N1=NAME"
+          else:
+              assert api.F.cf.v(word) == "DÙ.DÙ.BI"
+              assert api.F.gw.v(word) == "ritual (instructions)"
+              assert api.E.word_lex.f(word)
+
+          browser = setup(False, f"app:{root / 'app'}", "--modules=")
+          assert browser is not None
+          client = browser.test_client()
+          assert client.get("/").status_code == 200
+          assert client.get("/sections").status_code == 200
+          query = client.post("/query", data={
+              "query": f"word source_id={word_id}",
+              "jobName": "candidate-first-user",
+              "condenseType": "line",
+          })
+          assert query.status_code == 200 and query.is_json
+          result = query.get_json()
+          assert result["status"] is True, result.get("messages")
+          assert result["nResults"] >= 1, result
+          assert result["table"], result
+          print(f"CLEAN NO-BUILDER {kind}: docs={expected_docs}, words={expected_words}, archive_sha256={hashlib.sha256(archive.read_bytes()).hexdigest()}")
+          PY

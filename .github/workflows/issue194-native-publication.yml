@@ -1,0 +1,319 @@
+name: issue194-native-publication
+
+# On PRs: assemble and test complete FINAL-format bytes, without write access.
+# On reviewed merge to main: rebuild with durable main builder SHA, publish
+# two separate ZIP/sha256 pairs, then independently HTTP-download both.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/issue194-native-publication.yml"
+      - "scripts/build_native_releases.py"
+      - "tests/test_issue194_native_publication.py"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/issue194-native-publication.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        corpus: [etcsri, ninmed]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            datasets.toml
+            CITATION.cff
+            LICENSE_SCOPE.md
+            programs/oracc_tf
+            scripts/build_native_releases.py
+            docs/native
+            data/etcsri/corpusjson
+            data/asbp/ninmed/corpusjson
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install code-only converter and pinned TF
+        run: python -m pip install -e . "text-fabric==13.1.0"
+      - name: Rebuild complete exact-source final archive on current checked-out commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/build_native_releases.py \
+            --corpus "${{ matrix.corpus }}" \
+            --checkout "$GITHUB_WORKSPACE" \
+            --output-base "/tmp/final-native-${{ matrix.corpus }}" \
+            --builder-commit "$(git rev-parse HEAD)" \
+            --release-id 0.1.0
+          cd "/tmp/final-native-${{ matrix.corpus }}/assets"
+          sha256sum -c *.sha256
+          test -s "${{ matrix.corpus }}-0.1.0.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.corpus }}-final-validated
+          path: /tmp/final-native-${{ matrix.corpus }}/assets/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  clean-user:
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        corpus: [etcsri, ninmed]
+    steps:
+      # No repository checkout, no installation of oracc_tf or source data.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install reader runtime only
+        run: python -m pip install "text-fabric==13.1.0"
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-${{ matrix.corpus }}-final-validated
+          path: /tmp/final-native-download
+      - name: Check exact final ZIP/sha256, manifest, TF and real Flask browser
+        env:
+          CORPUS: ${{ matrix.corpus }}
+        run: |
+          set -euo pipefail
+          cd /tmp/final-native-download
+          sha256sum -c *.zip.sha256
+          python - <<'PY'
+          import importlib.util
+          import json
+          import os
+          from pathlib import Path
+          from zipfile import ZipFile
+          from tf.app import use
+          from tf.browser.web import setup
+
+          assert importlib.util.find_spec("oracc_tf") is None
+          kind = os.environ["CORPUS"]
+          archive = Path(f"/tmp/final-native-download/{kind}-0.1.0.zip")
+          root = Path("/tmp/final-native-reader") / kind
+          with ZipFile(archive) as zf:
+              names = set(zf.namelist())
+              assert "tf/0.1.0/otype.tf" in names and "app/config.yaml" in names
+              assert "docs/reference/rights.md" in names
+              assert not any(n.startswith(("data/", "programs/", "docs/native/"))
+                             or "/.tf/" in n for n in names)
+              zf.extractall(root)
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          assert manifest["dataset"] == kind
+          assert manifest["release_id"] == "0.1.0"
+          assert manifest["builder_commit"] == os.environ["GITHUB_SHA"]
+          assert manifest["tf_root"] == "tf/0.1.0"
+          reviewed = {
+              "etcsri": "sha256:1a1dc3e8f23a1126b578a7c3c459ef928c1d3dc1ad161af9a77c93f6763cc382",
+              "ninmed": "sha256:2c8e9bcc583c2900698811af1a5a8123289d1303aa16c8c107b704461ecf422b",
+          }
+          assert manifest["source_state"] == reviewed[kind], (
+              "ORACC source snapshot drifted from reviewed release state", kind
+          )
+          app = use(f"app:{root / 'app'}", modules=[""], silent="deep")
+          assert app is not None and app.api is not None
+          api = app.api
+          counts = (1456, 29573) if kind == "etcsri" else (159, 65089)
+          assert (len(api.F.otype.s("document")), len(api.F.otype.s("word"))) == counts
+          word_id = "Q000935.l04855" if kind == "etcsri" else "P285136.l003f2"
+          doc_key = "etcsri:Q000935" if kind == "etcsri" else "asbp/ninmed:P285136"
+          hit = [w for w in api.F.otype.s("word")
+                 if api.F.source_id.v(w) == word_id and api.F.document_key.v(w) == doc_key]
+          assert len(hit) == 1
+          w = hit[0]
+          if kind == "etcsri":
+              assert (api.F.morph.v(w), api.F.morph2.v(w)) == ("N1=Urnammak", "N1=NAME")
+          else:
+              assert (api.F.cf.v(w), api.F.gw.v(w)) == ("DÙ.DÙ.BI", "ritual (instructions)")
+              assert api.E.word_lex.f(w)
+          browser = setup(False, f"app:{root / 'app'}", "--modules=")
+          assert browser is not None
+          client = browser.test_client()
+          for route in ("/", "/sections", "/query"):
+              assert client.get(route).status_code == 200
+          response = client.post("/query", data={
+              "query": f"word source_id={word_id}",
+              "jobName": "release-clean-user", "condenseType": "line",
+          })
+          assert response.status_code == 200 and response.is_json
+          payload = response.get_json()
+          assert payload["status"] is True and payload["nResults"] >= 1 and payload["table"]
+          print(f"FINAL FORMAT CLEAN USER PASS {kind}: {counts}, source word {word_id}")
+          PY
+
+  publish:
+    # A pull request (including a fork) never receives a publishing token.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, clean-user]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    outputs:
+      etcsri_sha: ${{ steps.digests.outputs.etcsri_sha }}
+      ninmed_sha: ${{ steps.digests.outputs.ninmed_sha }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-etcsri-final-validated
+          path: /tmp/native-release-assets/etcsri
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-ninmed-final-validated
+          path: /tmp/native-release-assets/ninmed
+      - name: Require all four exact, verified release assets
+        id: digests
+        run: |
+          set -euo pipefail
+          cd /tmp/native-release-assets
+          test "$(find . -type f | wc -l)" -eq 4
+          for kind in etcsri ninmed; do
+            test -s "$kind/$kind-0.1.0.zip"
+            test -s "$kind/$kind-0.1.0.zip.sha256"
+            (cd "$kind" && sha256sum -c "$kind-0.1.0.zip.sha256")
+          done
+          echo "etcsri_sha=$(sha256sum etcsri/etcsri-0.1.0.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "ninmed_sha=$(sha256sum ninmed/ninmed-0.1.0.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Create immutable native public GitHub Release after every gate passes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if gh release view native-v0.1.0 >/dev/null 2>&1; then
+            echo "native-v0.1.0 already exists, refusing overwrite" >&2
+            exit 1
+          fi
+          cat > /tmp/native-release-notes.md <<'NOTES'
+          Standalone Text-Fabric corpora built from pinned ORACC JSON source exports:
+          - ETCSRI (Sumerian royal inscriptions): 1,456 texts, 29,573 words.
+          - ASBP/NINMED (Nineveh medical): 159 readable texts, 65,089 words;
+            the one zero-byte original P395407.json was not fabricated.
+
+          Download each corpus ZIP and its matching SHA-256 file separately.
+          Unpack, install text-fabric==13.1.0, and follow README.md and
+          docs/reference/installation.md. The archives contain app/, tf/0.1.0/
+          and corpus-specific reader manuals without builder source code.
+
+          The source-derived JSON data declare CC0. Converter code is MIT.
+          ORACC websites, British Museum images and other editorial materials
+          retain their own licenses. No source-backed running translation
+          series is present. The built-in TF browser currently requires TFQL
+          for advanced searches. The original royal RIAO/RINAP v1.0.0 archive
+          remains a separate release.
+          NOTES
+          gh release create native-v0.1.0 \
+            /tmp/native-release-assets/etcsri/etcsri-0.1.0.zip \
+            /tmp/native-release-assets/etcsri/etcsri-0.1.0.zip.sha256 \
+            /tmp/native-release-assets/ninmed/ninmed-0.1.0.zip \
+            /tmp/native-release-assets/ninmed/ninmed-0.1.0.zip.sha256 \
+            --target "$GITHUB_SHA" \
+            --title "ETCSRI and NINMED Text-Fabric corpora 0.1.0" \
+            --notes-file /tmp/native-release-notes.md \
+            --latest=false
+
+  verify-public:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        corpus: [etcsri, ninmed]
+    env:
+      ETCSRI_SHA: ${{ needs.publish.outputs.etcsri_sha }}
+      NINMED_SHA: ${{ needs.publish.outputs.ninmed_sha }}
+    steps:
+      # Deliberately no checkout or build: verify publicly downloadable assets.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install end-user Text-Fabric only
+        run: python -m pip install "text-fabric==13.1.0"
+      - name: HTTP download real public ZIP and checksum and cross-check independent publisher digest
+        env:
+          CORPUS: ${{ matrix.corpus }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/public-native-user
+          cd /tmp/public-native-user
+          archive="${CORPUS}-0.1.0.zip"
+          base="https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0"
+          curl --fail --location --retry 8 --retry-all-errors --retry-delay 3 "$base/$archive" -o "$archive"
+          curl --fail --location --retry 8 --retry-all-errors --retry-delay 3 "$base/$archive.sha256" -o "$archive.sha256"
+          sha256sum -c "$archive.sha256"
+          expected="$ETCSRI_SHA"
+          if [ "$CORPUS" = ninmed ]; then expected="$NINMED_SHA"; fi
+          test -n "$expected"
+          echo "$expected  $archive" | sha256sum -c -
+          python - <<'PY'
+          import importlib.util
+          import json
+          import os
+          from pathlib import Path
+          from zipfile import ZipFile
+          from tf.app import use
+          from tf.browser.web import setup
+
+          assert importlib.util.find_spec("oracc_tf") is None
+          kind = os.environ["CORPUS"]
+          root = Path("/tmp/public-native-user") / kind
+          archive = Path(f"/tmp/public-native-user/{kind}-0.1.0.zip")
+          with ZipFile(archive) as zf:
+              zf.extractall(root)
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          assert manifest["dataset"] == kind
+          assert manifest["release_id"] == "0.1.0"
+          assert manifest["builder_commit"] == os.environ["GITHUB_SHA"]
+          assert manifest["tf_root"] == "tf/0.1.0"
+          reviewed = {
+              "etcsri": "sha256:1a1dc3e8f23a1126b578a7c3c459ef928c1d3dc1ad161af9a77c93f6763cc382",
+              "ninmed": "sha256:2c8e9bcc583c2900698811af1a5a8123289d1303aa16c8c107b704461ecf422b",
+          }
+          assert manifest["source_state"] == reviewed[kind], (
+              "published corpus is not the separately reviewed ORACC edition", kind
+          )
+          assert (root / "docs/reference/rights.md").is_file()
+          assert (root / "docs/reference/installation.md").is_file()
+          a = use(f"app:{root / 'app'}", modules=[""], silent="deep")
+          assert a is not None and a.api is not None
+          api = a.api
+          expected = (1456, 29573) if kind == "etcsri" else (159, 65089)
+          assert (len(api.F.otype.s("document")), len(api.F.otype.s("word"))) == expected
+          word_id = "Q000935.l04855" if kind == "etcsri" else "P285136.l003f2"
+          matched = [w for w in api.F.otype.s("word") if api.F.source_id.v(w) == word_id]
+          assert len(matched) == 1
+          w = matched[0]
+          if kind == "etcsri":
+              assert api.F.morph2.v(w) == "N1=NAME"
+          else:
+              assert api.F.gw.v(w) == "ritual (instructions)"
+          browser = setup(False, f"app:{root / 'app'}", "--modules=")
+          assert browser is not None
+          client = browser.test_client()
+          assert client.get("/").status_code == 200
+          assert client.get("/sections").status_code == 200
+          response = client.post("/query", data={
+              "query": f"word source_id={word_id}",
+              "jobName": "public-external-consumer", "condenseType": "line",
+          })
+          assert response.status_code == 200 and response.is_json
+          payload = response.get_json()
+          assert payload["status"] is True and payload["nResults"] >= 1 and payload["table"]
+          print(f"PUBLIC HTTP REDOWNLOAD VERIFIED: {kind}, {expected}, source={word_id}")
+          PY

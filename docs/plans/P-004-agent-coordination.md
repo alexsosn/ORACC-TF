@@ -154,6 +154,12 @@ Open executable tickets created outside the original P-001–P-005 task lists ar
 
 For tickets whose issue explicitly permits research/design before a later production dependency, put only the true claim/start gate in `blocked_by` and put later integration/finalization dependencies in `completion_blocked_by`. The worker must still obey all issue-local integration, merge, and stop conditions.
 
+### ISSUE-196
+Complete native ETCSRI/NINMED standalone candidate ZIP, app/manual, full-source and clean-user acceptance — GitHub #196. Native manuals and browser are prerequisites, and no public release is asserted until independent candidate evaluation.
+
+### ISSUE-194
+Native ETCSRI/NINMED standalone release assets, source-specific researcher manual and fresh-user smoke — GitHub #194. User-facing manual research/design/tests may proceed before the shared versioned-native-app implementation (#192); no public publication or completion before #192 and the full legal/source/consumer smoke gates are resolved.
+
 ### ISSUE-32
 ETCSRI morphology-rich TF dataset research/design/TDD — GitHub #32.
 
@@ -222,6 +228,9 @@ Canonical app/docs/release support path ownership — GitHub #79.
 
 ### ISSUE-83
 Lightweight local installation, standalone acquisition path, and disk/RAM measurements — GitHub #83.
+
+### ISSUE-192
+Versioned native ETCSRI/NINMED TF app generation for release-format distributions — GitHub #192. Source identity, publishable provenance, native morphology and lexical display must be checked before the corresponding ETCSRI/NINMED release gates are treated as complete.
 
 ### ISSUE-124
 Final source-to-TF correctness and completeness audit — GitHub #124.

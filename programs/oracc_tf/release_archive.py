@@ -43,6 +43,14 @@ REQUIRED_DOCUMENTS = (
     "acknowledgements.md",
 )
 
+_NATIVE_DOCUMENTS = (
+    "index.md",
+    "quick-start.md",
+    "features.md",
+    "rights.md",
+    "installation.md",
+)
+
 _RELEASE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,100}\Z")
 _OWNED_STAGE_ROOTS = frozenset({"README.md", "manifest.json", "tf", "app", "docs"})
 _FORBIDDEN_DOCS = frozenset({"task-state", "research", "plans"})
@@ -104,8 +112,26 @@ def _stage_files(root: Path) -> tuple[str, str, tuple[Path, ...]]:
     _required_file(root, "docs/index.md")
     _required_file(root, "docs/CITATION.cff")
     _required_file(root, "docs/LICENSE_SCOPE.md")
-    for doc in REQUIRED_DOCUMENTS:
+    is_native = dataset in {"etcsri", "ninmed"}
+    required_docs = _NATIVE_DOCUMENTS if is_native else REQUIRED_DOCUMENTS
+    for doc in required_docs:
         _required_file(root, f"docs/reference/{doc}")
+    if is_native:
+        reference = (root / "docs/reference/index.md").read_text(encoding="utf-8")
+        rights = (root / "docs/reference/rights.md").read_text(encoding="utf-8")
+        if dataset not in reference.lower():
+            raise ReleasePackageError(
+                f"native release {dataset} has foreign/missing corpus manual"
+            )
+        if "CC0" not in rights or "MIT" not in rights:
+            raise ReleasePackageError(
+                "native release must distinguish JSON source rights from software"
+            )
+        if any((root / "docs/reference" / other).exists() for other in
+               ("translations.md", "words-and-lexemes.md")):
+            raise ReleasePackageError(
+                "native release may not bundle the royal corpus-specific manual"
+            )
 
     files: list[Path] = []
     for item in sorted(root.rglob("*")):

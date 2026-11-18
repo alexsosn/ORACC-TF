@@ -65,3 +65,19 @@ def test_releases_are_never_advertised_as_standalone_before_public_http_verifica
     assert "manifest.json" in source
     assert "tf.app" in source or "from tf.app import use" in source
     assert "text-fabric==13.1.0" in source
+
+
+def test_publication_pins_exact_reviewed_json_source_states_not_only_counts() -> None:
+    """A same-size source edit is still a new edition and must stop publication."""
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert (
+        "sha256:1a1dc3e8f23a1126b578a7c3c459ef928c1d3dc1ad161af9a77c93f6763cc382"
+        in workflow
+    )
+    assert (
+        "sha256:2c8e9bcc583c2900698811af1a5a8123289d1303aa16c8c107b704461ecf422b"
+        in workflow
+    )
+    # The manifest is checked against the expected immutable snapshot in
+    # both the pre-publication clean reader and public HTTP consumer jobs.
+    assert workflow.count('assert manifest["source_state"] == reviewed[kind]') == 2

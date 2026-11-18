@@ -12,6 +12,7 @@ import argparse
 from hashlib import sha256
 from pathlib import Path
 import re
+import shutil
 import time
 
 from tf.fabric import Fabric
@@ -133,6 +134,15 @@ def build_candidate(
     docs = manual.assemble_native_manual(
         checkout, output_base / "work" / "docs", dataset=kind,
     )
+    # Our full-corpus SHA reconciliation uses Fabric.loadAll(), which creates
+    # a volatile .tf cache beside the source TF files. Distribution digests
+    # must cover only portable .tf feature files, never platform-specific
+    # binary caches. Preserve the archive packager's hidden-path guard.
+    cache = tf_root / ".tf"
+    if cache.is_symlink() or (cache.exists() and not cache.is_dir()):
+        raise ValueError("unexpected non-directory or symlinked Text-Fabric cache")
+    if cache.is_dir():
+        shutil.rmtree(cache)
     stage = output_base / "stage"
     manifest = distribution.stage_distribution(
         tf_root, stage,

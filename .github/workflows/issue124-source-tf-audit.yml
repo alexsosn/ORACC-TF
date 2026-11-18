@@ -45,7 +45,24 @@ jobs:
       - name: Verify pinned source tree
         run: |
           git fetch --no-tags --depth=1 origin "$SOURCE_REVISION"
-          git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap datasets.toml
+          # Pin the original royal source inventory, not the unrelated
+          # native ETCSRI/NINMED datasets newly added to datasets.toml.
+          git diff --exit-code "$SOURCE_REVISION" -- data/riao data/rinap
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import subprocess
+          import tomllib
+
+          previous = tomllib.loads(subprocess.check_output(
+              ["git", "show", f"{os.environ['SOURCE_REVISION']}:datasets.toml"],
+              text=True,
+          ))
+          current = tomllib.loads(Path("datasets.toml").read_text(encoding="utf-8"))
+          assert current["assyrian-royal-inscriptions"] == previous["assyrian-royal-inscriptions"], (
+              "royal pinned semantic dataset identity or archives changed"
+          )
+          PY
 
       - name: Install audit dependencies
         run: pip install -e ".[dev]"

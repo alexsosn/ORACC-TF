@@ -76,6 +76,7 @@ def test_native_registry_tracks_two_distinct_semantic_datasets_without_royal_mut
     assert datasets["etcsri"].archives == ("etcsri",)
     assert datasets["ninmed"].archives == ("asbp-ninmed",)
     assert len(datasets["assyrian-royal-inscriptions"].archives) == 11
+    assert set(datasets) == {"assyrian-royal-inscriptions", "etcsri", "ninmed"}
 
 
 @pytest.mark.corpus

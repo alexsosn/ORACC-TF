@@ -4,8 +4,9 @@
 docs/registry.json drives the automated development loop. This static check
 validates git-side metadata only; a task is not claimable until GitHub issue,
 claim, and PR state have also been reconciled by ``oracc_tf.coordination``.
-User-facing generated/reference documentation under ``docs/reference`` is
-intentionally outside this registry contract.
+User-facing corpus documentation under ``docs/reference`` and ``docs/native``
+is intentionally outside the research/design registry contract and is checked by
+separate reader-manual acceptance tests.
 
 Verifies:
   * every registered-source docs/**/*.md outside docs/reference has required front-matter
@@ -172,9 +173,14 @@ def main():
 
     docs = {}
     bodies = {}
-    reference_root = os.path.abspath(os.path.join(a.docs, "reference"))
+    # Both trees contain reader-facing instructions, not agent task documents.
+    # They have their own source-grounded, runnable-example acceptance tests.
+    reader_roots = tuple(
+        os.path.abspath(os.path.join(a.docs, name))
+        for name in ("reference", "native")
+    )
     for path in sorted(glob.glob(os.path.join(a.docs, "**", "*.md"), recursive=True)):
-        if os.path.abspath(path).startswith(reference_root + os.sep):
+        if any(os.path.abspath(path).startswith(root + os.sep) for root in reader_roots):
             continue
         fm, body = front_matter(path)
         if fm is None:

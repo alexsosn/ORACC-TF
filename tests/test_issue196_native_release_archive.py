@@ -12,6 +12,7 @@ import shutil
 from zipfile import ZipFile
 
 import pytest
+import yaml
 from tf.app import use
 from tf.fabric import Fabric
 
@@ -95,6 +96,10 @@ def test_real_native_primary_source_to_versioned_app_stage_and_verified_zip(
         dataset=kind, tf_version="0.1.0", repository_org="alexsosn",
         native_kind=kind,
     )
+    config = yaml.safe_load((app_root / "config.yaml").read_text(encoding="utf-8"))
+    assert config["docs"]["featureBase"] == (
+        "{docBase}/native/" + kind + "/features.md#<feature>"
+    ), "native release app must not route a feature to the royal handbook"
     docs_root = manual.assemble_native_manual(
         _manual_repository(tmp_path, kind), tmp_path / "generated-docs",
         dataset=kind,

@@ -7,6 +7,7 @@ merge commits, absent consumer tests, or unverified public bytes.
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import runpy
 import subprocess
 import sys
@@ -81,3 +82,50 @@ def test_publication_pins_exact_reviewed_json_source_states_not_only_counts() ->
     # The manifest is checked against the expected immutable snapshot in
     # both the pre-publication clean reader and public HTTP consumer jobs.
     assert workflow.count('assert manifest["source_state"] == reviewed[kind]') == 2
+
+
+def test_researcher_readme_links_both_actual_public_native_assets_and_first_use() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "https://github.com/alexsosn/ORACC-TF/releases/tag/native-v0.1.0" in readme
+    for corpus in ("etcsri", "ninmed"):
+        base = ("https://github.com/alexsosn/ORACC-TF/releases/download/"
+                f"native-v0.1.0/{corpus}-0.1.0.zip")
+        assert base in readme
+        assert base + ".sha256" in readme
+    assert "sha256sum -c" in readme
+    assert "python -m tf.browser.start" in readme
+    for false_claim in (
+        "Neither native corpus has a public standalone TF ZIP yet",
+        "not an announced public ETCSRI dataset archive",
+        "not a published NINMED corpus archive",
+        "A **local, unpublished** Text-Fabric browser app",
+    ):
+        assert false_claim not in readme
+
+
+def test_native_researcher_indexes_refer_to_exact_published_assets() -> None:
+    for corpus in ("etcsri", "ninmed"):
+        text = (ROOT / "docs" / "native" / corpus / "index.md").read_text(
+            encoding="utf-8"
+        )
+        direct = ("https://github.com/alexsosn/ORACC-TF/releases/download/"
+                  f"native-v0.1.0/{corpus}-0.1.0.zip")
+        assert direct in text
+        assert direct + ".sha256" in text
+        assert "text-fabric==13.1.0" in text
+        assert "TFQL" in text
+
+
+def test_closed_native_release_tasks_are_not_open_in_agent_registry() -> None:
+    registry = json.loads((ROOT / "docs" / "registry.json").read_text(encoding="utf-8"))
+    for issue in (194, 196):
+        task = next(row for row in registry["tasks"] if row.get("issue") == issue)
+        assert task["status"] == "done"
+        evidence = ROOT / task["evidence_file"]
+        assert evidence.is_file(), task["id"]
+        record = json.loads(evidence.read_text(encoding="utf-8"))
+        assert record["status"] == "done"
+        assert record["issue"] == issue
+    status = json.loads((ROOT / "docs/task-state/ISSUE-194.json").read_text())
+    assert status["publication"]["tag"] == "native-v0.1.0"
+    assert status["publication"]["verification_run"] == 44377078649

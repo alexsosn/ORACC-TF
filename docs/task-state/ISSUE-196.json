@@ -1,0 +1,30 @@
+{
+  "task": "ISSUE-196",
+  "issue": 196,
+  "status": "done",
+  "scope": "Source-native ETCSRI/NINMED staged ZIP and independent no-builder reader candidate",
+  "implementation": {
+    "pr": 197,
+    "head": "10e87557183a6c98e3323b1a224906ebf38f9a6b",
+    "merge_commit": "daa4cd9833a1c99a443ab326fdaba1127bc0fd24"
+  },
+  "tdd": {
+    "red_workflow_run": 44317721972,
+    "red_failures": 5
+  },
+  "verification": {
+    "candidate_workflow_run": 44353945153,
+    "full_corpora": [
+      "etcsri:1456 texts,29573 words",
+      "ninmed:159 texts,65089 words"
+    ],
+    "clean_user_artifact_smoke": true
+  },
+  "review": {
+    "id": 5961517184,
+    "independent": true,
+    "head": "10e87557183a6c98e3323b1a224906ebf38f9a6b",
+    "verdict": "pass"
+  },
+  "release_scope": "Candidate only; public 0.1.0 publication tracked by ISSUE-194 and verified separately."
+}

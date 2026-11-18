@@ -117,7 +117,13 @@ jobs:
           assert manifest["release_id"] == "0.1.0"
           assert manifest["builder_commit"] == os.environ["GITHUB_SHA"]
           assert manifest["tf_root"] == "tf/0.1.0"
-          assert manifest["source_state"].startswith("sha256:")
+          reviewed = {
+              "etcsri": "sha256:1a1dc3e8f23a1126b578a7c3c459ef928c1d3dc1ad161af9a77c93f6763cc382",
+              "ninmed": "sha256:2c8e9bcc583c2900698811af1a5a8123289d1303aa16c8c107b704461ecf422b",
+          }
+          assert manifest["source_state"] == reviewed[kind], (
+              "ORACC source snapshot drifted from reviewed release state", kind
+          )
           app = use(f"app:{root / 'app'}", modules=[""], silent="deep")
           assert app is not None and app.api is not None
           api = app.api
@@ -275,6 +281,13 @@ jobs:
           assert manifest["release_id"] == "0.1.0"
           assert manifest["builder_commit"] == os.environ["GITHUB_SHA"]
           assert manifest["tf_root"] == "tf/0.1.0"
+          reviewed = {
+              "etcsri": "sha256:1a1dc3e8f23a1126b578a7c3c459ef928c1d3dc1ad161af9a77c93f6763cc382",
+              "ninmed": "sha256:2c8e9bcc583c2900698811af1a5a8123289d1303aa16c8c107b704461ecf422b",
+          }
+          assert manifest["source_state"] == reviewed[kind], (
+              "published corpus is not the separately reviewed ORACC edition", kind
+          )
           assert (root / "docs/reference/rights.md").is_file()
           assert (root / "docs/reference/installation.md").is_file()
           a = use(f"app:{root / 'app'}", modules=[""], silent="deep")

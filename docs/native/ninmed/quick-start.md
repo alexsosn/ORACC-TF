@@ -28,5 +28,5 @@ for lex in api.E.word_lex.f(example):
     print(api.F.cf.v(lex), api.F.gw.v(lex), api.F.pos.v(lex))
 ```
 
-Use TF's `text-trans-full` rendering for transliteration and inspect `sign` features for available Unicode cuneiform. A future separately published archive will include a versioned sibling `tf/<version>/` plus `app/`; the distribution's own README will describe no-builder installation. The current local app is a development preview, not a public corpus download.
+Use TF's `text-trans-full` rendering for transliteration and inspect `sign` features for available Unicode cuneiform. A separately distributed release archive, if available, contains `tf/<version>/` and `app/` and can be used with only Text-Fabric. Check the actual release asset, SHA-256 and manifest before trusting a download. The `prepare-local-app` command above still creates a separate development preview.
 

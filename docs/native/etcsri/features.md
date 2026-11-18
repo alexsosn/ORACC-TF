@@ -1,5 +1,18 @@
 # ETCSRI — graph and feature guide
 
+<a id="form"></a>
+<a id="base"></a>
+<a id="morph"></a>
+<a id="morph2"></a>
+<a id="para_json"></a>
+<a id="source_id"></a>
+<a id="document_key"></a>
+<a id="source_sha256"></a>
+<a id="word_json"></a>
+<a id="f_json"></a>
+<a id="marker_json"></a>
+<a id="sign_json"></a>
+
 ## Source morphology, not an inferred parser
 
 Each `word` node retains ORACC's independent `form`, `base`, `morph`, `morph2` fields where present. The actual source word `Q000935.l04855` has `morph = N1=Urnammak` and `morph2 = N1=NAME`. They are **source strings**. This converter neither decomposes them into individual morpheme edges nor infers missing analyses; a mismatch or absence must remain visible.

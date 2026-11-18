@@ -108,7 +108,7 @@ def test_release_identity_rejects_ambiguous_or_invalid_inputs():
         )
 
 
-def test_dataset_config_tracks_only_the_eleven_riao_rinap_archives():
+def test_dataset_config_keeps_royal_eleven_and_separate_native_datasets():
     config = releases.load_datasets(Path("datasets.toml"))
     dataset = config["assyrian-royal-inscriptions"]
 
@@ -126,5 +126,13 @@ def test_dataset_config_tracks_only_the_eleven_riao_rinap_archives():
         "rinap-rinap5p1",
     )
     assert dataset.tei == ("riao-teiCorpus",)
-    assert releases.tracked_archives(config) == frozenset(dataset.archives)
-    assert len(releases.tracked_archives(config)) == 11
+    # The royal corpus remains exactly the same joined eleven archives.
+    # New source-native corpora have their own dataset identities and must
+    # not be mistaken for additions to the royal corpus.
+    assert set(config) == {"assyrian-royal-inscriptions", "etcsri", "ninmed"}
+    assert config["etcsri"].archives == ("etcsri",)
+    assert config["ninmed"].archives == ("asbp-ninmed",)
+    assert releases.tracked_archives(config) == frozenset(
+        (*dataset.archives, "etcsri", "asbp-ninmed")
+    )
+    assert len(releases.tracked_archives(config)) == 13

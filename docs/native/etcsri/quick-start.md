@@ -32,5 +32,5 @@ for word in words[:5]:
           api.F.morph.v(word), api.F.morph2.v(word))
 ```
 
-The app's default text rendering `text-trans-full` displays transliteration. If a future release archive contains a sibling `tf/<version>/` and `app/`, use the included archive README to load that **versioned** path directly without rebuilding. Until publication, no stable download URL or translation coverage is claimed.
+The app's default text rendering `text-trans-full` displays transliteration. For a separately distributed verified ZIP, extract the sibling `tf/<version>/` and `app/` directories, install only Text-Fabric and follow the archive's `README.md` / `docs/reference/installation.md` without rebuilding. Confirm availability and SHA-256 on the actual release page. The JSON-derived graph does not supply a running translation.
 

@@ -1,0 +1,27 @@
+{
+  "task": "ISSUE-192",
+  "issue": 192,
+  "status": "done",
+  "scope": "source-validated versioned ETCSRI and NINMED TF app generation",
+  "implementation": {
+    "pr": 193,
+    "head": "0ab1b8f01bf1f553613754e79ca9133abd156a3a",
+    "merge_commit": "e154fdd0204de9d8ea1bf728478ed7070c5ccc50"
+  },
+  "tdd": {
+    "red_run": 44187036684,
+    "red_failure": "nine tests detected missing native_kind API"
+  },
+  "verification": {
+    "exact_head_workflows": 11,
+    "all_green": true,
+    "native_release_app_run": 44187930732
+  },
+  "review": {
+    "id": 5947690390,
+    "independent": true,
+    "head": "0ab1b8f01bf1f553613754e79ca9133abd156a3a",
+    "verdict": "pass"
+  },
+  "release_scope": "No public ETCSRI or NINMED corpus ZIP; only versioned app plumbing completed."
+}

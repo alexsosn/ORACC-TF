@@ -154,6 +154,9 @@ Open executable tickets created outside the original P-001–P-005 task lists ar
 
 For tickets whose issue explicitly permits research/design before a later production dependency, put only the true claim/start gate in `blocked_by` and put later integration/finalization dependencies in `completion_blocked_by`. The worker must still obey all issue-local integration, merge, and stop conditions.
 
+### ISSUE-196
+Complete native ETCSRI/NINMED standalone candidate ZIP, app/manual, full-source and clean-user acceptance — GitHub #196. Native manuals and browser are prerequisites, and no public release is asserted until independent candidate evaluation.
+
 ### ISSUE-194
 Native ETCSRI/NINMED standalone release assets, source-specific researcher manual and fresh-user smoke — GitHub #194. User-facing manual research/design/tests may proceed before the shared versioned-native-app implementation (#192); no public publication or completion before #192 and the full legal/source/consumer smoke gates are resolved.
 

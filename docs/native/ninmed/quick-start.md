@@ -1,5 +1,17 @@
 # NINMED — build, browse and query the source edition
 
+## Use the published Text-Fabric corpus
+
+Download [NINMED 0.1.0](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/ninmed-0.1.0.zip) and the matching
+[SHA-256 checksum](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/ninmed-0.1.0.zip.sha256).
+Check the digest, unpack the ZIP, and install only `text-fabric==13.1.0`.
+From the extracted archive root use
+`python -m tf.browser.start "app:$PWD/app" "--modules=" -noweb`.
+No converter wheel, original JSON archive or Git repository clone is needed.
+The browser supports advanced TFQL, while non-TFQL catalogue/form search is
+still being developed in [issue #189](https://github.com/alexsosn/ORACC-TF/issues/189).
+
+## Optional: rebuild from ORACC primary JSON
 Install a locally built code-only ORACC-TF wheel with Text-Fabric 13.1.0, and supply a separate `asbp/ninmed/corpusjson/` source directory. The wheel does not contain third-party medical editions.
 
 ```bash
@@ -28,5 +40,5 @@ for lex in api.E.word_lex.f(example):
     print(api.F.cf.v(lex), api.F.gw.v(lex), api.F.pos.v(lex))
 ```
 
-Use TF's `text-trans-full` rendering for transliteration and inspect `sign` features for available Unicode cuneiform. A separately distributed release archive, if available, contains `tf/<version>/` and `app/` and can be used with only Text-Fabric. Check the actual release asset, SHA-256 and manifest before trusting a download. The `prepare-local-app` command above still creates a separate development preview.
+Use TF's `text-trans-full` rendering for transliteration and inspect `sign` features for available Unicode cuneiform. The published 0.1.0 archive contains `tf/<version>/` and `app/` and can be used with only Text-Fabric. Verify the ZIP, SHA-256 and manifest from the [public release](https://github.com/alexsosn/ORACC-TF/releases/tag/native-v0.1.0). The `prepare-local-app` command above still creates a separate development preview.
 

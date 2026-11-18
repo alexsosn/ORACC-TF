@@ -1,0 +1,46 @@
+{
+  "task": "ISSUE-194",
+  "issue": 194,
+  "status": "done",
+  "scope": "Two public standalone ETCSRI/NINMED Text-Fabric 0.1.0 archives, source rights, manuals and independent public HTTP user smoke",
+  "implementation": {
+    "pr": 202,
+    "head": "8aba2870faa6a237a873f4b94344d88164bba0de",
+    "merge_commit": "0472e3b75b93a3abfb3c2a33b216e7240a5d07a7",
+    "manuals_pr": 195,
+    "candidate_pr": 197
+  },
+  "tdd": {
+    "red_workflow_run": 44357186209,
+    "red_failures": 3,
+    "source_integrity_regression_test": true
+  },
+  "review": {
+    "id": 5961912019,
+    "independent": true,
+    "head": "8aba2870faa6a237a873f4b94344d88164bba0de",
+    "verdict": "pass"
+  },
+  "publication": {
+    "tag": "native-v0.1.0",
+    "url": "https://github.com/alexsosn/ORACC-TF/releases/tag/native-v0.1.0",
+    "builder_commit": "0472e3b75b93a3abfb3c2a33b216e7240a5d07a7",
+    "verification_run": 44377078649,
+    "build_clean_publish_public_http_jobs": "7/7 success",
+    "source_state": {
+      "etcsri": "sha256:1a1dc3e8f23a1126b578a7c3c459ef928c1d3dc1ad161af9a77c93f6763cc382",
+      "ninmed": "sha256:2c8e9bcc583c2900698811af1a5a8123289d1303aa16c8c107b704461ecf422b"
+    },
+    "assets": {
+      "etcsri-0.1.0.zip": {
+        "size_bytes": 6570817,
+        "sha256": "788a98e7d4748f4a5dfca9747dd6f3dfd0d4b9fecbe3f1d1e7554f878add49ce"
+      },
+      "ninmed-0.1.0.zip": {
+        "size_bytes": 10433632,
+        "sha256": "286fcfab6d6faab459f56b99cfb76ab33337d0b805bb59d0e1ac40526b813749"
+      }
+    }
+  },
+  "remaining_separate_work": "Ordinary browse and search without TFQL is issue #189; no official running translation in either JSON-derived corpus."
+}

@@ -24,6 +24,54 @@ without cloning this repository.
 For a stable end-user package, use the [published GitHub Releases](https://github.com/alexsosn/ORACC-TF/releases)
 and verify the matching checksum. Workflow candidates are not public releases.
 
+## Published ETCSRI and NINMED corpora: native Text-Fabric 0.1.0
+
+Both corpora are **publicly available** in [native-v0.1.0](https://github.com/alexsosn/ORACC-TF/releases/tag/native-v0.1.0).
+Each ZIP contains versioned Text-Fabric data, an auto-discoverable local
+browser app, a corpus-specific manual and its manifest. You need **only**
+Text-Fabric to read them, not this source repository, its ORACC JSON or the
+converter. Both public assets were independently downloaded, checksummed,
+extracted and queried in [GitHub Actions run 44377078649](https://github.com/alexsosn/ORACC-TF/actions/runs/44377078649).
+
+| Corpus | Source bodies | Source words | Download | Verify |
+| --- | ---: | ---: | --- | --- |
+| ETCSRI (Sumerian royal inscriptions) | 1,456 | 29,573 | [etcsri-0.1.0.zip](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/etcsri-0.1.0.zip) | [SHA-256](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/etcsri-0.1.0.zip.sha256) |
+| ASBP/NINMED (Nineveh medical texts) | 159 readable, plus one known zero-byte source member | 65,089 | [ninmed-0.1.0.zip](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/ninmed-0.1.0.zip) | [SHA-256](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/ninmed-0.1.0.zip.sha256) |
+
+### Start reading without a source checkout
+
+On Linux, using Python 3.10+ and `curl`/`unzip` (change `corpus` to `ninmed`
+to download the medical texts):
+
+```bash
+corpus=etcsri
+base="https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0"
+curl --fail --location -o "$corpus-0.1.0.zip" "$base/$corpus-0.1.0.zip"
+curl --fail --location -o "$corpus-0.1.0.zip.sha256" "$base/$corpus-0.1.0.zip.sha256"
+sha256sum -c "$corpus-0.1.0.zip.sha256"
+mkdir -p "$corpus-0.1.0"
+unzip -q "$corpus-0.1.0.zip" -d "$corpus-0.1.0"
+cd "$corpus-0.1.0"
+python -m pip install "text-fabric==13.1.0"
+python -m tf.browser.start "app:$PWD/app" "--modules=" -noweb
+```
+
+Open the localhost URL printed by Text-Fabric. On macOS, replace `sha256sum -c`
+with `shasum -a 256 -c`; on Windows, verify the companion SHA-256 using
+`Get-FileHash` and unpack the ZIP before launching the browser. In Python,
+load the unpacked corpus with `from tf.app import use` and
+`A = use("app:/absolute/path/to/unpacked/app", modules=[""], silent="deep")`.
+The app automatically locates its sibling `tf/0.1.0/` directory.
+
+The built-in browser is intended for advanced Text-Fabric/TFQL research;
+ordinary catalogue browsing and form search without TFQL remain tracked in
+[issue #189](https://github.com/alexsosn/ORACC-TF/issues/189). Neither
+JSON-derived corpus contains an official running translation. ORACC JSON
+exports declare CC0, while the converter uses MIT and ORACC websites,
+third-party images and independently edited texts retain separate rights.
+See the [ETCSRI](docs/native/etcsri/rights.md) and
+[NINMED](docs/native/ninmed/rights.md) source/citation notices.
+
 ## First dataset: `assyrian-royal-inscriptions`
 
 The dataset is defined in [`datasets.toml`](datasets.toml). Its source selection
@@ -74,9 +122,10 @@ The two separately developed native corpora have dedicated, source-specific
 researcher manuals: [ETCSRI](docs/native/etcsri/index.md) (Sumerian royal
 inscriptions and morphological annotations) and
 [NINMED](docs/native/ninmed/index.md) (Nineveh medical texts and ORACC lexemes).
-These currently describe local converter/browser previews and their source
-rights. Neither native corpus has a public standalone TF ZIP yet;
-the release-delivery gate is [#194](https://github.com/alexsosn/ORACC-TF/issues/194).
+These describe the verified public native `0.1.0` distributions, optional
+local reconversion workflows and separate source rights. The release-delivery
+gate [#194](https://github.com/alexsosn/ORACC-TF/issues/194) passed public
+download, checksum, Text-Fabric and browser smoke tests.
 
 Maintainer research, design plans, reports, and the agentic-development
 registry are indexed separately in [`docs/README.md`](docs/README.md).
@@ -100,7 +149,7 @@ The fast test suite does not require a full-corpus run. Whole-corpus and
 integration work uses the source data under `data/` and is intentionally
 separate from the normal researcher installation path.
 
-## ETCSRI converter: locally supplied ORACC source (development preview)
+## Optional ETCSRI source reconversion (advanced users)
 
 After installing a wheel built from this repository, researchers can create
 a separate ETCSRI Text-Fabric corpus **without cloning the large builder
@@ -132,17 +181,17 @@ matching_words = [
 print(len(matching_words))
 ```
 
-This is an **unpublished converter and local TF browser preview**, not an
-announced public ETCSRI dataset archive. See the
-[source-specific reader manual](docs/native/etcsri/index.md) for features,
-installation and rights boundaries.
-The standalone release path and researcher-facing app acceptance for
-ETCSRI are still tracked in
+This optional source-to-TF workflow creates a local development copy.
+Researchers who only want to use the published corpus should download the
+[verified ETCSRI ZIP](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/etcsri-0.1.0.zip) instead.
+See the [source-specific reader manual](docs/native/etcsri/index.md) for
+source-grounded morphology, installation and reuse rights. The corpus
+conversion workstream remains separately indexed as
 [issue #32](https://github.com/alexsosn/ORACC-TF/issues/32).
 A clean-wheel end-to-end CI smoke test exercises this command against
 the pinned real edition Q000935 and checks TF morphology queries.
 
-## NINMED converter: local ORACC source (development preview)
+## Optional NINMED source reconversion (advanced users)
 
 The source-complete native `asbp/ninmed` converter supports a code-only
 wheel with a user-supplied primary ORACC `corpusjson` directory:
@@ -185,9 +234,10 @@ readable editions took **12.47 s**, generating **91.4 MB** of TF
 files, with **~997 MiB peak process RSS** including TF verification/load.
 These are indicative build/test measurements, not a laptop memory guarantee.
 
-The converter and local browser are **development previews**, not a published
-NINMED corpus archive, hosted Text-Fabric app, or a replacement for
-`Nino-cunei/ninmed`. Read the
+This locally rebuilt converter output is a development copy, separate from
+the [published NINMED ZIP](https://github.com/alexsosn/ORACC-TF/releases/download/native-v0.1.0/ninmed-0.1.0.zip).
+Neither the local app nor the public archive is a hosted browser service or a
+replacement for `Nino-cunei/ninmed`. Read the
 [NINMED manual](docs/native/ninmed/index.md) for native lexical features,
 installation, source exceptions and reuse rights. Primary-source form differences remain documented
 under [issue #33](https://github.com/alexsosn/ORACC-TF/issues/33).
@@ -197,7 +247,7 @@ source tree and queries real P285136/P425685 TF data.
 ## Native ETCSRI/NINMED local browser preview
 
 The installed converter can build either corpus from user-supplied ORACC
-`corpusjson` files. A **local, unpublished** Text-Fabric browser app can then
+`corpusjson` files. An **optional locally generated** Text-Fabric browser app can then
 be prepared from that independently loadable `tf/` output:
 
 ```bash

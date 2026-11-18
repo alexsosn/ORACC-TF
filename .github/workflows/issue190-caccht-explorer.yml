@@ -1,0 +1,139 @@
+name: issue190-caccht-explorer-compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/e2e/issue190_caccht_explorer_probe.py"
+      - "tests/e2e/issue190_caccht_release_probe.py"
+      - "tests/e2e/issue190_tf_baseline_probe.py"
+      - ".github/workflows/issue190-caccht-explorer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-grounded-explorer-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            programs/oracc_tf
+            tests/e2e/issue190_caccht_explorer_probe.py
+            data/etcsri/corpusjson/Q000935.json
+            data/asbp/ninmed/corpusjson/P285136.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install real wheel and published CACCHT Explorer in fresh Python
+        run: |
+          set -euo pipefail
+          python -m pip install build
+          python -m build --wheel --outdir /tmp/issue190-wheel
+          python -m venv /tmp/issue190-venv
+          /tmp/issue190-venv/bin/python -m pip install \
+            /tmp/issue190-wheel/oracc_tf-*.whl \
+            "cfabric-browser==0.1.2" "httpx>=0.27,<1"
+          /tmp/issue190-venv/bin/python -m pip freeze > /tmp/issue190-requirements.txt
+      - name: Convert real pinned ETCSRI and NINMED data into Explorer-compatible local layout
+        run: |
+          set -euo pipefail
+          root=/tmp/issue190-explorer
+          for kind in etcsri ninmed; do
+            mkdir -p "$root/sources/$kind/corpusjson" "$root/$kind/tf"
+          done
+          cp data/etcsri/corpusjson/Q000935.json "$root/sources/etcsri/corpusjson/"
+          cp data/asbp/ninmed/corpusjson/P285136.json "$root/sources/ninmed/corpusjson/"
+          cd "$root"
+          unset PYTHONPATH
+          for kind in etcsri ninmed; do
+            /tmp/issue190-venv/bin/python -m oracc_tf "build-$kind" \
+              --source-dir "$root/sources/$kind" \
+              --output "$root/$kind/tf/0.1.0"
+            /tmp/issue190-venv/bin/python -m oracc_tf prepare-local-app \
+              --kind "$kind" \
+              --tf-dir "$root/$kind/tf/0.1.0" \
+              --app-dir "$root/$kind/app"
+          done
+      - name: Probe real Explorer reading, sections, word cards and TFQL (baseline vs word-base)
+        run: |
+          set -euo pipefail
+          cd /tmp/issue190-explorer
+          unset PYTHONPATH
+          /tmp/issue190-venv/bin/python "$GITHUB_WORKSPACE/tests/e2e/issue190_caccht_explorer_probe.py"
+      - name: Upload compatibility report and dependency versions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue190-explorer-compatibility
+          path: |
+            /tmp/issue190-explorer/compatibility.json
+            /tmp/issue190-requirements.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  published-riao-rinap-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tests/e2e/issue190_caccht_release_probe.py
+            tests/e2e/issue190_tf_baseline_probe.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install published CACCHT Explorer without ORACC-TF builder
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/issue190-release-venv
+          /tmp/issue190-release-venv/bin/python -m pip install \
+            "cfabric-browser==0.1.2" "httpx>=0.27,<1"
+          /tmp/issue190-release-venv/bin/python -m pip freeze > /tmp/issue190-release-versions.txt
+      - name: Download the exact public ORACC-TF v1.0.0 release and verify SHA256
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/issue190-release/unpacked
+          cd /tmp/issue190-release
+          url=https://github.com/alexsosn/ORACC-TF/releases/download/v1.0.0
+          curl --fail --location --show-error --silent --retry 3 \
+            --connect-timeout 15 --max-time 420 \
+            -o assyrian-royal-inscriptions-1.0.0.zip \
+            "$url/assyrian-royal-inscriptions-1.0.0.zip"
+          curl --fail --location --show-error --silent --retry 3 \
+            --connect-timeout 15 --max-time 60 \
+            -o assyrian-royal-inscriptions-1.0.0.zip.sha256 \
+            "$url/assyrian-royal-inscriptions-1.0.0.zip.sha256"
+          sha256sum -c assyrian-royal-inscriptions-1.0.0.zip.sha256
+          unzip -q assyrian-royal-inscriptions-1.0.0.zip -d unpacked
+          find unpacked -name otext.tf -print
+      - name: Test RIAO/RINAP reader, native citations and TEI translation representation
+        run: |
+          set -euo pipefail
+          /tmp/issue190-release-venv/bin/python \
+            "$GITHUB_WORKSPACE/tests/e2e/issue190_caccht_release_probe.py"
+      - name: Compare full release load in isolated Text-Fabric 13.1.2 process
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/issue190-raw-tf
+          /tmp/issue190-raw-tf/bin/python -m pip install "text-fabric==13.1.2"
+          /tmp/issue190-raw-tf/bin/python \
+            "$GITHUB_WORKSPACE/tests/e2e/issue190_tf_baseline_probe.py"
+      - name: Upload release compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue190-riao-rinap-release-compatibility
+          path: |
+            /tmp/issue190-release/released-v1-explorer.json
+            /tmp/issue190-release/raw-tf-baseline.json
+            /tmp/issue190-release-versions.txt
+          if-no-files-found: warn
+          retention-days: 14

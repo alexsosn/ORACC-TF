@@ -1,0 +1,39 @@
+name: issue196-native-release-archives
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "datasets.toml"
+      - "programs/oracc_tf/manual.py"
+      - "programs/oracc_tf/release_archive.py"
+      - "programs/oracc_tf/distribution.py"
+      - "tests/test_issue196_native_release_archive.py"
+      - ".github/workflows/issue196-native-release-archives.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-release-zip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+            datasets.toml
+            programs/oracc_tf
+            tests/test_issue196_native_release_archive.py
+            data/etcsri/corpusjson/Q000935.json
+            data/asbp/ninmed/corpusjson/P285136.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned runtime and test dependencies
+        run: python -m pip install -e ".[dev]" "text-fabric==13.1.0"
+      - name: Convert real native texts, stage, ZIP, extract and load in user layout
+        run: python -m pytest -q -s tests/test_issue196_native_release_archive.py

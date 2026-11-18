@@ -75,8 +75,13 @@ def build_candidate(
     *,
     kind: str,
     builder_commit: str,
+    release_id: str = RELEASE_ID,
 ) -> tuple[Path, Path]:
-    """Create a complete candidate, without public publication side effects."""
+    """Create a deterministic corpus ZIP without publication side effects."""
+    if not isinstance(release_id, str) or not re.fullmatch(
+        r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-rc[1-9][0-9]*)?", release_id
+    ):
+        raise ValueError(f"invalid release_id: {release_id!r}")
     if not isinstance(builder_commit, str) or not re.fullmatch(r"[0-9a-f]{40}", builder_commit):
         raise ValueError("builder commit must be a real 40-digit lowercase git revision")
     checkout = checkout.resolve(strict=True)
@@ -146,7 +151,7 @@ def build_candidate(
     stage = output_base / "stage"
     manifest = distribution.stage_distribution(
         tf_root, stage,
-        dataset=kind, release_id=RELEASE_ID,
+        dataset=kind, release_id=release_id,
         tf_version=TF_VERSION, builder_commit=builder_commit,
         source_state=source_state, support_roots={"app": app, "docs": docs},
     )
@@ -173,9 +178,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--checkout", type=Path, default=Path.cwd())
     parser.add_argument("--output-base", type=Path, required=True)
     parser.add_argument("--builder-commit", required=True)
+    parser.add_argument(
+        "--release-id", default=RELEASE_ID,
+        help="Explicit release version (e.g. 0.1.0 final, default 0.1.0-rc1 candidate)",
+    )
     args = parser.parse_args(argv)
     archive, checksum = build_candidate(
-        args.checkout, args.output_base, kind=args.corpus, builder_commit=args.builder_commit,
+        args.checkout, args.output_base, kind=args.corpus,
+        builder_commit=args.builder_commit, release_id=args.release_id,
     )
     print(archive)
     print(checksum)

@@ -42,5 +42,5 @@ for word in words[:5]:
           api.F.morph.v(word), api.F.morph2.v(word))
 ```
 
-The app's default text rendering `text-trans-full` displays transliteration. The published ZIP already contains the sibling `tf/<version>/` and `app/` directories, install only Text-Fabric and follow the archive's `README.md` / `docs/reference/installation.md` without rebuilding. Confirm its checksum against the [public release](https://github.com/alexsosn/ORACC-TF/releases/tag/native-v0.1.0). The JSON-derived graph does not supply a running translation.
+The app's default text rendering `text-trans-full` displays transliteration. To read the published ZIP without rebuilding, use its included `README.md` and `docs/reference/installation.md`. Verify the archive checksum against the [public release](https://github.com/alexsosn/ORACC-TF/releases/tag/native-v0.1.0). The JSON-derived graph does not supply a running translation.
 

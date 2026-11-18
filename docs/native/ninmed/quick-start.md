@@ -12,6 +12,7 @@ The browser supports advanced TFQL, while non-TFQL catalogue/form search is
 still being developed in [issue #189](https://github.com/alexsosn/ORACC-TF/issues/189).
 
 ## Optional: rebuild from ORACC primary JSON
+
 Install a locally built code-only ORACC-TF wheel with Text-Fabric 13.1.0, and supply a separate `asbp/ninmed/corpusjson/` source directory. The wheel does not contain third-party medical editions.
 
 ```bash

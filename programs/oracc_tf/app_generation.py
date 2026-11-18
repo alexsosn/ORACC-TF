@@ -275,7 +275,11 @@ def _config_bytes(
                 f"https://github.com/{repository_org}/ORACC-TF"
                 f"/blob/{docs_ref}/docs"
             ),
-            "featureBase": "{docBase}/reference/features.md#<feature>",
+            "featureBase": (
+                "{docBase}/reference/features.md#<feature>"
+                if native_kind is None
+                else f"{{docBase}}/native/{native_kind}/features.md#<feature>"
+            ),
             "featurePage": "feature-reference",
         },
         "typeDisplay": _type_display(node_types, node_features, native_kind=native_kind),

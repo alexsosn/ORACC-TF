@@ -1,5 +1,7 @@
 # ORACC-TF Agent Instructions
 
+> **Product-goal gate:** Before selecting a task or expanding the backlog, read [PRODUCT_GOALS.md](PRODUCT_GOALS.md). Prioritize its researcher journeys and minimum usable release; require concrete evidence for infrastructure work. Keep all mandatory source, security, licensing, TDD and independent-review checks below.
+
 ## Mandatory coordination
 
 All autonomous work must follow the parallel-safe coordination protocol in `docs/plans/P-004-agent-coordination.md` and the machine-readable task registry in `docs/registry.json`.

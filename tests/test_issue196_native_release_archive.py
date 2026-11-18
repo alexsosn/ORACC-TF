@@ -161,3 +161,10 @@ def test_native_manual_assembly_is_isolated_and_refuses_wrong_corpus(tmp_path: P
     assert (docs / "reference" / "installation.md").is_file()
     assert kind in (docs / "reference" / "index.md").read_text(encoding="utf-8")
     assert not (docs / "reference" / "words-and-lexemes.md").exists()
+
+
+@pytest.mark.parametrize("kind,feature", (("etcsri", "morph2"), ("ninmed", "word_lex")))
+def test_native_feature_help_anchor_exists_in_actual_reader_manual(kind: str, feature: str) -> None:
+    manual_path = paths.ROOT / "docs" / "native" / kind / "features.md"
+    page = manual_path.read_text(encoding="utf-8")
+    assert f'<a id="{feature}"></a>' in page

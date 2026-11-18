@@ -1,5 +1,18 @@
 # NINMED — native lexical, structural and source features
 
+<a id="form"></a>
+<a id="cf"></a>
+<a id="gw"></a>
+<a id="pos"></a>
+<a id="sense"></a>
+<a id="lang"></a>
+<a id="word_lex"></a>
+<a id="source_markers_json"></a>
+<a id="document_meta_json"></a>
+<a id="source_id"></a>
+<a id="document_key"></a>
+<a id="source_sha256"></a>
+
 NINMED's ORACC JSON uses `asbp/ninmed` and keys such as `asbp/ninmed:P285136`. Its `word` nodes represent actual source `node=l` words with attested `form`, `cf`, `gw`, `pos` and optional `sense`/`lang`, not reconstructed tokens from another edition. `word_lex` is a typed Text-Fabric edge linking source words to lexical entries.
 
 For the real word `P285136.l003f2`, source `form = DU₃.DU₃.BI`, `cf = DÙ.DÙ.BI`, `gw = ritual (instructions)`, `pos = N`. The fact that a gloss is labelled `gw` does not give an English running translation of the line. Nino-cunei `uniqueLemma` is an independently defined field and is deliberately not imported as an ORACC citation form.

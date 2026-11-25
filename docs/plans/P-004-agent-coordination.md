@@ -235,4 +235,16 @@ Versioned native ETCSRI/NINMED TF app generation for release-format distribution
 ### ISSUE-124
 Final source-to-TF correctness and completeness audit — GitHub #124.
 
+### ISSUE-198
+AEMW Ugarit native multilingual corpus — GitHub #198. Follow the source-specific issue acceptance criteria, reusing the current loader, graph and installed converter. Do not make optional public data ZIPs or a new browser prerequisite for a tested code-only converter release.
+
+### ISSUE-199
+AEMW Amarna native multilingual corpus — GitHub #199. Follow the source-specific issue acceptance criteria, reusing the current loader, graph and installed converter. Do not make optional public data ZIPs or a new browser prerequisite for a tested code-only converter release.
+
+### ISSUE-200
+DCCLT Ebla native lexical corpus — GitHub #200. Follow the source-specific issue acceptance criteria, reusing the current loader, graph and installed converter. Do not make optional public data ZIPs or a new browser prerequisite for a tested code-only converter release.
+
+### ISSUE-201
+TCMA native Middle Assyrian archives — GitHub #201. Follow the source-specific issue acceptance criteria, reusing the current loader, graph and installed converter. Do not make optional public data ZIPs or a new browser prerequisite for a tested code-only converter release.
+
 When one of these workstreams gains a dedicated normative R/P document, move its registry task to that document without changing the task id or GitHub issue mapping unless an explicit migration says otherwise. When an issue closes, reconcile registry status/evidence in the same merge window so closed work cannot remain falsely selectable.

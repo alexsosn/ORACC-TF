@@ -11,7 +11,7 @@ import shlex
 from pathlib import Path
 import sys
 
-from . import app_generation, etcsri, ninmed
+from . import app_generation, corpus, etcsri, ninmed, project
 
 
 def _build_etcsri(args: argparse.Namespace) -> int:
@@ -136,6 +136,17 @@ def _prepare_local_app(args: argparse.Namespace) -> int:
     return 0
 
 
+def _build_project(args: argparse.Namespace) -> int:
+    report = project.build_project(
+        args.output, source_dir=args.source_dir, project=args.project
+    )
+    print(
+        f"Built {args.project}: {report.documents} documents, "
+        f"{report.words} words, {report.semantic_signs} source signs at {args.output}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m oracc_tf",
@@ -178,6 +189,13 @@ def main(argv: list[str] | None = None) -> int:
         "--skip-known-empty", action="store_true",
         help="For full-corpus input only: explicitly exclude known zero-byte P395407.json.",
     )
+    native = commands.add_parser(
+        "build-project",
+        help="Convert a complete local ORACC CDL export (first validation: AEMW/Amarna).",
+    )
+    native.add_argument("--project", required=True, help="Exact ORACC project ID.")
+    native.add_argument("--source-dir", required=True, help="Directory containing corpus.json, catalogue.json and corpusjson/.")
+    native.add_argument("--output", required=True, help="New/empty TF destination.")
     preview = commands.add_parser(
         "prepare-local-app",
         help="Prepare a local (unpublished) native ORACC Text-Fabric browser app.",
@@ -193,7 +211,9 @@ def main(argv: list[str] | None = None) -> int:
             return _build_etcsri(args)
         if args.command == "build-ninmed":
             return _build_ninmed(args)
-    except (ValueError, OSError, etcsri.ETCSRISourceError) as exc:
+        if args.command == "build-project":
+            return _build_project(args)
+    except (ValueError, OSError, corpus.CorpusBuildError, etcsri.ETCSRISourceError) as exc:
         print(f"ORACC-TF: {exc}", file=sys.stderr)
         return 2
     return 2
